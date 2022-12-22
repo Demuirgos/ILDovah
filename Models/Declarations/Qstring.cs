@@ -1,3 +1,21 @@
+using System.Text;
+
+public record QSTRING(string Value, bool IsSingleQuoted) {
+    public override string ToString() => IsSingleQuoted ? $"'{Value}'" : $"\"{Value}\"";
+    public static void Parse(ref int index, string source, bool isSingleQuoted, out QSTRING qstring) {
+        char delimiter = isSingleQuoted ? '\'' : '\"';
+        StringBuilder sb = new StringBuilder();
+        if(source[index] == delimiter) {
+            while(source[++index] != delimiter) {
+                sb.Append(source[index]);
+            }
+            qstring = new QSTRING(sb.ToString(), isSingleQuoted);
+            return;
+        }
+        qstring = null;
+    }
+}
+
 public record CompQstring(QSTRING[] AggregatedStrings) : Decl {
     public override string ToString()
     {

@@ -1,10 +1,4 @@
 public record ModuleHeadDecl(bool IsExtern, String Name) : Decl {
-    /*
-    moduleHead :    '.module' 
-                    | '.module' name1 
-                    | '.module' 'extern' name1 
-                    ;
-    */
     public override string ToString()
         => $".module {(IsExtern ? "extern " : "")}{Name}";
 
