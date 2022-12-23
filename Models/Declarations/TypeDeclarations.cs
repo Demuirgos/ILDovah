@@ -1,50 +1,66 @@
 using System.Text;
+using System.Threading.Channels;
 
 public record Type(string? TypeName) : Decl 
 {
     public override string ToString()
         => TypeName;
-    /*
-    type : 
-            | type '[' ']' 
-            | type '[' bounds1 ']' 
-            | type 'value' '[' int32 ']' 
-            | type '&' 
-            | type '*' 
-            | type 'pinned' 
-            | type 'modreq' '(' className ')' 
-            | type 'modopt' '(' className ')' 
-
-            | methodSpec callConv type '*' '(' sigArgs0 ')' 
-            ;
- */
-    public void Parse(ref int index, string source, out Type? typeDecl) {
+    public static void Parse(ref int index, string source, out Type? typeDecl) {
         string[] PossiblePrimitiveValues = {"typedref", "object", "string", "char", "void", "bool", "int8", "int16", "int32", "int64", "float32", "float64", "unsignedint8", "unsignedint16", "unsignedint32", "unsignedint64", "nativeint", "nativeunsignedint", "nativefloat"};
-        string[] PossibleSecondaryValues = {"class", "valueclass",  "valuetype"}; 
+        string[] PossibleSecondaryValues = {"&", "*",  "pinned"}; 
+        string[] PossibleSpecialValues = {"modopt", "modreq"}; 
         StringBuilder sb = new StringBuilder();
-        bool StartsWithSimpleWord(string[] wordPool, string code, out String typeWord) {
-            var result = wordPool.Any(x => code.StartsWith(x));
-            if(result) {
-                typeWord = wordPool.First(x => code.StartsWith(x));
-            } else {
-                typeWord = null;
-            }
-            return result;
-        } 
 
-        if(StartsWithSimpleWord(PossiblePrimitiveValues, source[index..], out string typeWord)) {
+        if(source[index..].StartsWith(PossiblePrimitiveValues, out string typeWord)) {
             index += typeWord.Length;
             sb.Append(typeWord);
-        } else if(source[index] == '!') {
+        } else if(source.ConsumeWord(ref index, "!")) {
             index++;
             INT.Parse(ref index, source, out INT intvalue);
             sb.Append($" !{intvalue} ");
-        } else if(StartsWithSimpleWord(PossibleSecondaryValues, source[index..], out string attrword)) {
+        } else if(source[index..].StartsWith(PossibleSecondaryValues, out string attrword)) {
             index+=attrword.Length;
             sb.Append($" {attrword} ");
             ClassName.Parse(ref index, source, out ClassName className);
             sb.Append($" {className} ");
+        } else {
+            MethodSpec.Parse(ref index, source, out MethodSpec spec);
+            CallConv.Parse(ref index, source, out CallConv conv);
+            Type.Parse(ref index, source, out Type typedecl);
+            source.ConsumeWord(ref index, "*");
+            source.ConsumeWord(ref index, "(");
+            SigArgs.Parse(ref index, source, out SigArgs sigargs);
+            source.ConsumeWord(ref index, ")");
         }
+        if(source[index] == '[' ||  source[index..].StartsWith("value")) {
+            if(source.ConsumeWord(ref index, "value")) {
+                index += "value".Length;
+                sb.Append("value");
+            }
+
+            if(source[index] == '[') {
+                index++;
+                INT.Parse(ref index, source, out INT intval);
+                if(intval is null) {
+                    Bounds.Parse(ref index, source, out Bounds bounds);
+                    sb.Append($"[{bounds}]");
+                } else {
+                    sb.Append($"[{intval}]");
+                }
+                index++;
+            }
+        } else if(source[index..].StartsWith(PossibleSecondaryValues, out var capturedWord)) {
+            index+=capturedWord.Length;
+            sb.Append(capturedWord);
+        } else if(source[index..].StartsWith(PossibleSpecialValues, out var capturedPrefix)) {
+            index+=capturedPrefix.Length;
+            source.ConsumeWord(ref index, "(");
+            ClassName.Parse(ref index, source, out ClassName className);
+            source.ConsumeWord(ref index, ")");
+            sb.Append($"{capturedPrefix} ({className})");
+        }
+
+        typeDecl = new Type(sb.ToString());
     }
 }
 
@@ -55,25 +71,16 @@ internal record VariantType(string Type) : Decl
 
     internal static void Parse(ref int index, string source, out VariantType? marshalTypeDecl)
     {
-        string[] VariantTypes = { "variant", "null", "currency", "void", "bool", "int8", "int16", "int32", "int64", "float32", "float64", "*'","decimal", "date", "bstr", "lpstr", "lpwstr", "iunknown", "idispatch", "safearray", "int", "unsigned","error", "hresult", "carray", "userdefined", "record", "filetime", "blob", "stream", "storage", "streamed_object", "stored_object", "blob_object", "cf", "clsid"};
+        string[] VariantTypes = { "variant", "null", "currency", "void", "bool", "int8", "int16", "int32", "int64", "float32", "float64", "*","decimal", "date", "bstr", "lpstr", "lpwstr", "iunknown", "idispatch", "safearray", "int", "unsigned","error", "hresult", "carray", "userdefined", "record", "filetime", "blob", "stream", "storage", "streamed_object", "stored_object", "blob_object", "cf", "clsid"};
         string[] UnsignedTypes = { "int" ,"int8", "int16", "int32", "int64"};
-        string[] Compelementary = { "[]" ,"&", "vector"};
+        string[] Complementary = { "[]" ,"&", "vector"};
         string marshalType; 
-        bool StartsWithSimpleWord(string[] wordPool, string code, out String typeWord) {
-            var result = wordPool.Any(x => code.StartsWith(x));
-            if(result) {
-                typeWord = wordPool.First(x => code.StartsWith(x));
-            } else {
-                typeWord = null;
-            }
-            return result;
-        } 
 
-        if(StartsWithSimpleWord(VariantTypes, source[index..], out string? typeWord)) {
+        if(source[index..].StartsWith(VariantTypes, out string? typeWord)) {
             if(typeWord == "unsigned") {
                 index += typeWord.Length;
-                if(StartsWithSimpleWord(UnsignedTypes, source[index..], out typeWord)) {
-                    marshalType = $"unsigned {typeWord}";
+                if(source[index..].StartsWith(UnsignedTypes, out typeWord)) {
+                    marshalType = $" unsigned {typeWord} ";
                     index += typeWord.Length;
                 } else {
                     throw new Exception("VariantType.Parse: Invalid source");
@@ -86,7 +93,7 @@ internal record VariantType(string Type) : Decl
             marshalType = String.Empty;
         }
 
-        while(StartsWithSimpleWord(Compelementary, source[index..], out typeWord)) {
+        while(source[index..].StartsWith(Complementary, out typeWord)) {
             marshalType += typeWord;
             index += typeWord.Length;
         }
@@ -98,7 +105,7 @@ internal record VariantType(string Type) : Decl
 public record NativeType(String TypeName) : Decl
 {
     public override string ToString()
-        => Type;
+        => TypeName;
 
     internal static void Parse(ref int index, string source, out NativeType? marshalType)
     {
@@ -106,62 +113,45 @@ public record NativeType(String TypeName) : Decl
         StringBuilder sb = new StringBuilder();
         marshalType = null;
 
-        bool StartsWithSimpleWord(string[] wordPool, string code, out String typeWord) {
-            var result = wordPool.Any(x => code.StartsWith(x));
-            if(result) {
-                typeWord = wordPool.First(x => code.StartsWith(x));
-            } else {
-                typeWord = null;
-            }
-            return result;
-        } 
-
-        if(StartsWithSimpleWord(NativeTypes, source[index..], out string? typeWord)) {
+        if(source[index..].StartsWith(NativeTypes, out string? typeWord)) {
             sb.Append(typeWord);
             index += typeWord.Length;
         } else {
             void consumeIndexer(ref int i, string source, out string result) {
                 INT intDecl2 = null;
                 INT intDecl1 = null;
-                if(source[i] == '[') {
-                    i++;
+                
+                if(source.ConsumeWord(ref i, "[")) {
                     INT.Parse(ref i, source, out intDecl1);
-                    if(source[i] == '+') {
-                        i++;
+                    if(source.ConsumeWord(ref i, "+")) {
                         INT.Parse(ref i, source, out intDecl2);
                     }
                 }
-                i++;
-                result = $"[{(intDecl1?.ToString() ?? "")}+{(intDecl2?.ToString() ?? "")}]";
+                source.ConsumeWord(ref i, "]");
+
+                result = $"[{intDecl1?.ToString() ?? ""}+{intDecl2?.ToString() ?? ""}]";
             }
-            if(source[index..].StartsWith("custom")) {
+
+            if(source.ConsumeWord(ref index, "custom")) {
                 sb.Append(" custom ");
-                index += "custom".Length;
                 int start = index;
-                if(source[index] == '(') {
-                    while(source[index] != ')') {
-                        index++;
-                    }
-                    index++;
+                if(source.ConsumeWord(ref index, "(")) {
+                    source.ConsumeUntil(ref index, (rest) => rest[0] == ')');
+                    source.ConsumeWord(ref index, ")");
                 }
                 sb.Append(source[start..index]);
-            } else if(source[index..].StartsWith("fixed")) {
+            } else if(source.ConsumeWord(ref index, "fixed")) {
                 sb.Append(" fixed ");
-                index+= "fixed".Length;
-                if(source[index..].StartsWith("sysstring")) {
+                if(source.ConsumeWord(ref index, "sysstring")) {
                     sb.Append(" sysstring ");
-                    index+= "sysstring".Length;
-                    
-                } else if(source[index..].StartsWith("array")) {
+                } else if(source.ConsumeWord(ref index, "array")) {
                     sb.Append(" array ");
-                    index+= "array".Length;
                 } else {
                     throw new Exception("NativeType.Parse: Invalid source");
                 }
                 consumeIndexer(ref index, source, out string s);
-            } else if(source[index..].StartsWith("safearray")) {
+            } else if(source.ConsumeWord(ref index, "safearray")) {
                 sb.Append(" safearray ");
-                index+= "safearray".Length;
                 VariantType.Parse(ref index, source, out VariantType? variantType);
                 sb.Append(variantType);
                 if(source[index] == ',') {
@@ -173,9 +163,8 @@ public record NativeType(String TypeName) : Decl
                 throw new Exception("NativeType.Parse: Invalid source");
             }
 
-            if(source[index] == '*') {
+            if(source.ConsumeWord(ref index, "*")) {
                 sb.Append("*");
-                index++;
             } else if(source[index] == '[') {
                 consumeIndexer(ref index, source, out string s);
                 sb.Append(s);

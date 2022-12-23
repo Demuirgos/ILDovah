@@ -1,1 +1,2 @@
-public record Decl();
+public interface Decl {
+}

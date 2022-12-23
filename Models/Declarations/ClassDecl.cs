@@ -6,7 +6,7 @@ public record ClassHeadDecl(ClassAttrDecl Attributes, String id, ExtendsClause P
         => $".class {Attributes} {id} {Parent} {Interfaces}";
 
     public static void Parse(ref int index, string source, out ClassHeadDecl classHeadDecl) {
-        if(source[index..].StartsWith(".class")) {
+        if(source.ConsumeWord(ref index, ".class")) {
             index += 6 + 1;
             ClassAttrDecl.Parse(ref index, source, out ClassAttrDecl classAttrDecl);
             ID.Parse(ref index, source, out ID id);
@@ -25,12 +25,11 @@ public record ImplClause(ClassNames? Interfaces) : Decl
         => Interfaces is null ? String.Empty : $"implements {Interfaces}";
     public static void Parse(ref int index, string source, out ImplClause implClause)
     {   
-        if(source[index..].StartsWith("implements")) {
-            index += 10 + 1;
+        if(source.ConsumeWord(ref index, "implements")) {
             ClassNames.Parse(ref index, source, out ClassNames classNames);
             implClause = new ImplClause(classNames);
         } else {
-            implClause = new ImplClause(null);
+            implClause = new ImplClause((ClassNames?)null);
         }
     }
 }
@@ -68,8 +67,7 @@ public record ClassName(String? InnerName, bool HasDotModule, String OuterName) 
         string? innerName = null;
         if(source[index] == '[') {
             index++;
-            if(source[index..].StartsWith(".module")) {
-                index += 7;
+            if(source.ConsumeWord(ref index, ".module")) {
                 hasDotModule = true;
             }
             NameDecl.Parse(ref index, source, out NameDecl nameDecl);
@@ -87,12 +85,11 @@ public record ExtendsClause(ClassName? className) : Decl
         => className is null ? String.Empty : $"extends {className}";
     public static void Parse(ref int index, string source, out ExtendsClause extendsClause)
     {
-        if(source[index..].StartsWith("extends")) {
-            index += 7 + 1;
+        if(source.ConsumeWord(ref index, "extends")) {
             ClassName.Parse(ref index, source, out ClassName className);
             extendsClause = new ExtendsClause(className);
         } else {
-            extendsClause = new ExtendsClause(null);
+            extendsClause = new ExtendsClause((ClassName?)null);
         }
     }
 }
@@ -104,27 +101,14 @@ public record ClassAttrDecl(string[] Attributes) : Decl
     public static void Parse(ref int index, string source, out ClassAttrDecl classAttrDecl) {
         string[] possibleValues = new string[] { "public", "private", "value", "enum", "interface", "sealed", "abstract", "auto", "sequential", "explicit", "ansi", "unicode", "autochar", "import", "serializable", "nested", "public", "private", "beforefieldinit", "specialname", "rtspecialname" };
         string[] possibleNestedValues = new string[] {  "public", "private", "family", "assembly", "famandassem", "famorassem"};
-        
-        bool StartsWithAttribute(string code, out String attribute) {
-            var result = possibleValues.Any(x => code.StartsWith(x));
-            if(result) {
-                attribute = possibleValues.First(x => code.StartsWith(x));
-            } else {
-                attribute = null;
-            }
-            return result;
-        } 
 
         List<string> attributes = new List<string>();
-        while(StartsWithAttribute(source, out string word)) {
+        while(source[index..].StartsWith(possibleValues, out string word)) {
             if(word == "nested") {
-                foreach(var nestedWord in possibleNestedValues) {
-                    if(source[index..].StartsWith(nestedWord)) {
-                        attributes.Add($"{word} {nestedWord}");
-                        index += nestedWord.Length;
-                        break;
-                    }
-                }
+                index += word.Length + 1;
+                source[index..].StartsWith(possibleNestedValues,out string nestedWord);
+                attributes.Add($"{word} {nestedWord}");
+                index += nestedWord.Length;
             }
             else {
                 attributes.Add(word);

@@ -27,8 +27,7 @@ public record CompQstring(QSTRING[] AggregatedStrings) : Decl {
         List<QSTRING> qstringList = new();
         QSTRING.Parse(ref index, source, false, out QSTRING qstring);
         qstringList.Add(qstring);
-        while(source[index] == '+') {
-            index++;
+        while(source.ConsumeWord(ref index, "+")) {
             QSTRING.Parse(ref index, source, false, out QSTRING qstring2);
             qstringList.Add(qstring2);
         }
