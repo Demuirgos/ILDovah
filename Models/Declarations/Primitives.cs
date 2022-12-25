@@ -65,3 +65,19 @@ public record BYTE(byte Value) {
         byteval = null;
     }
 }
+
+
+public record BOOL(bool Value) {
+    public override string ToString() => Value.ToString();
+    public static void Parse(ref int index, string source, out BOOL byteval) {
+        String[] boolValue = { "true", "false" };
+        if(source[index..].StartsWith(boolValue, out string word)) {
+            byteval = new BOOL(word == "true");
+            index += word.Length;
+            return;
+        }
+        byteval = null;
+    }
+}
+
+

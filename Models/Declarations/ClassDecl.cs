@@ -7,7 +7,6 @@ public record ClassHeadDecl(ClassAttrDecl Attributes, String id, ExtendsClause P
 
     public static void Parse(ref int index, string source, out ClassHeadDecl classHeadDecl) {
         if(source.ConsumeWord(ref index, ".class")) {
-            index += 6 + 1;
             ClassAttrDecl.Parse(ref index, source, out ClassAttrDecl classAttrDecl);
             ID.Parse(ref index, source, out ID id);
             ExtendsClause.Parse(ref index, source, out ExtendsClause extendsClause);
@@ -61,8 +60,9 @@ public record ClassName(String? InnerName, bool HasDotModule, String OuterName) 
         return sb.ToString();
     }
 
-    public static void Parse(ref int index, string source, out ClassName className)
+    public static bool Parse(ref int index, string source, out ClassName className)
     {
+        int start = index;
         bool hasDotModule = false;
         string? innerName = null;
         if(source[index] == '[') {
@@ -76,6 +76,7 @@ public record ClassName(String? InnerName, bool HasDotModule, String OuterName) 
         }
         SlashednameDecl.Parse(ref index, source, out SlashednameDecl slashednameDecl);
         className = new ClassName(innerName, hasDotModule, slashednameDecl.idDecls);
+        return start == index;
     }
 }
 
@@ -105,8 +106,8 @@ public record ClassAttrDecl(string[] Attributes) : Decl
         List<string> attributes = new List<string>();
         while(source[index..].StartsWith(possibleValues, out string word)) {
             if(word == "nested") {
-                index += word.Length + 1;
-                source[index..].StartsWith(possibleNestedValues,out string nestedWord);
+                index += word.Length;
+                source[index..].StartsWith(possibleNestedValues, out string nestedWord);
                 attributes.Add($"{word} {nestedWord}");
                 index += nestedWord.Length;
             }

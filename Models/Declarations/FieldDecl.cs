@@ -1,10 +1,21 @@
 public record FieldDecl(RepeatOpt RepeatOpt, FieldAttr attributes, Type type, IdDecl Id, AtOpt atOpt, InitOpt Init) : Decl {
     public override string ToString()
-        => $"{RepeatOpt} {attributes} {type} {Id} {atOpt} {Init}";
+        => $".field {RepeatOpt} {attributes} {type} {Id} {atOpt} {Init}";
+
+    public static void Parse(ref int index, string source, out FieldDecl fieldDecl) {
+        source.ConsumeWord(ref index, ".field");
+        RepeatOpt.Parse(ref index, source, out RepeatOpt repeatOpt);
+        FieldAttr.Parse(ref index, source, out FieldAttr fieldAttr);
+        Type.Parse(ref index, source, out Type type);
+        IdDecl.Parse(ref index, source, out IdDecl id);
+        AtOpt.Parse(ref index, source, out AtOpt atOpt);
+        InitOpt.Parse(ref index, source, out InitOpt initOpt);
+        fieldDecl = new FieldDecl(repeatOpt, fieldAttr, type, id, atOpt, initOpt);
+    }
 
 }
 
-internal record AtOpt(IdDecl? Id) : Decl
+public record AtOpt(IdDecl? Id) : Decl
 {
     public override string ToString()
         => Id is null ? String.Empty : $"at {Id}";
@@ -21,7 +32,7 @@ internal record AtOpt(IdDecl? Id) : Decl
     }
 }
 
-internal record RepeatOpt(long? index) : Decl
+public record RepeatOpt(long? index) : Decl
 {
     public override string ToString()
         => index is null ? String.Empty : $"[{index}]";
@@ -39,14 +50,10 @@ internal record RepeatOpt(long? index) : Decl
     }
 }
 
-internal record InitOpt(FieldInit init) :  Decl
+public record InitOpt(FieldInit init) :  Decl
 {
     public override string ToString()
         => $"= {init}";
-    /*
-        initOpt :   EMPTY 
-                    | '=' fieldInit
-    */
     public static void Parse(ref int index, string source, out InitOpt initOpt)
     {   
         if(source.ConsumeWord(ref index, "=")) {
@@ -58,17 +65,9 @@ internal record InitOpt(FieldInit init) :  Decl
     }
 }
 
-internal record  FieldInit() : Decl
+public record  FieldInit() : Decl
 {
-    /*
-                | 'bytearray' '(' bytes ')' 
-                | 'nullref' 
-                ; 
-    bytes :    EMPTY
-                | hexbytes 
-                ; 
-    */
-    internal static void Parse(ref int index, string source, out FieldInit fieldInit)
+    public static void Parse(ref int index, string source, out FieldInit fieldInit)
     {
         string[] possible_tokens = {"float32","float64","float32","float64","int64","int32","int16","char","int8","bool","bytearray","nullref", "compQstring"};
         if(source[index..].StartsWith(possible_tokens, out string word)) {
@@ -83,6 +82,7 @@ internal record  FieldInit() : Decl
                     source.ConsumeWord(ref index, "(");
                     FLOAT.Parse(ref index, source, out FLOAT real_number);
                     source.ConsumeWord(ref index, ")");
+                    fieldInit = new FieldInitFloat(real_number);
                     break;
                 }
                 case "int64":
@@ -94,30 +94,34 @@ internal record  FieldInit() : Decl
                     source.ConsumeWord(ref index, "(");
                     INT.Parse(ref index, source, out INT int_number);
                     source.ConsumeWord(ref index, ")");
+                    fieldInit = new FieldInitInt(int_number);
                     break;
                 }
                 case "bool":
                 {
-                    string[] bool_values = {"true", "false"};
                     source.ConsumeWord(ref index, "(");
-                    if(source[index..].StartsWith(bool_values, out string bool_word)) {
-                        index += bool_word.Length + 1;
-                    }
+                    BOOL.Parse(ref index, source, out BOOL bool_word);
                     source.ConsumeWord(ref index, ")");
+                    fieldInit = new FieldInitBool(bool_word);
                     break;
                 }
                 case "bytearray":
                 {
+                    List<BYTE> bytes = new();
                     source.ConsumeWord(ref index, "(");
                     while(source.ConsumeWord(ref index, ")")) {
                         BYTE.Parse(ref index, source, out BYTE byteValue);
+                        bytes.Add(byteValue);
                     }
+                    fieldInit = new FieldInitByteArray(bytes.ToArray());
                     break;
                 }
                 case "nullref":
+                    fieldInit = new FieldInitRef();
                     break;
                 case "compQstring":
                     CompQstring.Parse(ref index, source, out CompQstring compQstring);
+                    fieldInit = new FieldInitString(compQstring);
                     break;
                 default:
                     throw new NotImplementedException();
@@ -129,7 +133,34 @@ internal record  FieldInit() : Decl
     }
 }
 
-internal record FieldAttr(string[] Attributes, String? MarshalType)
+public record  FieldInitFloat(FLOAT f) : FieldInit {
+    public override string ToString()
+        => f.Value.ToString();
+}
+public record  FieldInitInt(INT n) : FieldInit {
+    public override string ToString()
+        => n.Value.ToString();
+}
+public record  FieldInitBool(BOOL n) : FieldInit {
+    public override string ToString()
+        => n.Value.ToString();
+}
+public record  FieldInitByteArray(BYTE[] bs) : FieldInit {
+    public override string ToString()
+        => $"{{{String.Join(", ", bs.Select(b => b.ToString()))}}}";
+}
+public record  FieldInitString(CompQstring str) : FieldInit {
+    public override string ToString()
+        => str.ToString();
+}
+public record  FieldInitRef() : FieldInit {
+    public override string ToString()
+        => "nullref";
+}
+
+
+
+public record FieldAttr(string[] Attributes, String? MarshalType)
 {
     public override string ToString()
         => String.Join(" ", Attributes) + (MarshalType is null ? String.Empty : $"marshal ({MarshalType})");

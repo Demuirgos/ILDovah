@@ -1,14 +1,62 @@
 using System.Text;
 using System.Threading.Channels;
 
+public record TypeSpec() : Decl
+{
+    public override string ToString()
+        => String.Empty;
+    public static bool Parse(ref int index, string source, out TypeSpec typeSpec)
+    {
+        int start = index;
+        if(source.ConsumeWord(ref index, "[")) {
+            if(source.ConsumeWord(ref index, ".module")) {
+                NameDecl.Parse(ref index, source, out NameDecl className);
+                typeSpec = new TypeSpecModule(className);
+            } else {
+                NameDecl.Parse(ref index, source, out NameDecl className);
+                typeSpec = new TypeSpecNamed(className);
+            }
+            source.ConsumeWord(ref index, "]");
+        } else {
+            if(ClassName.Parse(ref index, source, out ClassName className)) {
+                typeSpec = new TypeSpecClassNamed(className);
+            } else {
+                Type.Parse(ref index, source, out Type type);
+                typeSpec = new TypeSpecTyped(type);
+            }
+        }
+        return start != index;
+    }
+}
+ 
+public record TypeSpecModule(NameDecl Name) : TypeSpec {
+    public override string ToString()
+        => $"[.module {Name}]";
+}
+public record TypeSpecNamed(NameDecl Name) : TypeSpec {
+    public override string ToString()
+        => $"[{Name}]";
+}
+public record TypeSpecClassNamed(ClassName Name) : TypeSpec {
+    public override string ToString()
+        => Name.ToString();
+}
+public record TypeSpecTyped(Type type) : TypeSpec {
+    public override string ToString()
+        => type.ToString();
+}
+
+
+
 public record Type(string? TypeName) : Decl 
 {
     public override string ToString()
         => TypeName;
-    public static void Parse(ref int index, string source, out Type? typeDecl) {
+    public static bool Parse(ref int index, string source, out Type? typeDecl) {
         string[] PossiblePrimitiveValues = {"typedref", "object", "string", "char", "void", "bool", "int8", "int16", "int32", "int64", "float32", "float64", "unsignedint8", "unsignedint16", "unsignedint32", "unsignedint64", "nativeint", "nativeunsignedint", "nativefloat"};
         string[] PossibleSecondaryValues = {"&", "*",  "pinned"}; 
         string[] PossibleSpecialValues = {"modopt", "modreq"}; 
+        int start = index;
         StringBuilder sb = new StringBuilder();
 
         if(source[index..].StartsWith(PossiblePrimitiveValues, out string typeWord)) {
@@ -61,6 +109,7 @@ public record Type(string? TypeName) : Decl
         }
 
         typeDecl = new Type(sb.ToString());
+        return start != index;
     }
 }
 
@@ -69,12 +118,13 @@ internal record VariantType(string Type) : Decl
     public override string ToString()
         => Type;
 
-    internal static void Parse(ref int index, string source, out VariantType? marshalTypeDecl)
+    internal static bool Parse(ref int index, string source, out VariantType? marshalTypeDecl)
     {
         string[] VariantTypes = { "variant", "null", "currency", "void", "bool", "int8", "int16", "int32", "int64", "float32", "float64", "*","decimal", "date", "bstr", "lpstr", "lpwstr", "iunknown", "idispatch", "safearray", "int", "unsigned","error", "hresult", "carray", "userdefined", "record", "filetime", "blob", "stream", "storage", "streamed_object", "stored_object", "blob_object", "cf", "clsid"};
         string[] UnsignedTypes = { "int" ,"int8", "int16", "int32", "int64"};
         string[] Complementary = { "[]" ,"&", "vector"};
         string marshalType; 
+        int start = index;
 
         if(source[index..].StartsWith(VariantTypes, out string? typeWord)) {
             if(typeWord == "unsigned") {
@@ -99,6 +149,7 @@ internal record VariantType(string Type) : Decl
         }
 
         marshalTypeDecl = new VariantType(marshalType);
+        return start != index;
     }
 }
 
@@ -107,10 +158,11 @@ public record NativeType(String TypeName) : Decl
     public override string ToString()
         => TypeName;
 
-    internal static void Parse(ref int index, string source, out NativeType? marshalType)
+    internal static bool Parse(ref int index, string source, out NativeType? marshalType)
     {
         string[] NativeTypes = {"variant", "currency", "syschar", "void", "bool", "int8", "int16", "int32", "int64", "float32", "float64", "error", "unsignedint8", "unsignedint16", "unsignedint32", "unsignedint64", "decimal", "date", "bstr", "lpstr", "lpwstr", "lptstr", "objectref", "iunknown", "idispatch", "struct", "interface", "int", "unsignedint", "nested", "byvalstr", "ansibstr", "tbstr", "variantbool", "methodSpec","asany", "lps"};
         StringBuilder sb = new StringBuilder();
+        int start = index;
         marshalType = null;
 
         if(source[index..].StartsWith(NativeTypes, out string? typeWord)) {
@@ -134,12 +186,12 @@ public record NativeType(String TypeName) : Decl
 
             if(source.ConsumeWord(ref index, "custom")) {
                 sb.Append(" custom ");
-                int start = index;
+                int substart = index;
                 if(source.ConsumeWord(ref index, "(")) {
                     source.ConsumeUntil(ref index, (rest) => rest[0] == ')');
                     source.ConsumeWord(ref index, ")");
                 }
-                sb.Append(source[start..index]);
+                sb.Append(source[substart..index]);
             } else if(source.ConsumeWord(ref index, "fixed")) {
                 sb.Append(" fixed ");
                 if(source.ConsumeWord(ref index, "sysstring")) {
@@ -172,6 +224,6 @@ public record NativeType(String TypeName) : Decl
             
             marshalType = new NativeType(sb.ToString());
         }
-
+        return start != index;
     }
 }

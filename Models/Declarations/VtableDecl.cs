@@ -2,7 +2,7 @@ public record VtableDecl(byte[] values) : Decl {
     public override string ToString()
         => $".vtable = ({ String.Join(" ", values) })";
     
-    public static void Parse(ref int index, string source, out VtableDecl vtableDecl) {
+    public static bool Parse(ref int index, string source, out VtableDecl vtableDecl) {
         if(source.ConsumeWord(ref index, ".vtable")) {
             source.ConsumeWord(ref index, "=");
             source.ConsumeWord(ref index, "(");
@@ -12,8 +12,10 @@ public record VtableDecl(byte[] values) : Decl {
                 bytes.Add(byteValue.Value);
             }
             vtableDecl = new VtableDecl(bytes.ToArray());
+            return true;
         } else {
             vtableDecl = null;
+            return false;
         }
     }
 }

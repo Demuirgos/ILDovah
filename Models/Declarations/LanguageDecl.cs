@@ -1,11 +1,9 @@
-public record LanguageDecl() : Decl {
-    public QSTRING[] Language { get; init; }
-
+public record LanguageDecl(QSTRING[] Language) : Decl {
     public override string ToString() {
         return $".language {Language.Aggregate(String.Empty, (acc, s) => $"{acc}, s.Value")}";
     }
 
-    public static void Parse(ref int index, string source, out LanguageDecl languageDecl) {
+    public static bool Parse(ref int index, string source, out LanguageDecl languageDecl) {
         if(source[index..].StartsWith(".language")) {
             index += 9;
             QSTRING.Parse(ref index, source, true, out QSTRING langString);
@@ -15,9 +13,10 @@ public record LanguageDecl() : Decl {
                 QSTRING.Parse(ref index, source, true, out QSTRING langString2);
                 langList.Add(langString2);
             }
-            languageDecl = new LanguageDecl() { Language = langList.ToArray() };
-            return;
+            languageDecl = new LanguageDecl(langList.ToArray());
+            return true;
         } 
         languageDecl = null;
+        return false;
     }
 }
