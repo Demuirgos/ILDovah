@@ -1,5 +1,6 @@
 using System.Text;
 using System.Linq;
+using static Core;
 public record INT(Int64 Value, int ByteCount) {
     public override string ToString() => Value.ToString();
     public static void Parse(ref int index, string source, out INT intVal) {
@@ -71,8 +72,8 @@ public record BOOL(bool Value) {
     public override string ToString() => Value.ToString();
     public static void Parse(ref int index, string source, out BOOL byteval) {
         String[] boolValue = { "true", "false" };
-        if(source[index..].StartsWith(boolValue, out string word)) {
-            byteval = new BOOL(word == "true");
+        if(TryRun(boolValue.Select(ConsumeString).ToArray())(source, ref index, out string[] word)) {
+            byteval = new BOOL(word[0] == "true");
             index += word.Length;
             return;
         }

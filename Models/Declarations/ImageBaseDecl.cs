@@ -1,3 +1,0 @@
-public record ImageBaseDecl() : Decl {
-    
-}

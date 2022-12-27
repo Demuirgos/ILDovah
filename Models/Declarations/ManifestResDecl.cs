@@ -1,3 +1,0 @@
-public record ManifestResDecl() : Decl {
-    
-} 

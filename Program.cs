@@ -1,8 +1,7 @@
 ﻿// See https://aka.ms/new-console-template for more information
 using System.Text.RegularExpressions;
 
-Console.WriteLine("Hello, World!");
-
-// NOTE : refactor nested constructs into own types 
-// NOTE : refactor repeated constructs into own ExtraFunctions
-// NOTE : add more primitive string manipulation functions
+string source = "true";
+int index = 0;
+BOOL.Parse(ref index, source, out BOOL boolVal);
+Console.WriteLine(boolVal);

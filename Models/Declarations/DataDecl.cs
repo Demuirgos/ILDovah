@@ -1,3 +1,0 @@
-public record DataDecl() : Decl {
-    
-}

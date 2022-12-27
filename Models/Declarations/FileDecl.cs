@@ -1,3 +1,0 @@
-public record FileDecl() : Decl {
-    
-}
