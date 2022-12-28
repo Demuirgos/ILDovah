@@ -1,4 +1,7 @@
 using static Core;
+/*
+MethAttr* [ CallConv ] Type [ marshal ‘(’ [ NativeType ] ‘)’ ] MethodName [ ‘<’ GenPars‘>’ ] ‘(’ Parameters ‘)’ ImplAttr*
+*/
 public record MethodDeclaration(bool IsConstructor) : IDeclaration<MethodDeclaration> {
     /*Ctor [ ‘=’ ‘(’ Bytes ‘)’ ]*/
     public override string ToString() => throw new NotImplementedException();
@@ -14,3 +17,4 @@ public record MethodName(String Name) : IDeclaration<MethodName> {
         Map((dname) => dname.Value, DottedName.AsParser)
     );
 }
+

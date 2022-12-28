@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
@@ -9,6 +10,21 @@ public static class Core {
         result = default;
         return true;
     };
+
+    public static Parser<T> Discard<T, U>(Parser<U> parser) {
+        return (string code, ref int index, out T result) => {
+            bool isParsed = parser(code, ref index, out U value);
+            result = default(T);
+            return isParsed;
+        };
+    }
+
+    public static Parser<T> Fail<T>(string? message = null) {
+        return (string code, ref int index, out T result) => {
+            result = default;
+            throw new UnreachableException(message ?? "This parser should never be reached");
+        };
+    }
 
     public static Parser<T> Map<T, U>(Func<U, T> converter, Parser<U> parser) {
         return (string code, ref int index, out T result) => {
