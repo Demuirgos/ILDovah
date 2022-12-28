@@ -34,7 +34,7 @@ public record FLOAT(double Value, bool IsCast) : IDeclaration<FLOAT> {
 }
 
 public record BYTE(byte Value) : IDeclaration<BYTE> {
-    public override string ToString() => Value.ToString();
+    public override string ToString() => Convert.ToHexString(new byte[] { Value });
     public static byte charVal(char c) {
         if(c >= '0' && c <= '9') return (byte)(c - '0');
         if(c >= 'A' && c <= 'F') return (byte)(c - 'A' + 10);
@@ -88,28 +88,31 @@ public record QSTRING(String Value, bool IsSingleyQuoted) : IDeclaration<QSTRING
 }
 
 public record ARRAY<T>(T[] Values) : IDeclaration<ARRAY<T>> where T : IDeclaration<T> {
-    public override string ToString() => $"[{string.Join(", ", Values.Select(v => v.ToString()))}]";
+    public (char start, char separator, char end) Delimiters = ('[', ',', ']');
+    public override string ToString() => $"{Delimiters.start}{string.Join(Delimiters.separator, Values.Select(v => v.ToString()))}{Delimiters.end}";
     public static Parser<ARRAY<T>> AsParser => throw new NotImplementedException();
-    public static Parser<ARRAY<T>> MakeParser((char start, char separator, char end) specialCharacters) => RunAll(
-        converter: (vals) => new ARRAY<T>(vals[1]),
-        ConsumeChar(_ => Array.Empty<T>(), specialCharacters.start),
+    public static Parser<ARRAY<T>> MakeParser(char start, char separator, char end) => RunAll(
+        converter: (vals) => new ARRAY<T>(vals[1]) {
+            Delimiters = (start, separator, end)
+        },
+        ConsumeChar(_ => Array.Empty<T>(), start),
         RunMany(
             converter: (values) => values.Where(item => !EqualityComparer<T>.Default.Equals(item , default(T)))
                                              .Select(x => (T)x)
                                              .ToArray(),
             0, Int32.MaxValue, TryRun(Id,
                 IDeclaration<T>.AsParser, 
-                ConsumeChar(_ => default(T), specialCharacters.separator)
+                ConsumeChar(_ => default(T), separator)
             )
         ),
-        ConsumeChar(_ => Array.Empty<T>(), specialCharacters.end)
+        ConsumeChar(_ => Array.Empty<T>(), end)
     );
 
     public static bool Parse(ref int index, string source, out ARRAY<T> arrayVal)
         => throw new NotImplementedException();
     
     public static bool Parse(ref int index, string source, out ARRAY<T> arrayVal, (char start, char separator, char end) specialCharacters) {
-        if(MakeParser(specialCharacters)(source, ref index, out arrayVal)) {
+        if(MakeParser(specialCharacters.start, specialCharacters.separator, specialCharacters.end)(source, ref index, out arrayVal)) {
             return true;
         }
         arrayVal = null;

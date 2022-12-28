@@ -1,16 +1,33 @@
 using System.Text;
 using static Core;
 
-public record CustomAttribute(String Name) : IDeclaration<CustomAttribute> {
-    public override string ToString() => Name;
-    public static Parser<CustomAttribute> AsParser => null;
-    public static bool Parse(ref int index, string source, out CustomAttribute idVal) {
-        if(CustomAttribute.AsParser(source, ref index, out idVal)) {
-            return true;
+public record CustomAttribute(MethodDeclaration AttributeCtor, ARRAY<BYTE>? Arguments) : IDeclaration<CustomAttribute> {
+    /*Ctor [ ‘=’ ‘(’ Bytes ‘)’ ]*/
+    public override string ToString() {
+        StringBuilder sb = new();
+        sb.Append(AttributeCtor);
+        if(Arguments is not null) {
+            sb.Append($" = ({Arguments})");
         }
-        idVal = null;
-        return false;
+        return sb.ToString();
     }
+    public static Parser<CustomAttribute> AsParser => RunAll(
+        converter: (vals) => {
+            if(vals[0].AttributeCtor.IsConstructor == false)
+                throw new Exception("Custom attribute must be a constructor");
+            return new CustomAttribute(vals[0].AttributeCtor, vals[1].Arguments);
+        },
+        Map((methname) => new CustomAttribute(methname, null), MethodDeclaration.AsParser),
+        TryRun(
+            converter: (vals) => new CustomAttribute(null, vals),
+            RunAll(
+                converter: (vals) => vals[1],
+                ConsumeChar((_) => default(ARRAY<BYTE>), '='),
+                Map((bytes) => bytes, ARRAY<BYTE>.MakeParser('(', '\0', ')'))
+            ),
+            Empty<ARRAY<BYTE>>()
+        )
+    );
 }
 
 public record ClassAttribute(String[] Attribute) : IDeclaration<ClassAttribute> {
