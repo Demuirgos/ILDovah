@@ -134,6 +134,29 @@ public record MethodAttribute(MethodAttribute.ModifierBehaviour Type) : IDeclara
     );
 }
 
+public record ParamAttribute(string Attribute) : IDeclaration<ParamAttribute> {
+    private static String[] AttributeWords = { "in", "opt", "out" };
+    public record Collection(ParamAttribute[] Attributes) : IDeclaration<ParamAttribute.Collection> {
+        public override string ToString() => String.Join(' ', Attributes.Select((attr) => attr.ToString()));
+        public static Parser<ParamAttribute.Collection> AsParser => RunMany(
+            converter: (attrs) => new ParamAttribute.Collection(attrs),
+            0, Int32.MaxValue,
+            ParamAttribute.AsParser
+        );
+    }
+
+    public override string ToString() => $"[{Attribute}]";
+    public static Parser<ParamAttribute> AsParser => TryRun(
+        converter: (vals) => new ParamAttribute(vals),
+        AttributeWords.Select((word) => RunAll(
+            converter: (vals) => vals[1],
+            Discard<string, char>(ConsumeChar(Id, '[')),
+            ConsumeWord(Id, word),
+            Discard<string, char>(ConsumeChar(Id, ']'))
+        )).ToArray()
+    );
+}
+
 public record PinvAttribute(string Attribute) : IDeclaration<PinvAttribute> {
     private static String[] AttributeWords = { "ansi", "autochar", "cdecl", "fastcall","stdcall", "thiscall", "unicode","platformapi"};
     public record Collection(PinvAttribute[] Attributes) : IDeclaration<PinvAttribute.Collection> {

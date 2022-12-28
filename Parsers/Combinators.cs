@@ -19,6 +19,13 @@ public static class Core {
         };
     }
 
+    
+    public static Parser<T> Lazy<T>(Func<Parser<T>> parser) {
+        return (string code, ref int index, out T result) => {
+            return parser()(code, ref index, out result);
+        };
+    }
+
     public static Parser<T> Fail<T>(string? message = null) {
         return (string code, ref int index, out T result) => {
             result = default;
