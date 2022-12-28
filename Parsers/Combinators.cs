@@ -21,7 +21,7 @@ public static class Core {
     public static Parser<T> ConsumeIf<T>(Func<char, bool> predicate, Func<char, T> converter) {
         return (string code, ref int index, out T result) => {
             result = default;
-            if(predicate(code[index])) {
+            if(index < code.Length && predicate(code[index])) {
                 index++;
                 result = converter(code[index - 1]);
                 return true;
@@ -32,8 +32,8 @@ public static class Core {
 
     public static Parser<T> ConsumeChar<T>(char c, Func<char, T> converter) {
         return (string code, ref int index, out T result) => {
-            bool isParsed = ConsumeIf<char>(x => x == c, (id) => id)
-                                         (code,  ref index, out char charC);
+            bool isParsed = ConsumeIf(x => x == c, (id) => id)
+                                     (code,  ref index,  out char charC);
             if(isParsed) {
                 result = converter(charC);
             }
@@ -61,13 +61,14 @@ public static class Core {
         };
     }
 
-    public static Parser<T> TryRun<T>(params Parser<T>[] parsers) {
-        return (string code, ref int index, out T result) => {
+    public static Parser<U> TryRun<T,U>(Func<T, U> converter, params Parser<T>[] parsers) {
+        return (string code, ref int index, out U result) => {
             int oldIndex = index;
             result = default;
             foreach (Parser<T> parser in parsers)
             {
-                if(parser(code, ref index, out result)) {
+                if(parser(code, ref index, out T subResult)) {
+                    result = converter(subResult);
                     return true;
                 }
                 index = oldIndex;

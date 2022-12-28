@@ -49,8 +49,9 @@ public record SLASHEDNAME(String Value) : IDeclaration<SLASHEDNAME> {
 public record Identifier(string Value) : IDeclaration<Identifier> {
     public override string ToString() => Value;
     public static Parser<Identifier> AsParser => TryRun(
-        Map(ID.AsParser, (ID id) => new Identifier(id.ToString())), 
-        Map(QSTRING.AsParser, (QSTRING qstring) => new Identifier(qstring.ToString()))
+        converter: (vals) => new Identifier(vals),
+        Map(ID.AsParser, (ID id) => id.ToString()), 
+        Map(QSTRING.AsParser, (QSTRING qstring) => qstring.ToString())
     );
 
     public static bool Parse(ref int index, string source, out Identifier idVal) {
@@ -77,21 +78,3 @@ public record ID(String Value) : IDeclaration<ID> {
         return false;
     }
 }
-
-public record QSTRING(String Value) : IDeclaration<QSTRING> {
-    public override string ToString() => $"\"{Value}\"";
-    public static Parser<QSTRING> AsParser => RunAll(
-        converter: (vals) => new QSTRING(vals[1]),
-        ConsumeChar('"', (_) => String.Empty),
-        RunMany(1, Int32.MaxValue, ConsumeIf(c => Char.IsLetterOrDigit(c) || c == '_', Id), chars => new string(chars.ToArray())),
-        ConsumeChar('"', (_) => String.Empty)
-    );
-    public static bool Parse(ref int index, string source, out QSTRING idVal) {
-        if(QSTRING.AsParser(source, ref index, out idVal)) {
-            return true;
-        }
-        idVal = null;
-        return false;
-    }
-}
-
