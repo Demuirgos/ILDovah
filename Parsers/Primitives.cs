@@ -1,15 +1,6 @@
 using System.Text;
 using System.Linq;
 using static Core;
-
-public interface IDeclaration<in T> {
-    static Parser<T> AsParser => Empty<T>(); 
-    static bool Parse(ref int index, string source, out T val) {
-        val = default;
-        return false;
-    }
-        
-}
 public record INT(Int64 Value, int ByteCount) : IDeclaration<INT> {
     public override string ToString() => Value.ToString();
     public static Parser<INT> AsParser => RunMany(1, Int32.MaxValue, ConsumeIf(Char.IsDigit, Id), chars => new INT(Int64.Parse(new string(chars.ToArray())), chars.Length));

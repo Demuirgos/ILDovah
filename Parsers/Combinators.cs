@@ -10,6 +10,14 @@ public static class Core {
         return true;
     };
 
+    public static Parser<T> Map<T, U>(Parser<U> parser, Func<U, T> converter) {
+        return (string code, ref int index, out T result) => {
+            bool isParsed = parser(code, ref index, out U value);
+            result = isParsed ? converter(value) : default;
+            return isParsed;
+        };
+    }
+
     public static Parser<T> ConsumeIf<T>(Func<char, bool> predicate, Func<char, T> converter) {
         return (string code, ref int index, out T result) => {
             result = default;
