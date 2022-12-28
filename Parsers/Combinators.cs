@@ -10,7 +10,7 @@ public static class Core {
         return true;
     };
 
-    public static Parser<T> Map<T, U>(Parser<U> parser, Func<U, T> converter) {
+    public static Parser<T> Map<T, U>(Func<U, T> converter, Parser<U> parser) {
         return (string code, ref int index, out T result) => {
             bool isParsed = parser(code, ref index, out U value);
             result = isParsed ? converter(value) : default;
@@ -18,7 +18,7 @@ public static class Core {
         };
     }
 
-    public static Parser<T> ConsumeIf<T>(Func<char, bool> predicate, Func<char, T> converter) {
+    public static Parser<T> ConsumeIf<T>(Func<char, T> converter, Func<char, bool> predicate) {
         return (string code, ref int index, out T result) => {
             result = default;
             if(index < code.Length && predicate(code[index])) {
@@ -30,9 +30,9 @@ public static class Core {
         };
     }
 
-    public static Parser<T> ConsumeChar<T>(char c, Func<char, T> converter) {
+    public static Parser<T> ConsumeChar<T>(Func<char, T> converter, char c) {
         return (string code, ref int index, out T result) => {
-            bool isParsed = ConsumeIf(x => x == c, (id) => id)
+            bool isParsed = ConsumeIf(Id, x => x == c)
                                      (code,  ref index,  out char charC);
             if(isParsed) {
                 result = converter(charC);
@@ -45,12 +45,12 @@ public static class Core {
         };
     }
 
-    public static Parser<T> ConsumeWord<T>(string word, Func<string, T> converter) {
+    public static Parser<T> ConsumeWord<T>(Func<string, T> converter, string word) {
         return (string code, ref int index, out T result) => {
             StringBuilder resultAcc = new();
             foreach (char c in word)
             {
-                if(!ConsumeChar(c, Id)(code, ref index, out char character)) {
+                if(!ConsumeChar(Id, c)(code, ref index, out char character)) {
                     result = default;
                     return false;
                 }
@@ -77,7 +77,7 @@ public static class Core {
         };
     }
 
-    public static Parser<U> RunMany<T, U>(int min, int max, Parser<T> parser, Func<T[], U> converter) {
+    public static Parser<U> RunMany<T, U>(Func<T[], U> converter, int min, int max, Parser<T> parser) {
         return (string code, ref int index, out U result) => {
             int oldIndex = index;
             var resultAcc = new List<T>();
