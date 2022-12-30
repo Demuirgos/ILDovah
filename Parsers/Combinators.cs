@@ -33,7 +33,7 @@ public static class Core {
     }
 
     public static Parser<T> Cast<T, U>(Parser<U> parser) {
-        return Map(item => (T)Convert.ChangeType(item, typeof(T)), parser);
+        return Map(item => (T)((object)item), parser);
     }
 
     public static Parser<T> Map<T, U>(Func<U, T> converter, Parser<U> parser) {

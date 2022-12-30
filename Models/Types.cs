@@ -66,9 +66,107 @@ public record NativeType(NativeType Type, bool IsArray, INT Length, INT Supplied
         )
     );
 }
-
+// Fix Stackoverflow Because of MethodTypeDefinition / GenericTypeDefinition
 public record Type : IDeclaration<Type> {
-    private Object _type;
+    public override string ToString() {
+        StringBuilder sb = new();
+        sb.Append($"{Basic} ");
+        if(Suffixes is not null) {
+            sb.Append(String.Join(" ", Suffixes.Select((suffix) => suffix.ToString())));
+        }
+        return sb.ToString();
+    }
+    public Type.TypePrefix Basic {get; set;}
+    public Type.TypeSuffix[] Suffixes {get; set;}
+    public record TypePrefix : IDeclaration<TypePrefix> {
+        public record TypePrimitive(String TypeName) : TypePrefix, IDeclaration<TypePrimitive> {
+            private static String[] _primitives = new String[] { "bool","char","class","float32","float64","int8","int16","int32","int64","object","string","typedref","valuetype","void", "unsigned","native" };
+
+            public override string ToString() => TypeName;
+            public static Parser<TypePrimitive> AsParser => TryRun(
+                converter: (vals) => new TypePrimitive(vals),
+                _primitives.Select((primitive) => {
+                    if(primitive == "unsigned") {
+                        return RunAll(
+                            converter: (vals) => $"{vals[0]} {vals[1]}",
+                            ConsumeWord(Id, primitive),
+                            TryRun(
+                                converter: (vals) => vals,
+                                _primitives.Take(5..8).Select((primitive2) => ConsumeWord(Id, primitive2)).ToArray()
+                            )
+                        );
+                    }
+                    else if(primitive == "native") {
+                        return RunAll(
+                            converter: (vals) => {
+                                StringBuilder sb = new();
+                                sb.Append(vals[0]);
+                                if(vals[1] is not null) {
+                                    sb.Append($" {vals[1]}");
+                                }
+                                sb.Append($" {vals[2]} ");
+                                return sb.ToString();
+                            },
+                            ConsumeWord(Id, primitive),
+                            TryRun(Id, ConsumeWord(Id, "unsigned"), Empty<String>()),
+                            ConsumeWord(Id, "int")
+                        );
+                    } else {
+                        return ConsumeWord(Id, primitive);
+                    }
+                }).ToArray()
+            );
+        }
+
+        public record GenericTypeParameter(INT Index, GenericTypeParameter.Type TypeParameterType) : TypePrefix, IDeclaration<GenericTypeParameter> {
+            public enum Type { Method, Class }
+            public override string ToString() => $"{(TypeParameterType is Type.Method ? "!!" : "!")}{Index}";
+            public static Parser<GenericTypeParameter> AsParser => RunAll(
+                converter: (vals) => new GenericTypeParameter(vals[1].Index, vals[0].TypeParameterType),
+                TryRun(
+                    converter: (indicator) => new GenericTypeParameter(null, indicator == "!!" ? Type.Method : Type.Class),
+                    ConsumeWord(Id, "!!"),
+                    ConsumeWord(Id,  "!")
+                ),
+                Map(val => new GenericTypeParameter(val, Type.Class), INT.AsParser)
+            );
+        }
+
+        public record MethodDefinition(CallConvention CallConvention, Type TypeTarget, Parameter.Collection Parameters) : TypePrefix, IDeclaration<MethodDefinition> {
+            public override string ToString() {
+                StringBuilder sb = new();
+                sb.Append($"method {CallConvention} {TypeTarget}* (");
+                sb.Append(Parameters.ToString());
+                sb.Append(")");
+                return sb.ToString();            
+            }
+            public static Parser<MethodDefinition> AsParser => RunAll(
+                converter: parts => new MethodDefinition(parts[1].CallConvention, parts[2].TypeTarget, parts[5].Parameters),
+                Discard<MethodDefinition, String>(ConsumeWord(Id, "method")),
+                Map(
+                    converter: part1 => new MethodDefinition(part1, null, null),
+                    CallConvention.AsParser
+                ),
+                Map(
+                    converter: part2 => new MethodDefinition(null, part2, null),
+                    Lazy(() => Type.AsParser)
+                ),
+                Discard<MethodDefinition, char>(ConsumeChar(Id, '*')),
+                Discard<MethodDefinition, char>(ConsumeChar(Id, '(')),
+                Map(
+                    converter: part3 => new MethodDefinition(null, null, part3),
+                    Parameter.Collection.AsParser),
+                Discard<MethodDefinition, char>(ConsumeChar(Id, ')'))
+            );
+        }
+        public static Parser<TypePrefix> AsParser => TryRun(
+            converter: Id,
+            Cast<TypePrefix, TypePrimitive>(TypePrimitive.AsParser),
+            Cast<TypePrefix, GenericTypeParameter>(GenericTypeParameter.AsParser),
+            Cast<TypePrefix, MethodDefinition>(MethodDefinition.AsParser)
+        );
+    }
+    
     public record Collection(Type[] Types) : Type, IDeclaration<Collection> {
         public override string ToString() => String.Join(", ", Types.Select((type) => type.ToString()));
         public static Parser<Collection> AsParser => RunAll(
@@ -89,148 +187,86 @@ public record Type : IDeclaration<Type> {
         );
     }
     
-    public record TypePrimitive(String TypeName) : Type, IDeclaration<TypePrimitive> {
-        private static String[] _primitives = new String[] { "bool","char","class","float32","float64","int8","int16","int32","int64","object","string","typedref","valuetype","void", "unsigned","native" };
-
-        public override string ToString() => TypeName;
-        public static Parser<TypePrimitive> AsParser => TryRun(
-            converter: (vals) => new TypePrimitive(vals),
-            _primitives.Select((primitive) => {
-                if(primitive == "unsigned") {
-                    return RunAll(
-                        converter: (vals) => $"{vals[0]} {vals[1]}",
-                        ConsumeWord(Id, primitive),
-                        TryRun(
-                            converter: (vals) => vals,
-                            _primitives.Take(5..8).Select((primitive2) => ConsumeWord(Id, primitive2)).ToArray()
-                        )
-                    );
-                }
-                else if(primitive == "native") {
-                    return RunAll(
-                        converter: (vals) => {
-                            StringBuilder sb = new();
-                            sb.Append(vals[0]);
-                            if(vals[1] is not null) {
-                                sb.Append($" {vals[1]}");
-                            }
-                            sb.Append($" {vals[2]} ");
-                            return sb.ToString();
-                        },
-                        ConsumeWord(Id, primitive),
-                        TryRun(Id, ConsumeWord(Id, "unsigned"), Empty<String>()),
-                        ConsumeWord(Id, "int")
-                    );
-                } else {
-                    return ConsumeWord(Id, primitive);
-                }
-            }).ToArray()
-        );
-    }
-
-    public record GenericTypeParameter(INT Index, GenericTypeParameter.Type TypeParameterType) : Type, IDeclaration<GenericTypeParameter> {
-        public enum Type { Method, Class }
-        public override string ToString() => $"{(TypeParameterType is Type.Method ? "!!" : "!")}{Index}";
-        public static Parser<GenericTypeParameter> AsParser => RunAll(
-            converter: (vals) => new GenericTypeParameter(vals[1].Index, vals[0].TypeParameterType),
-            TryRun(
-                converter: (indicator) => new GenericTypeParameter(null, indicator == "!!" ? Type.Method : Type.Class),
-                ConsumeWord(Id, "!!"),
-                ConsumeWord(Id,  "!")
-            ),
-            Map(val => new GenericTypeParameter(val, Type.Class), INT.AsParser)
-        );
-    }
-
-    public record MethodDefinition(CallConvention CallConvention, Type TypeTarget, Parameter.Collection Parameters) : Type, IDeclaration<MethodDefinition> {
-        public override string ToString() {
-            StringBuilder sb = new();
-            sb.Append($"method {CallConvention} {TypeTarget}* (");
-            sb.Append(Parameters.ToString());
-            sb.Append(")");
-            return sb.ToString();            
-        }
-        public static Parser<MethodDefinition> AsParser => RunAll(
-            converter: parts => new MethodDefinition(parts[1].CallConvention, parts[2].TypeTarget, parts[5].Parameters),
-            Discard<MethodDefinition, String>(ConsumeWord(Id, "method")),
-            Map(
-                converter: part1 => new MethodDefinition(part1, null, null),
-                CallConvention.AsParser
-            ),
-            Map(
-                converter: part2 => new MethodDefinition(null, part2, null),
-                Type.AsParser
-            ),
-            Discard<MethodDefinition, char>(ConsumeChar(Id, '*')),
-            Discard<MethodDefinition, char>(ConsumeChar(Id, '(')),
-            Map(
-                converter: part3 => new MethodDefinition(null, null, part3),
-                Parameter.Collection.AsParser),
-            Discard<MethodDefinition, char>(ConsumeChar(Id, ')'))
-        );
-    }
-    // Maybe try strat : composable subparser only parse their supposed suffix, main parser will just do a RunMany 0..n on a TryRun on all of them 
-    public record ComposableType(Type TypeTarget) : Type, IDeclaration<ComposableType> {
-        public record ReferenceType(Type TypeTarget, bool IsRawPointer) : ComposableType(TypeTarget), IDeclaration<ReferenceType> {
-            public override string ToString() => $"{TypeTarget}{(IsRawPointer ? "*" : "&")}";
-            public static Parser<ReferenceType> AsParser => RunAll(
-                converter: (vals) => new ReferenceType(vals[0].TypeTarget, vals[1].IsRawPointer),
-                Map(val => new ReferenceType(val, false), Type.AsParser),
-                TryRun(
-                    converter: (vals) => new ReferenceType(null, vals == '*'),
-                    ConsumeChar(Id, '*'), ConsumeChar(Id, '&')
-                )
+    public record TypeSuffix : Type, IDeclaration<TypeSuffix> {
+        public record ReferenceTypeSuffix(bool IsRawPointer) : TypeSuffix, IDeclaration<ReferenceTypeSuffix> {
+            public override string ToString() => IsRawPointer ? "*" : "&";
+            public static Parser<ReferenceTypeSuffix> AsParser => TryRun(
+                converter: (vals) => new ReferenceTypeSuffix(vals == '*'),
+                ConsumeChar(Id, '*'), ConsumeChar(Id, '&')
             );
         }
 
-        public record BoundedType(Type TypeTarget, Bound.Collection Bounds) : ComposableType(TypeTarget), IDeclaration<BoundedType> {
-            public override string ToString() => $"{TypeTarget}[{Bounds}]";
-            public static Parser<BoundedType> AsParser => RunAll(
-                converter: (vals) => new BoundedType(vals[0].TypeTarget, vals[1].Bounds),
-                Map(val => new BoundedType(val, null), Type.AsParser),
-                Map(val => new BoundedType(null, val), Bound.Collection.AsParser)
+        public record BoundedTypeSuffix(Bound.Collection Bounds) : TypeSuffix, IDeclaration<BoundedTypeSuffix> {
+            public override string ToString() => $"[{Bounds}]";
+            public static Parser<BoundedTypeSuffix> AsParser => RunAll(
+                converter: (vals) => new BoundedTypeSuffix(vals[1]),
+                Discard<Bound.Collection, char>(ConsumeChar(Id, '[')),
+                Bound.Collection.AsParser,
+                Discard<Bound.Collection, char>(ConsumeChar(Id, ']'))
             );
         }
 
-        public record GenericType(Type TypeTarget, GenArgs GenericArguments) : ComposableType(TypeTarget), IDeclaration<GenericType> {
-            public override string ToString() => $"{TypeTarget}<{GenericArguments}>";
-            public static Parser<GenericType> AsParser => RunAll(
-                converter: (vals) => new GenericType(vals[0].TypeTarget, vals[1].GenericArguments),
-                Map(val => new GenericType(val, null), Type.AsParser),
-                Map(val => new GenericType(null, val), GenArgs.AsParser)
+        public record GenericTypeSuffix(GenArgs GenericArguments) : TypeSuffix, IDeclaration<GenericTypeSuffix> {
+            public override string ToString() => $"<{GenericArguments}>";
+            public static Parser<GenericTypeSuffix> AsParser => RunAll(
+                converter: (vals) => new GenericTypeSuffix(vals[1]),
+                Discard<GenArgs, char>(ConsumeChar(Id, '<')),
+                GenArgs.AsParser,
+                Discard<GenArgs, char>(ConsumeChar(Id, '>'))
             );
         }
 
-        public record ModifierType(Type TypeTarget, String Modifier, TypeReference ReferencedType) : ComposableType(TypeTarget), IDeclaration<ModifierType> {
+        public record ModifierTypeSuffix(String Modifier, TypeReference ReferencedType) :  TypeSuffix, IDeclaration<ModifierTypeSuffix> {
             public override string ToString() {
                 StringBuilder sb = new();
-                sb.Append($"{TypeTarget} {Modifier} ");
+                sb.Append($"{Modifier} ");
                 if(ReferencedType is not null) {
                     sb.Append($"({ReferencedType})");
                 }
                 return sb.ToString();
             }
-            public static Parser<ModifierType> AsParser => RunAll(
-                converter: (vals) => new ModifierType(vals[0].TypeTarget, vals[1].Modifier, vals[2].ReferencedType),
-                Map(val => new ModifierType(val, null, null), Type.AsParser),
-                Map(val => new ModifierType(null, val, null), TryRun(Id, ConsumeWord(Id, "modopt"), ConsumeWord(Id, "modreq"))),
-                Map(val => new ModifierType(null, null, val), TypeReference.AsParser)
+            public static Parser<ModifierTypeSuffix> AsParser => RunAll(
+                converter: (vals) => new ModifierTypeSuffix(vals[0].Modifier, vals[1].ReferencedType),
+                Map(val => new ModifierTypeSuffix(val, null), TryRun(Id, ConsumeWord(Id, "modopt"), ConsumeWord(Id, "modreq"))),
+                Map(val => new ModifierTypeSuffix(null, val), TypeReference.AsParser)
             );
         }
-        public static Parser<ComposableType> AsParser => TryRun(
+        
+        public static Parser<TypeSuffix> AsParser => TryRun(
             converter: Id,
-            Cast<ComposableType, ReferenceType>(ReferenceType.AsParser),
-            Cast<ComposableType, BoundedType>(BoundedType.AsParser),
-            Cast<ComposableType, GenericType>(GenericType.AsParser),
-            Cast<ComposableType, ModifierType>(ModifierType.AsParser)
+            Cast<TypeSuffix, BoundedTypeSuffix>(BoundedTypeSuffix.AsParser),
+            Cast<TypeSuffix, ModifierTypeSuffix>(ModifierTypeSuffix.AsParser),
+            Cast<TypeSuffix, ReferenceTypeSuffix>(ReferenceTypeSuffix.AsParser),
+            Cast<TypeSuffix, GenericTypeSuffix>(GenericTypeSuffix.AsParser),
+            Empty<TypeSuffix>()
         );
     }
 
-    public override string ToString() => throw new NotImplementedException();
-    public static Parser<Type> AsParser => throw new NotImplementedException();
+    public static Parser<Type> AsParser => RunAll(
+        converter: parts => new Type {
+            Basic = parts[0].Basic,
+            Suffixes = parts[1].Suffixes
+        },
+        Map(
+            converter: (type) => new Type {
+                Basic = type
+            },
+            TypePrefix.AsParser
+        ),
+        TryRun(
+            converter: (suffixes) => new Type {
+                Suffixes = suffixes
+            },
+            RunMany(
+                converter: Id,
+                0, Int32.MaxValue,
+                TypeSuffix.AsParser
+            )
+        )
+    );
 }
 
 public record TypeReference() : IDeclaration<TypeReference> {
     public override string ToString() => throw new NotImplementedException();
-    public static Parser<TypeReference> AsParser => throw new NotImplementedException();
+    public static Parser<TypeReference> AsParser => Empty<TypeReference>();
 }

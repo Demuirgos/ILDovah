@@ -1,9 +1,9 @@
 ﻿using System.Reflection;
 using static Core;
 
-var (source, index) = ("...,23...69", 0);
+var (source, index) = ("!!23", 0);
 
-if(IDeclaration<Bound.Collection>.Parse(ref index, source, out Bound.Collection resultVal)) {
+if(IDeclaration<Type>.Parse(ref index, source, out Type resultVal)) {
     Console.WriteLine(resultVal);
 } else {
     Console.WriteLine("Failed to parse");
