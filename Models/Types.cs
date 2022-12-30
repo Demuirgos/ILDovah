@@ -66,7 +66,6 @@ public record NativeType(NativeType Type, bool IsArray, INT Length, INT Supplied
         )
     );
 }
-// Fix Stackoverflow Because of MethodTypeDefinition / GenericTypeDefinition
 public record Type : IDeclaration<Type> {
     public override string ToString() {
         StringBuilder sb = new();
@@ -163,27 +162,15 @@ public record Type : IDeclaration<Type> {
             converter: Id,
             Cast<TypePrefix, TypePrimitive>(TypePrimitive.AsParser),
             Cast<TypePrefix, GenericTypeParameter>(GenericTypeParameter.AsParser),
-            Cast<TypePrefix, MethodDefinition>(MethodDefinition.AsParser)
+            Lazy(() => Cast<TypePrefix, MethodDefinition>(MethodDefinition.AsParser))
         );
     }
     
-    public record Collection(Type[] Types) : Type, IDeclaration<Collection> {
-        public override string ToString() => String.Join(", ", Types.Select((type) => type.ToString()));
-        public static Parser<Collection> AsParser => RunAll(
-            converter: (bounds) => new Collection(bounds.SelectMany(Id).ToArray()),
-            Map(
-                converter: (type) => new Type[] { type },
-                Type.AsParser
-            ),
-            RunMany(
-                converter: Id,
-                0, Int32.MaxValue,
-                RunAll(
-                    converter: (vals) => vals[1],
-                    Discard<Type, string>(ConsumeWord(Id, ",")),
-                    Type.AsParser
-                )
-            )
+    public record Collection(ARRAY<Type> Types) : Type, IDeclaration<Collection> {
+        public override string ToString() => Types.ToString();
+        public static Parser<Collection> AsParser => Map(
+            converter: (types) => new Collection(types),
+            ARRAY<Type>.MakeParser('\0', ',', '\0')
         );
     }
     
@@ -211,7 +198,7 @@ public record Type : IDeclaration<Type> {
             public static Parser<GenericTypeSuffix> AsParser => RunAll(
                 converter: (vals) => new GenericTypeSuffix(vals[1]),
                 Discard<GenArgs, char>(ConsumeChar(Id, '<')),
-                GenArgs.AsParser,
+                Lazy(() => GenArgs.AsParser),
                 Discard<GenArgs, char>(ConsumeChar(Id, '>'))
             );
         }
@@ -237,8 +224,7 @@ public record Type : IDeclaration<Type> {
             Cast<TypeSuffix, BoundedTypeSuffix>(BoundedTypeSuffix.AsParser),
             Cast<TypeSuffix, ModifierTypeSuffix>(ModifierTypeSuffix.AsParser),
             Cast<TypeSuffix, ReferenceTypeSuffix>(ReferenceTypeSuffix.AsParser),
-            Cast<TypeSuffix, GenericTypeSuffix>(GenericTypeSuffix.AsParser),
-            Empty<TypeSuffix>()
+            Lazy(() => Cast<TypeSuffix, GenericTypeSuffix>(GenericTypeSuffix.AsParser))
         );
     }
 
@@ -264,9 +250,4 @@ public record Type : IDeclaration<Type> {
             )
         )
     );
-}
-
-public record TypeReference() : IDeclaration<TypeReference> {
-    public override string ToString() => throw new NotImplementedException();
-    public static Parser<TypeReference> AsParser => Empty<TypeReference>();
 }

@@ -1,23 +1,11 @@
 using System.Text;
 using static Core;
-public record Bound(INT Lower, INT Upper, Bound.BoundType Type) : IDeclaration<Parameter> {
-    public record Collection(Bound[] Bounds) : IDeclaration<Collection> {
-        public override string ToString() => $"{string.Join(", ", Bounds.Select(x => x.ToString()))}";
-        public static Parser<Collection> AsParser => RunAll(
-            converter: (bounds) => new Collection(bounds.SelectMany(Id).ToArray()),
-            Map(
-                converter: (bound) => new Bound[] { bound },
-                Bound.AsParser
-            ),
-            RunMany(
-                converter: (bounds) => bounds,
-                0, Int32.MaxValue,
-                RunAll(
-                    converter: (vals) => vals[1],
-                    Discard<Bound, string>(ConsumeWord(Id, ",")),
-                    Bound.AsParser
-                )
-            )
+public record Bound(INT Lower, INT Upper, Bound.BoundType Type) : IDeclaration<Bound> {
+    public record Collection(ARRAY<Bound> Bounds) : IDeclaration<Collection> {
+        public override string ToString() => Bounds.ToString();
+        public static Parser<Collection> AsParser => Map(
+            converter: (bounds) => new Collection(bounds),
+            ARRAY<Bound>.MakeParser('\0', ',', '\0')
         );
     }
     public enum BoundType {

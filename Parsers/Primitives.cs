@@ -3,7 +3,6 @@ public record INT(Int64 Value, int ByteCount) : IDeclaration<INT> {
     public override string ToString() => Value.ToString();
     public static Parser<INT> AsParser => RunMany(
         converter: chars => {
-            Console.WriteLine($"chars: {new string(chars.ToArray())}");
             return new INT(Int64.Parse(new string(chars.ToArray())), chars.Length);
         },
         1, Int32.MaxValue, ConsumeIf(Id, Char.IsDigit)
@@ -91,24 +90,37 @@ public record QSTRING(String Value, bool IsSingleyQuoted) : IDeclaration<QSTRING
 }
 
 public record ARRAY<T>(T[] Values) : IDeclaration<ARRAY<T>> where T : IDeclaration<T> {
-    public (char start, char separator, char end) Delimiters = ('[', ',', ']');
-    public override string ToString() => $"{Delimiters.start}{string.Join(Delimiters.separator, Values.Select(v => v.ToString()))}{Delimiters.end}";
+    public virtual (char start, char separator, char end) Delimiters {get; set;} = ('[', ',', ']');
+    public override string ToString() => ToString(Delimiters.separator);
+    public new string ToString(char? overrideDelim = null) => $"{Delimiters.start}{string.Join(overrideDelim ?? Delimiters.separator, Values.Select(v => v.ToString()))}{Delimiters.end}";
     public static Parser<ARRAY<T>> AsParser => throw new NotImplementedException();
     public static Parser<ARRAY<T>> MakeParser(char start, char separator, char end) => RunAll(
         converter: (vals) => new ARRAY<T>(vals[1]) {
             Delimiters = (start, separator, end)
         },
-        ConsumeChar(_ => Array.Empty<T>(), start),
-        RunMany(
-            converter: (values) => values.Where(item => !EqualityComparer<T>.Default.Equals(item , default(T)))
-                                             .Select(x => (T)x)
-                                             .ToArray(),
-            0, Int32.MaxValue, TryRun(Id,
-                IDeclaration<T>.AsParser, 
-                ConsumeChar(_ => default(T), separator)
+        start != '\0' ? ConsumeChar(_ => Array.Empty<T>(), start) : Empty<T[]>(),
+        Map(
+            converter: results => {
+                if(results.Item1 is null) return Array.Empty<T>();
+                return results.Item1.Concat(results.Item2).ToArray();
+            },
+            If(
+                condP: Map(val => new T[] { val }, IDeclaration<T>.AsParser),
+                thenP: RunMany(
+                    converter: (vals) => vals,
+                    0, Int32.MaxValue,
+                    RunAll(
+                        converter: (vals) => vals[1],
+                        separator == '\0' 
+                            ? Empty<T>() 
+                            : Discard<T, char>(ConsumeChar(Id, separator)),
+                        IDeclaration<T>.AsParser
+                    )
+                ),
+                elseP : Empty<T[]>()
             )
         ),
-        ConsumeChar(_ => Array.Empty<T>(), end)
+        end != '\0' ? ConsumeChar(_ => Array.Empty<T>(), end) : Empty<T[]>()
     );
 
     public static bool Parse(ref int index, string source, out ARRAY<T> arrayVal)

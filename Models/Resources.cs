@@ -1,9 +1,85 @@
 using System.Text;
 using static Core;
 
+/*
+TypeReference ::= [ ResolutionScope ] DottedName [ ‘/’ DottedName ]*
+*/
+
+public record TypeReference(ResolutionScope Scope, ARRAY<DottedName> Names) : IDeclaration<TypeReference> {
+    public override string ToString() {
+        StringBuilder sb = new();
+        if(Scope is not null) {
+            sb.Append($"{Scope} ");
+        }
+        sb.Append(Names.ToString());
+        return sb.ToString();
+    }
+    public static Parser<TypeReference> AsParser => RunAll(
+        converter: (vals) => new TypeReference(vals[0]?.Scope, vals[1].Names),
+        TryRun(
+            converter: (scope) =>  new TypeReference(scope, null),
+            ResolutionScope.AsParser
+        ),
+        Map(
+            converter: (name) =>  new TypeReference(null, name),
+            ARRAY<DottedName>.MakeParser('\0', '/', '\0')
+        )
+    );
+}
+
+public record ResolutionScope : IDeclaration<ResolutionScope> {
+    public record Module(FileName File) : ResolutionScope {
+        public override string ToString() => $".module {File}";
+        public static Parser<Module> AsParser => RunAll(
+            converter: (vals) => new Module(vals[1]),
+            Discard<FileName, string>(ConsumeWord(Id, ".module")),
+            FileName.AsParser
+        );
+    }
+
+    public record AssemblyRef(AssemblyRefName Name) : ResolutionScope {
+        public override string ToString() => $"{Name}";
+        public static Parser<AssemblyRef> AsParser => Map(
+            converter: (name) => new AssemblyRef(name),
+            AssemblyRefName.AsParser
+        );
+    }
+
+    public override string ToString() {
+        StringBuilder sb = new();
+        sb.Append('[');
+        switch(this) {
+            case Module m:
+                sb.Append(m);
+                break;
+            case AssemblyRef a:
+                sb.Append(a);
+                break;
+        }
+        sb.Append(']');
+        return sb.ToString();
+    }
+
+    public static Parser<ResolutionScope> AsParser => RunAll(
+        converter: (vals) => vals[1],
+        Cast<ResolutionScope, char>(ConsumeChar(Id, '[')),
+        TryRun(
+            converter: (vals) => vals,
+            Cast<ResolutionScope, Module>(Module.AsParser),
+            Cast<ResolutionScope, AssemblyRef>(AssemblyRef.AsParser)
+        ),
+        Cast<ResolutionScope, char>(ConsumeChar(Id, ']'))
+    );
+}
+
+public record AssemblyRefName(DottedName Name) : DottedName(Name), IDeclaration<AssemblyRefName> {
+    public override string ToString() => Name.ToString();
+    public static Parser<AssemblyRefName> AsParser => Cast<AssemblyRefName, DottedName>(DottedName.AsParser);
+}
+
 public record FileName(String Name) : IDeclaration<FileName> {
     public override string ToString() => Name;
-    public static Parser<FileName> AsParser => Map((name) => new FileName(name.Value), DottedName.AsParser);
+    public static Parser<FileName> AsParser => Map((name) => new FileName(name.ToString()), DottedName.AsParser);
 }
 
 public record ExternSource(INT Line, INT? Column, QSTRING? File) : IDeclaration<ExternSource> {

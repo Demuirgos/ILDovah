@@ -1,38 +1,18 @@
 using static Core;
 
-public record DottedName(String Value) : IDeclaration<DottedName> {
-    public override string ToString() => Value;
-    public static Parser<DottedName> AsParser => RunAll(
-        converter: (vals) => new DottedName(String.Join('.', vals)),
-
-        Map((Identifier id) => id.ToString(), Identifier.AsParser),
-        RunMany(
-            converter: (vals) => String.Join('.', vals),
-            0, Int32.MaxValue, RunAll(
-                converter: (vals) => vals[1],
-
-                ConsumeChar((_) => String.Empty, '.'),
-                Map((Identifier id) => id.ToString(), Identifier.AsParser)
-            )
-        )
+public record DottedName(ARRAY<Identifier> Values) : IDeclaration<DottedName> {
+    public override string ToString() => Values.ToString();
+    public static Parser<DottedName> AsParser => Map(
+        converter: Ids => new DottedName(Ids),
+        ARRAY<Identifier>.MakeParser('\0', '.', '\0')
     );
 }
 
-public record SlashedName(String Value) : IDeclaration<SlashedName> {
-    public override string ToString() => Value;
-    public static Parser<SlashedName> AsParser => RunAll(
-        converter: (vals) => new SlashedName(String.Join('/', vals)),
-
-        Map((Identifier id) => id.ToString(), Identifier.AsParser),
-        RunMany(
-            converter: (vals) => String.Join('/', vals),
-            0, Int32.MaxValue, RunAll(
-                converter: (vals) => vals[1],
-
-                ConsumeChar((_) => String.Empty, '/'),
-                Map((id) => id.ToString(), Identifier.AsParser)
-            ) 
-        )
+public record SlashedName(ARRAY<Identifier> Values) : IDeclaration<SlashedName> {
+    public override string ToString() => Values.ToString();
+    public static Parser<SlashedName> AsParser => Map(
+        converter: Ids => new SlashedName(Ids),
+        ARRAY<Identifier>.MakeParser('\0', '/', '\0')
     );
 }
 

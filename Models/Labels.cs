@@ -1,23 +1,10 @@
 using static Core;
 
-public record Label(LabelOrOffset[] Values) : IDeclaration<Label> {
-    public override string ToString() => String.Join(',', Values.Select((val) => val.ToString()));
-    public static Parser<Label> AsParser => RunAll(
-        converter: (vals) => {
-            return new Label(vals.Aggregate(new List<LabelOrOffset>(), (acc, val) => {
-                acc.AddRange(val);
-                return acc;
-            }).ToArray());
-        },
-
-        Map((looff) => new List<LabelOrOffset>() { looff }, LabelOrOffset.AsParser),
-        RunMany(
-            converter: (vals) => vals.Where((val) => val != default(LabelOrOffset)).Select((val) => val).ToList(),
-            0, Int32.MaxValue, 
-            RunAll( converter: (vals) => vals[1],
-                    ConsumeChar((_) => default(LabelOrOffset), ','),
-                    LabelOrOffset.AsParser)
-        )
+public record Label(ARRAY<LabelOrOffset> Values) : IDeclaration<Label> {
+    public override string ToString() => Values.ToString(); 
+    public static Parser<Label> AsParser => Map(
+        converter: (vals) => new Label(vals),
+        ARRAY<LabelOrOffset>.MakeParser('\0', ',', '\0')
     );
 }
 

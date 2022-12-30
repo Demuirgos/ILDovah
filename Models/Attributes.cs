@@ -32,12 +32,11 @@ public record CustomAttribute(MethodDeclaration AttributeCtor, ARRAY<BYTE>? Argu
 public record ImplAttribute(String Name, ImplAttribute.ModifierBehaviour Type) : IDeclaration<ImplAttribute> {
 
     public enum ModifierBehaviour { Implementation, MemoryManagement, Information }
-    public record Collection(ImplAttribute Attributes) : IDeclaration<Collection> {
-        public override string ToString() => Attributes.ToString();
-        public static Parser<ImplAttribute[]> AsParser => RunMany(
-            converter: (attrs) => attrs,
-            0, Int32.MaxValue,
-            ImplAttribute.AsParser
+    public record Collection(ARRAY<ImplAttribute> Attributes) : IDeclaration<Collection> {
+        public override string ToString() => Attributes.ToString(' ');
+        public static Parser<ImplAttribute.Collection> AsParser => Map(
+            converter: (attrs) => new ImplAttribute.Collection(attrs),
+            ARRAY<ImplAttribute>.AsParser
         );
     }
     private static String[] AttributeWords = { "forwardref", "internalcall", "managed", "noinlining", "nooptimization", "runtime", "synchronized", "unmanaged" };
@@ -105,12 +104,11 @@ public record MethodAttribute(MethodAttribute.ModifierBehaviour Type) : IDeclara
             Discard<MethodPInvokeAttribute, char>(ConsumeChar(Id, ')'))
         );
     }
-    public record Collection(MethodAttribute[] Attributes) : IDeclaration<MethodAttribute.Collection> {
-        public override string ToString() => String.Join(' ', Attributes.Select((attr) => attr.ToString()));
-        public static Parser<MethodAttribute.Collection> AsParser => RunMany(
+    public record Collection(ARRAY<MethodAttribute> Attributes) : IDeclaration<MethodAttribute.Collection> {
+        public override string ToString() => Attributes.ToString(' ');
+        public static Parser<MethodAttribute.Collection> AsParser => Map(
             converter: (attrs) => new MethodAttribute.Collection(attrs),
-            0, Int32.MaxValue,
-            MethodAttribute.AsParser
+            ARRAY<MethodAttribute>.MakeParser('\0', '\0', '\0')
         );
     }
 
@@ -136,12 +134,11 @@ public record MethodAttribute(MethodAttribute.ModifierBehaviour Type) : IDeclara
 
 public record ParamAttribute(string Attribute) : IDeclaration<ParamAttribute> {
     private static String[] AttributeWords = { "in", "opt", "out" };
-    public record Collection(ParamAttribute[] Attributes) : IDeclaration<ParamAttribute.Collection> {
-        public override string ToString() => String.Join(' ', Attributes.Select((attr) => attr.ToString()));
-        public static Parser<ParamAttribute.Collection> AsParser => RunMany(
+    public record Collection(ARRAY<ParamAttribute> Attributes) : IDeclaration<ParamAttribute.Collection> {
+        public override string ToString() => Attributes.ToString(' ');
+        public static Parser<ParamAttribute.Collection> AsParser => Map(
             converter: (attrs) => new ParamAttribute.Collection(attrs),
-            0, Int32.MaxValue,
-            ParamAttribute.AsParser
+            ARRAY<ParamAttribute>.MakeParser('\0', '\0', '\0')
         );
     }
 
@@ -159,12 +156,11 @@ public record ParamAttribute(string Attribute) : IDeclaration<ParamAttribute> {
 
 public record PinvAttribute(string Attribute) : IDeclaration<PinvAttribute> {
     private static String[] AttributeWords = { "ansi", "autochar", "cdecl", "fastcall","stdcall", "thiscall", "unicode","platformapi"};
-    public record Collection(PinvAttribute[] Attributes) : IDeclaration<PinvAttribute.Collection> {
-        public override string ToString() => String.Join(' ', Attributes.Select((attr) => attr.ToString()));
-        public static Parser<PinvAttribute.Collection> AsParser => RunMany(
+    public record Collection(ARRAY<PinvAttribute> Attributes) : IDeclaration<PinvAttribute.Collection> {
+        public override string ToString() => Attributes.ToString(' '); 
+        public static Parser<PinvAttribute.Collection> AsParser => Map(
             converter: (attrs) => new PinvAttribute.Collection(attrs),
-            0, Int32.MaxValue,
-            PinvAttribute.AsParser
+            ARRAY<PinvAttribute>.MakeParser('\0', '\0', '\0')
         );
     }
 
@@ -176,12 +172,11 @@ public record PinvAttribute(string Attribute) : IDeclaration<PinvAttribute> {
 }
 
 public record ClassAttribute(String Attribute) : IDeclaration<ClassAttribute> {
-    public record Collection(ClassAttribute[] Attributes) : IDeclaration<ClassAttribute.Collection> {
-        public override string ToString() => String.Join(' ', Attributes.Select((attr) => attr.ToString()));
-        public static Parser<ClassAttribute.Collection> AsParser => RunMany(
+    public record Collection(ARRAY<ClassAttribute> Attributes) : IDeclaration<ClassAttribute.Collection> {
+        public override string ToString() => Attributes.ToString(' ');
+        public static Parser<ClassAttribute.Collection> AsParser => Map(
             converter: (attrs) => new ClassAttribute.Collection(attrs),
-            0, Int32.MaxValue,
-            ClassAttribute.AsParser
+            ARRAY<ClassAttribute>.MakeParser('\0', '\0', '\0')
         );
     }
 

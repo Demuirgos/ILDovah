@@ -3,23 +3,11 @@ using static Core;
 
 public record Parameter() : IDeclaration<Parameter> {
     private Object _value;
-    public record Collection(Parameter[] Parameters) : IDeclaration<Collection> {
-        public override string ToString() => $"({string.Join(", ", Parameters.Select(x => x.ToString()))})";
-        public static Parser<Collection> AsParser => RunAll(
-            converter: (parameters) => new Collection(parameters.SelectMany(Id).ToArray()),
-            Map(
-                converter: (parameter) => new Parameter[] { parameter },
-                Parameter.AsParser
-            ),
-            RunMany(
-                converter: (parameters) => parameters,
-                0, Int32.MaxValue,
-                RunAll(
-                    converter: (vals) => vals[1],
-                    Discard<Parameter, string>(ConsumeWord(Id, ",")),
-                    Parameter.AsParser
-                )
-            )
+    public record Collection(ARRAY<Parameter> Parameters) : IDeclaration<Collection> {
+        public override string ToString() => Parameters.ToString();
+        public static Parser<Collection> AsParser => Map(
+            converter: (parameters) => new Collection(parameters),
+            ARRAY<Parameter>.MakeParser('\0', ',', '\0')
         );
     }
     public record VarargParameter() : Parameter {

@@ -12,6 +12,6 @@ public record MethodName(String Name) : IDeclaration<MethodName> {
         converter: (vals) => new MethodName(vals),
         ConsumeWord(Id, ".ctor"),
         ConsumeWord(Id, ".cctor"),
-        Map((dname) => dname.Value, DottedName.AsParser)
+        Map((dname) => dname.ToString(), DottedName.AsParser)
     );
 }

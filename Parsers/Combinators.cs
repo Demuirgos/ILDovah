@@ -141,4 +141,23 @@ public static class Core {
             return true;
         };
     }
+
+    public static Parser<(T, U)> If<T, U>(Parser<T> condP, Parser<U> thenP, Parser<U> elseP) {
+        return (string code, ref int index, out (T, U) result) => {
+            int oldIndex = index;
+            if(condP(code, ref index, out T cond)) {
+                if(thenP(code, ref index, out U then)) {
+                    result = (cond, then);
+                    return true;
+                }
+            }
+            index = oldIndex;
+            if(elseP(code, ref index, out U elseResult)) {
+                result = (default, elseResult);
+                return true;
+            }
+            result = default;
+            return false;
+        };
+    }
 }
