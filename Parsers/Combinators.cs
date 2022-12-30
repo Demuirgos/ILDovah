@@ -19,7 +19,6 @@ public static class Core {
         };
     }
 
-    
     public static Parser<T> Lazy<T>(Func<Parser<T>> parser) {
         return (string code, ref int index, out T result) => {
             return parser()(code, ref index, out result);
@@ -31,6 +30,10 @@ public static class Core {
             result = default;
             throw new UnreachableException(message ?? "This parser should never be reached");
         };
+    }
+
+    public static Parser<T> Cast<T, U>(Parser<U> parser) {
+        return Map(item => (T)Convert.ChangeType(item, typeof(T)), parser);
     }
 
     public static Parser<T> Map<T, U>(Func<U, T> converter, Parser<U> parser) {
@@ -104,9 +107,9 @@ public static class Core {
         return (string code, ref int index, out U result) => {
             int oldIndex = index;
             var resultAcc = new List<T>();
-            for (int i = 0; i < max && index < code.Length; i++)
+            for (int i = 0; i < max; i++)
             {
-                if(!parser(code, ref index, out T single)) {
+                if(!parser(code, ref index, out T single) || index > code.Length) {
                     if(i < min) {
                         index = oldIndex;
                         result = default;

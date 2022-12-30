@@ -2,7 +2,10 @@ using static Core;
 public record INT(Int64 Value, int ByteCount) : IDeclaration<INT> {
     public override string ToString() => Value.ToString();
     public static Parser<INT> AsParser => RunMany(
-        converter: chars => new INT(Int64.Parse(new string(chars.ToArray())), chars.Length),
+        converter: chars => {
+            Console.WriteLine($"chars: {new string(chars.ToArray())}");
+            return new INT(Int64.Parse(new string(chars.ToArray())), chars.Length);
+        },
         1, Int32.MaxValue, ConsumeIf(Id, Char.IsDigit)
     );
 }
