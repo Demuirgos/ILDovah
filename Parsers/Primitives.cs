@@ -1,5 +1,5 @@
 using static Core;
-public record INT(Int64 Value, int ByteCount) : IDeclaration<INT> {
+public record INT(Int64 Value, int BitsSize) : IDeclaration<INT> {
     public override string ToString() => Value.ToString();
     public static Parser<INT> AsParser => RunMany(
         converter: chars => {
@@ -9,13 +9,13 @@ public record INT(Int64 Value, int ByteCount) : IDeclaration<INT> {
     );
 }
 
-public record FLOAT(double Value, bool IsCast) : IDeclaration<FLOAT> {
+public record FLOAT(double Value, int BitSize, bool IsCast) : IDeclaration<FLOAT> {
     public override string ToString() => IsCast ? $"float64({Value})" : Value.ToString();
     public static Parser<FLOAT> CastParser => TryRun (
-            converter: (val) => new FLOAT((float)val, true),
+            converter: (val) => new FLOAT(val.Item2, val.Item1,true),
             new[] {"float64", "float32"}.Select(castWord => {
                 return RunAll(
-                    converter: (vals) => vals[2],
+                    converter: (vals) => (castWord == "float64" ? 64 : 32, vals[2]),
                     ConsumeWord(_ => 0l, castWord),
                     ConsumeChar(_ => 0l, '('),
                     Map((intVal) => intVal.Value, INT.AsParser),
@@ -24,7 +24,7 @@ public record FLOAT(double Value, bool IsCast) : IDeclaration<FLOAT> {
             }).ToArray()
         );
     private static Parser<FLOAT> StraightParser => RunAll(
-        converter: (vals) => new FLOAT(double.Parse($"{vals[0]}.{vals[2]}"), false),
+        converter: (vals) => new FLOAT(double.Parse($"{vals[0]}.{vals[2]}"), 64, false),
         Map((intVal) => intVal.Value, INT.AsParser),
         ConsumeChar(_ => 0l, '.'),
         Map((intVal) => intVal.Value, INT.AsParser)

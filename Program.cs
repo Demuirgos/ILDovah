@@ -1,8 +1,8 @@
 ﻿using static Core;
 
-var (source, index) = ("<[23]>", 0);
+var (source, index) = ("char*(\"test\")", 0);
 
-if(IDeclaration<GenericTypeArity>.Parse(ref index, source, out GenericTypeArity resultVal)) {
+if(IDeclaration<DataItem>.Parse(ref index, source, out DataItem resultVal)) {
     Console.WriteLine(resultVal);
 } else {
     Console.WriteLine("Failed to parse");

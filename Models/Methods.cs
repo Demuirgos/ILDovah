@@ -101,14 +101,21 @@ public record MethodBodyItem(bool IsEntrypoint = false) : IDeclaration<MethodBod
 
     /*
     MethodBodyItem ::= 
-        | .data DataDecl  
         | .entrypoint 
         
         | Instr 
+
         | ScopeBlock 
         | SecurityDecl
         | SEHBlock
     */
+    public record Collection(ARRAY<MethodBodyItem> Items) : IDeclaration<Collection> {
+        public override string ToString() => Items.ToString(' ');
+        public static Parser<Collection> AsParser => Map(
+            converter: items => new Collection(items),
+            ARRAY<MethodBodyItem>.MakeParser('\0', '\0', '\0')
+        );
+    }
     public record EmitByteItem(INT Value) : IDeclaration<EmitByteItem> {
         public override string ToString() => $".emitbyte {Value} ";
         public static Parser<EmitByteItem> AsParser => RunAll(
@@ -286,11 +293,21 @@ public record MethodBodyItem(bool IsEntrypoint = false) : IDeclaration<MethodBod
         );
     };
 
-    public record DataItem(Data Data) : IDeclaration<DataItem> {
+    public record DataBodyItem(Data Data) : IDeclaration<DataBodyItem> {
         public override string ToString() => Data.ToString();
-        public static Parser<DataItem> AsParser => Map(
-            converter: data => new DataItem(data),
+        public static Parser<DataBodyItem> AsParser => Map(
+            converter: data => new DataBodyItem(data),
             Data.AsParser
+        );
+    }
+
+    public record ScopeBlock(Collection Blocks) : IDeclaration<ScopeBlock> {
+        public override string ToString() => $"{{ {Blocks} }}";
+        public static Parser<ScopeBlock> AsParser => RunAll(
+            converter: parts => new ScopeBlock(parts[1]),
+            Discard<MethodBodyItem.Collection, char>(ConsumeChar(Id, '{')),
+            MethodBodyItem.Collection.AsParser,
+            Discard<MethodBodyItem.Collection, char>(ConsumeChar(Id, '}'))
         );
     }
 
