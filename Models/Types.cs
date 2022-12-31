@@ -2,6 +2,54 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using static Core;
 using GenArgs = Type.Collection;
+
+public record TypeSpecification() : IDeclaration<TypeSpecification> {
+    private Object _value;
+    /*
+    TypeSpec ::= ‘[’ [ .module ] DottedName ‘]’
+*/
+    public record NamedModuleSpecification(DottedName Name, bool IsModule) : IDeclaration<NamedModuleSpecification> {
+        public override string ToString() => $"{(IsModule ? ".module " : "")} {Name}";
+        public static Parser<NamedModuleSpecification> AsParser => RunAll(
+            converter: (vals) => new NamedModuleSpecification(vals[1].Name, vals[0].IsModule),
+            TryRun(
+                converter: (module) => new NamedModuleSpecification(null, module is not null),
+                Discard<NamedModuleSpecification, string>(ConsumeWord(Id, ".module"))
+            ),
+            Map(
+                converter: (name) => new NamedModuleSpecification(name, false),
+                DottedName.AsParser
+            )
+        );
+    }
+    public override string ToString() => _value switch {
+        Type t => t.ToString(),
+        TypeReference t => t.ToString(),
+        NamedModuleSpecification t => $"[{t}]",
+        _ => throw new NotImplementedException()
+    };
+    public static Parser<TypeSpecification> AsParser => TryRun(
+        converter : Id,
+        Map(
+            converter : (type) => new TypeSpecification { _value = type },
+            Type.AsParser
+        ),
+        Map(
+            converter : (type) => new TypeSpecification { _value = type },
+            TypeReference.AsParser
+        ),
+        Map(
+            converter : (type) => new TypeSpecification { _value = type },
+            RunAll(
+                converter : (vals) => new TypeSpecification { _value = vals[1] },
+                Discard<NamedModuleSpecification, string>(ConsumeWord(Id, "[")),
+                NamedModuleSpecification.AsParser,
+                Discard<NamedModuleSpecification, string>(ConsumeWord(Id, "]"))
+            )
+        )
+    );
+}
+
 public record NativeType(NativeType Type, bool IsArray, INT Length, INT Supplied) : IDeclaration<NativeType> {
     public override string ToString() {
         StringBuilder sb = new();
@@ -66,6 +114,7 @@ public record NativeType(NativeType Type, bool IsArray, INT Length, INT Supplied
         )
     );
 }
+
 public record Type : IDeclaration<Type> {
     public override string ToString() {
         StringBuilder sb = new();

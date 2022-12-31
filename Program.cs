@@ -1,8 +1,8 @@
 ﻿using static Core;
 
-var (source, index) = ("boolTest2,bool", 0);
+var (source, index) = ("<[23]>", 0);
 
-if(IDeclaration<Local.Collection>.Parse(ref index, source, out Local.Collection resultVal)) {
+if(IDeclaration<GenericTypeArity>.Parse(ref index, source, out GenericTypeArity resultVal)) {
     Console.WriteLine(resultVal);
 } else {
     Console.WriteLine("Failed to parse");

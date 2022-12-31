@@ -124,9 +124,18 @@ public record GenericParameter(GenParamAttribute.Collection Attributes, Type.Col
     );
 }
 
-/*
-GenPars ::= GenPar [ ‘,’ GenPars ]
-GenPar::= [ GenParAttribs ]* [ ‘(’ [ GenConstraints ] ‘)’ ] Id 
-
-*/
-
+public record GenericTypeArity(INT? Value) : IDeclaration<GenericTypeArity> {
+    public override string ToString() => Value is null ? String.Empty : $"<[{Value}]>";
+    public static Parser<GenericTypeArity> AsParser => TryRun(
+        converter: (arity) => new GenericTypeArity(arity),
+        RunAll(
+            converter: vals => vals[2],
+            Discard<INT, char>(ConsumeChar(Core.Id, '<')),
+            Discard<INT, char>(ConsumeChar(Core.Id, '[')),
+            INT.AsParser,
+            Discard<INT, char>(ConsumeChar(Core.Id, ']')),
+            Discard<INT, char>(ConsumeChar(Core.Id, '>'))
+        ),
+        Empty<INT>()
+    );
+}

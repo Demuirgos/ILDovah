@@ -1,10 +1,6 @@
 using System.Text;
 using static Core;
 
-/*
-TypeReference ::= [ ResolutionScope ] DottedName [ ‘/’ DottedName ]*
-*/
-
 public record TypeReference(ResolutionScope Scope, ARRAY<DottedName> Names) : IDeclaration<TypeReference> {
     public override string ToString() {
         StringBuilder sb = new();
