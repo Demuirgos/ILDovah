@@ -86,6 +86,7 @@ public record MethodHeader(MethodAttribute.Collection MethodAttributes, CallConv
         )
     );
 }
+
 public record MethodName(String Name) : IDeclaration<MethodName> {
     public override string ToString() => Name;
     public static Parser<MethodName> AsParser => TryRun(
@@ -95,3 +96,114 @@ public record MethodName(String Name) : IDeclaration<MethodName> {
         Map((dname) => dname.ToString(), DottedName.AsParser)
     );
 }
+
+public record MethodBodyItem : IDeclaration<MethodBodyItem> {
+
+    /*
+    MethodBodyItem ::= 
+        | .data DataDecl  
+        | .entrypoint 
+        | .override TypeSpec ‘::’ MethodName
+        | .override method CallConv Type TypeSpec‘::’ MethodName GenArity ‘(’ Parameters ‘)’
+        | ExternSourceDecl
+        | Instr 
+        | Id ‘:’ 
+        | ScopeBlock 
+        | SecurityDecl
+        | SEHBlock
+    */
+    public record EmitByteItem(INT Value) : IDeclaration<EmitByteItem> {
+        public override string ToString() => $".emitbyte {Value} ";
+        public static Parser<EmitByteItem> AsParser => RunAll(
+            converter: parts => new EmitByteItem(parts[1]),
+            Discard<INT, string>(ConsumeWord(Id, ".emitbyte")),
+            INT.AsParser
+        );
+    }
+
+    public record MaxStackItem(INT Value) : IDeclaration<MaxStackItem> {
+        public override string ToString() => $".maxstack {Value} ";
+        public static Parser<MaxStackItem> AsParser => RunAll(
+            converter: parts => new MaxStackItem(parts[1]),
+            Discard<INT, string>(ConsumeWord(Id, ".emitbyte")),
+            INT.AsParser
+        );
+    } 
+
+    public record CustomAttributeItem(CustomAttribute Attribute) : IDeclaration<CustomAttributeItem> {
+        public override string ToString() => $".custom {Attribute} ";
+        public static Parser<CustomAttributeItem> AsParser => RunAll(
+            converter: parts => new CustomAttributeItem(parts[1]),
+            Discard<CustomAttribute, string>(ConsumeWord(Id, ".custom")),
+            CustomAttribute.AsParser
+        );
+    }
+    
+    public record ParamAttribute(INT Index) : IDeclaration<ParamAttribute> {
+        public record GenericParamAttribute(INT Index) : ParamAttribute(Index), IDeclaration<GenericParamAttribute> {
+            public override string ToString() => $".param type [{Index}]";
+            public static Parser<GenericParamAttribute> AsParser => RunAll(
+                converter: parts => new GenericParamAttribute(parts[3]),
+                Discard<INT, string>(ConsumeWord(Id, ".param")),
+                Discard<INT, string>(ConsumeWord(Id, "type")),
+                Discard<INT, char>(ConsumeChar(Id, '[')),
+                INT.AsParser,
+                Discard<INT, char>(ConsumeChar(Id, ']'))
+            );            
+        }
+
+        public record InitializeParamAttribute(INT Index, FieldInit Value) : ParamAttribute(Index) {
+            public override string ToString() => $".param [{Index}] {(Value is null ? String.Empty : $"= {Value}")}";
+            public static Parser<InitializeParamAttribute> AsParser => RunAll(
+                converter: parts => new InitializeParamAttribute(
+                    parts[0].Index,
+                    parts[1]?.Value
+                ),
+                RunAll(
+                    converter : parts => new InitializeParamAttribute(parts[2], null),
+                    Discard<INT, string>(ConsumeWord(Id, ".param")),
+                    Discard<INT, char>(ConsumeChar(Id, '[')),
+                    INT.AsParser,
+                    Discard<INT, char>(ConsumeChar(Id, ']'))
+                ),
+                TryRun(
+                    converter: finit => new InitializeParamAttribute(null, finit),
+                    RunAll(
+                        converter: parts => parts[1],
+                        Discard<FieldInit, char>(ConsumeChar(Id, '=')),
+                        FieldInit.AsParser
+                    )
+                )
+            );                
+        }
+    
+        public static Parser<ParamAttribute> AsParser => TryRun(
+            converter: Id,
+            Cast<ParamAttribute, GenericParamAttribute>(GenericParamAttribute.AsParser),
+            Cast<ParamAttribute, InitializeParamAttribute>(InitializeParamAttribute.AsParser)
+        );
+    }
+    
+    public record LocalsItem(bool IsInit, Local.Collection Signatures) {
+        public override string ToString() => $".locals {(IsInit ? "init" : String.Empty)} ({Signatures})";
+        public static Parser<LocalsItem> AsParser => RunAll(
+            converter: parts => new LocalsItem(parts[0].IsInit, parts[1].Signatures),
+            Discard<LocalsItem, string>(ConsumeWord(Id, ".locals")),
+            TryRun(
+                converter: result => new LocalsItem(result is null, null),
+                Discard<LocalsItem, string>(ConsumeWord(Id, "init")),
+                Empty<LocalsItem>()
+            ),
+            RunAll(
+                converter: sigs => new LocalsItem(false, sigs[1]),
+                Discard<Local.Collection, char>(ConsumeChar(Id, '(')),
+                Local.Collection.AsParser,
+                Discard<Local.Collection, char>(ConsumeChar(Id, ')'))
+            )
+        );
+    }
+
+    public override string ToString() => throw new NotImplementedException();
+    public static Parser<MethodBodyItem> AsParser => throw new NotImplementedException();
+}
+
