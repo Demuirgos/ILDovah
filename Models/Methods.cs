@@ -2,11 +2,28 @@ using System.Reflection.Metadata;
 using System.Text;
 using static Core;
 using static Extensions;
-public record MethodDeclaration(bool IsConstructor) : IDeclaration<MethodDeclaration> {
-    public override string ToString() => throw new NotImplementedException();
-    public static Parser<MethodDeclaration> AsParser => throw new NotImplementedException();
+public record MethodDeclaration(MethodHeader Header, MethodBodyItem.Collection Body) : IDeclaration<MethodDeclaration> {
+    public bool IsConstructor => Header.Name.IsConstructor;
+    public bool IsEntrypoint => Body.Items.Values.Any(item => item.IsEntrypoint);
+    
+    public override string ToString() => $"method {Header} {{ {Body} }}";
+    public static Parser<MethodDeclaration> AsParser => RunAll(
+        converter: parts => new MethodDeclaration(parts[1].Header, parts[3].Body),
+        Discard<MethodDeclaration, string>(ConsumeWord(Id, "method")),
+        Map(
+            converter : header => Construct<MethodDeclaration>(2, 0, header),
+            MethodHeader.AsParser
+        ),
+        Discard<MethodDeclaration, char>(ConsumeChar(Id, '{')),
+        Map(
+            converter : blocks => Construct<MethodDeclaration>(2, 1, blocks),
+            MethodBodyItem.Collection.AsParser
+        ),
+        Discard<MethodDeclaration, char>(ConsumeChar(Id, '}'))
+    );
 }
-public record MethodHeader(MethodAttribute.Collection MethodAttributes, CallConvention? Convention, Type Type, NativeType? MarshalledType, MethodName Name, GenericParameter.Collection? TypeParameters, Parameter.Collection Parameters, ImplAttribute.Collection ImplementationAttributes) : IDeclaration<MethodName> {
+public record MethodHeader(MethodAttribute.Collection MethodAttributes, CallConvention? Convention, Type Type, NativeType? MarshalledType, MethodName Name, GenericParameter.Collection? TypeParameters, Parameter.Collection Parameters, ImplAttribute.Collection ImplementationAttributes) : IDeclaration<MethodName> 
+{
     public override string ToString() {
         var sb = new StringBuilder();
         sb.Append(MethodAttributes);
@@ -88,6 +105,7 @@ public record MethodHeader(MethodAttribute.Collection MethodAttributes, CallConv
 }
 
 public record MethodName(String Name) : IDeclaration<MethodName> {
+    public bool IsConstructor => Name == ".ctor";
     public override string ToString() => Name;
     public static Parser<MethodName> AsParser => TryRun(
         converter: (vals) => new MethodName(vals),
@@ -99,12 +117,15 @@ public record MethodName(String Name) : IDeclaration<MethodName> {
 
 public record MethodBodyItem(bool IsEntrypoint = false) : IDeclaration<MethodBodyItem> {
 
-    /*
-    MethodBodyItem ::= 
-        | .entrypoint 
-        
-        | Instr 
-    */
+    public record InstructionItem(Instruction Instr) : MethodBodyItem, IDeclaration<InstructionItem> {
+        public override string ToString() => Instr.ToString();
+        public static Parser<InstructionItem> AsParser => Map(
+            converter: instr => new InstructionItem(instr),
+            Instruction.AsParser
+        );
+    }
+
+
     public record Collection(ARRAY<MethodBodyItem> Items) : IDeclaration<Collection> {
         public override string ToString() => Items.ToString(' ');
         public static Parser<Collection> AsParser => Map(
@@ -112,7 +133,7 @@ public record MethodBodyItem(bool IsEntrypoint = false) : IDeclaration<MethodBod
             ARRAY<MethodBodyItem>.MakeParser('\0', '\0', '\0')
         );
     }
-    public record EmitByteItem(INT Value) : IDeclaration<EmitByteItem> {
+    public record EmitByteItem(INT Value) : MethodBodyItem, IDeclaration<EmitByteItem> {
         public override string ToString() => $".emitbyte {Value} ";
         public static Parser<EmitByteItem> AsParser => RunAll(
             converter: parts => new EmitByteItem(parts[1]),
@@ -121,7 +142,7 @@ public record MethodBodyItem(bool IsEntrypoint = false) : IDeclaration<MethodBod
         );
     }
 
-    public record MaxStackItem(INT Value) : IDeclaration<MaxStackItem> {
+    public record MaxStackItem(INT Value) : MethodBodyItem, IDeclaration<MaxStackItem> {
         public override string ToString() => $".maxstack {Value} ";
         public static Parser<MaxStackItem> AsParser => RunAll(
             converter: parts => new MaxStackItem(parts[1]),
@@ -130,7 +151,7 @@ public record MethodBodyItem(bool IsEntrypoint = false) : IDeclaration<MethodBod
         );
     } 
 
-    public record CustomAttributeItem(CustomAttribute Attribute) : IDeclaration<CustomAttributeItem> {
+    public record CustomAttributeItem(CustomAttribute Attribute) : MethodBodyItem, IDeclaration<CustomAttributeItem> {
         public override string ToString() => $".custom {Attribute} ";
         public static Parser<CustomAttributeItem> AsParser => RunAll(
             converter: parts => new CustomAttributeItem(parts[1]),
@@ -139,7 +160,7 @@ public record MethodBodyItem(bool IsEntrypoint = false) : IDeclaration<MethodBod
         );
     }
     
-    public record ParamAttribute(INT Index) : IDeclaration<ParamAttribute> {
+    public record ParamAttribute(INT Index) : MethodBodyItem, IDeclaration<ParamAttribute> {
         public record GenericParamAttribute(INT Index) : ParamAttribute(Index), IDeclaration<GenericParamAttribute> {
             public override string ToString() => $".param type [{Index}]";
             public static Parser<GenericParamAttribute> AsParser => RunAll(
@@ -184,7 +205,7 @@ public record MethodBodyItem(bool IsEntrypoint = false) : IDeclaration<MethodBod
         );
     }
     
-    public record LocalsItem(bool IsInit, Local.Collection Signatures) {
+    public record LocalsItem(bool IsInit, Local.Collection Signatures) : MethodBodyItem, IDeclaration<LocalsItem> {
         public override string ToString() => $".locals {(IsInit ? "init" : String.Empty)} ({Signatures})";
         public static Parser<LocalsItem> AsParser => RunAll(
             converter: parts => new LocalsItem(parts[0].IsInit, parts[1].Signatures),
@@ -203,7 +224,7 @@ public record MethodBodyItem(bool IsEntrypoint = false) : IDeclaration<MethodBod
         );
     }
 
-    public record LabelItem(CodeLabel Label) : IDeclaration<LabelItem> {
+    public record LabelItem(CodeLabel Label) : MethodBodyItem, IDeclaration<LabelItem> {
         public override string ToString() => Label.ToString();
         public static Parser<LabelItem> AsParser => Map(
             converter: label => new LabelItem(label),
@@ -211,7 +232,7 @@ public record MethodBodyItem(bool IsEntrypoint = false) : IDeclaration<MethodBod
         );
     }
     
-    public record ExternSourceItem(ExternSource Source) : IDeclaration<ExternSourceItem> {
+    public record ExternSourceItem(ExternSource Source) : MethodBodyItem, IDeclaration<ExternSourceItem> {
         public override string ToString() => Source.ToString();
         public static Parser<ExternSourceItem> AsParser => Map(
             converter: source => new ExternSourceItem(source),
@@ -219,7 +240,7 @@ public record MethodBodyItem(bool IsEntrypoint = false) : IDeclaration<MethodBod
         );
     }
     
-    public record OverrideMethodItem : IDeclaration<OverrideMethodItem> {
+    public record OverrideMethodItem : MethodBodyItem, IDeclaration<OverrideMethodItem> {
         public record OverrideMethodDefault(TypeSpecification Specification, MethodName Name) : OverrideMethodItem, IDeclaration<OverrideMethodDefault> {
             public override string ToString() => $".override {Specification}::{Name}";
             public static Parser<OverrideMethodDefault> AsParser => RunAll(
@@ -289,7 +310,7 @@ public record MethodBodyItem(bool IsEntrypoint = false) : IDeclaration<MethodBod
         );
     };
 
-    public record DataBodyItem(Data Data) : IDeclaration<DataBodyItem> {
+    public record DataBodyItem(Data Data) : MethodBodyItem, IDeclaration<DataBodyItem> {
         public override string ToString() => Data.ToString();
         public static Parser<DataBodyItem> AsParser => Map(
             converter: data => new DataBodyItem(data),
@@ -297,7 +318,7 @@ public record MethodBodyItem(bool IsEntrypoint = false) : IDeclaration<MethodBod
         );
     }
 
-    public record ScopeBlock(Collection Blocks) : IDeclaration<ScopeBlock> {
+    public record ScopeBlock(Collection Blocks) : MethodBodyItem, IDeclaration<ScopeBlock> {
         public override string ToString() => $"{{ {Blocks} }}";
         public static Parser<ScopeBlock> AsParser => RunAll(
             converter: parts => new ScopeBlock(parts[1]),
@@ -307,15 +328,15 @@ public record MethodBodyItem(bool IsEntrypoint = false) : IDeclaration<MethodBod
         );
     }
 
-    public record SecurtyDeclarationItem(SecurityBlock Declaration) : IDeclaration<SecurtyDeclarationItem> {
+    public record SecurityDeclarationItem(SecurityBlock Declaration) : MethodBodyItem, IDeclaration<SecurityDeclarationItem> {
         public override string ToString() => Declaration.ToString();
-        public static Parser<SecurtyDeclarationItem> AsParser => Map(
-            converter: declaration => new SecurtyDeclarationItem(declaration),
+        public static Parser<SecurityDeclarationItem> AsParser => Map(
+            converter: declaration => new SecurityDeclarationItem(declaration),
             SecurityBlock.AsParser
         );
     }
     
-    public record ExceptionHandlingBlock(StructuralExceptionBlock Block) : IDeclaration<ExceptionHandlingBlock> {
+    public record ExceptionHandlingBlock(StructuralExceptionBlock Block) : MethodBodyItem, IDeclaration<ExceptionHandlingBlock> {
         public override string ToString() => Block.ToString();
         public static Parser<ExceptionHandlingBlock> AsParser => Map(
             converter: block => new ExceptionHandlingBlock(block),
@@ -323,6 +344,46 @@ public record MethodBodyItem(bool IsEntrypoint = false) : IDeclaration<MethodBod
         );
     }
     
-    public static Parser<MethodBodyItem> AsParser => throw  new NotImplementedException();
+    public static Parser<MethodBodyItem> AsParser => TryRun(
+        converter: result => result,
+        Map(
+            converter: item => new MethodBodyItem(true),
+            ConsumeWord(Id, ".entrypoint")
+        ),
+        Cast<MethodBodyItem, EmitByteItem>(EmitByteItem.AsParser),
+        Cast<MethodBodyItem, MaxStackItem>(MaxStackItem.AsParser),
+        Cast<MethodBodyItem, CustomAttributeItem>(CustomAttributeItem.AsParser),
+        Cast<MethodBodyItem, ParamAttribute>(ParamAttribute.AsParser),
+        Cast<MethodBodyItem, LocalsItem>(LocalsItem.AsParser),
+        Cast<MethodBodyItem, LabelItem>(LabelItem.AsParser),
+        Cast<MethodBodyItem, ExternSourceItem>(ExternSourceItem.AsParser),
+        Cast<MethodBodyItem, OverrideMethodItem>(OverrideMethodItem.AsParser),
+        Cast<MethodBodyItem, DataBodyItem>(DataBodyItem.AsParser),
+        Cast<MethodBodyItem, ScopeBlock>(ScopeBlock.AsParser),
+        Cast<MethodBodyItem, SecurityDeclarationItem>(SecurityDeclarationItem.AsParser),
+        Cast<MethodBodyItem, ExceptionHandlingBlock>(ExceptionHandlingBlock.AsParser),
+
+        Cast<MethodBodyItem, InstructionItem>(InstructionItem.AsParser)
+    );
 }
 
+public record VTFFixup(INT Index, VTFixupAttribute.Collection Attributes, DataLabel Label) : IDeclaration<VTFFixup> {
+    public override string ToString() => $".vtfixup {Index} {Attributes} at {Label}";
+    public static Parser<VTFFixup> AsParser => RunAll(
+        converter: parts => new VTFFixup(parts[1].Index, parts[2].Attributes, parts[4].Label),
+        Discard<VTFFixup, string>(ConsumeWord(Id, ".vtfixup")),
+        TryRun(
+            converter: index => Construct<VTFFixup>(3, 0, index), 
+            INT.AsParser, Empty<INT>()
+        ),
+        Map(
+            converter: attributes => Construct<VTFFixup>(3, 1, attributes), 
+            VTFixupAttribute.Collection.AsParser
+        ),
+        Discard<VTFFixup, string>(ConsumeWord(Id, "at")),
+        Map(
+            converter: label => Construct<VTFFixup>(3, 2, label), 
+            DataLabel.AsParser
+        )
+    );
+}

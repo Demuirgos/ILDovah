@@ -1,7 +1,7 @@
 using System.Text;
 using static Core;
 
-public record CustomAttribute(MethodDeclaration AttributeCtor, ARRAY<BYTE>? Arguments) : IDeclaration<CustomAttribute> {
+public record CustomAttribute(MethodName AttributeCtor, ARRAY<BYTE>? Arguments) : IDeclaration<CustomAttribute> {
     public override string ToString() {
         StringBuilder sb = new();
         sb.Append(AttributeCtor);
@@ -16,7 +16,7 @@ public record CustomAttribute(MethodDeclaration AttributeCtor, ARRAY<BYTE>? Argu
                 throw new Exception("Custom attribute must be a constructor");
             return new CustomAttribute(vals[0].AttributeCtor, vals[1].Arguments);
         },
-        Map((methname) => new CustomAttribute(methname, null), MethodDeclaration.AsParser),
+        Map((methname) => new CustomAttribute(methname, null), MethodName.AsParser),
         TryRun(
             converter: (vals) => new CustomAttribute(null, vals),
             RunAll(
@@ -217,6 +217,23 @@ public record GenParamAttribute(string keyword) : IDeclaration<GenParamAttribute
 
     public static Parser<GenParamAttribute> AsParser => TryRun(
         converter: (vals) => new GenParamAttribute(vals),
+        PossibleValues.Select((word) => ConsumeWord(Id, word)).ToArray()
+    );
+}
+
+public record VTFixupAttribute(String keyword) : IDeclaration<VTFixupAttribute> {
+    private static String[] PossibleValues = { "fromunmanaged", "int32", "int64" };
+    public record Collection(ARRAY<VTFixupAttribute> Attributes) : IDeclaration<VTFixupAttribute.Collection> {
+        public override string ToString() => Attributes.ToString(' ');
+        public static Parser<VTFixupAttribute.Collection> AsParser => Map(
+            converter: (attrs) => new VTFixupAttribute.Collection(attrs),
+            ARRAY<VTFixupAttribute>.MakeParser('\0', '\0', '\0')
+        );
+    }
+
+    public override string ToString() => keyword;
+    public static Parser<VTFixupAttribute> AsParser => TryRun(
+        converter: (vals) => new VTFixupAttribute(vals),
         PossibleValues.Select((word) => ConsumeWord(Id, word)).ToArray()
     );
 }
