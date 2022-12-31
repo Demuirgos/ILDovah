@@ -1,18 +1,16 @@
-﻿using System.Reflection;
-using static Core;
+﻿using static Core;
 
-var (source, index) = ("deadbeef", 0);
+var (source, index) = ("class+(bool,int16)typename", 0);
 
-if(ARRAY<BYTE>.Parse(ref index, source, out ARRAY<BYTE> resultVal, ('\0', '\0', '\0'))) {
-    Console.WriteLine(resultVal.ToString(' '));
+var part1 = Extensions.Construct<PersonTest>(2, 0, "Ayman");
+var part2 = Extensions.Construct<PersonTest>(2, 1, 3);
+var complete = new PersonTest(part1.Name, part2.Age);
+Console.WriteLine(complete);
+
+if(IDeclaration<GenericParameter>.Parse(ref index, source, out GenericParameter resultVal)) {
+    Console.WriteLine(resultVal);
 } else {
     Console.WriteLine("Failed to parse");
 }
 
-// if(IDeclaration<SlashedName2>.Parse(ref index, source, out SlashedName2 resultVal)) {
-//     Console.WriteLine(resultVal);
-// } else {
-//     Console.WriteLine("Failed to parse");
-// }
-
-// Console.WriteLine(index);
+record PersonTest(string Name, int Age);

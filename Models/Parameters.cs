@@ -1,6 +1,7 @@
+using System.Reflection.Metadata;
 using System.Text;
 using static Core;
-
+using GenericConstraints = Type.Collection;
 public record Parameter() : IDeclaration<Parameter> {
     private Object _value;
     public record Collection(ARRAY<Parameter> Parameters) : IDeclaration<Collection> {
@@ -77,3 +78,55 @@ public record Parameter() : IDeclaration<Parameter> {
         )
     );
 }
+
+public record GenericParameter(GenParamAttribute.Collection Attributes, Type.Collection Constraints, Identifier Id) : IDeclaration<GenericParameter> {
+    public record Collection(ARRAY<GenericParameter> Parameters) : IDeclaration<Collection> {
+        public override string ToString() => Parameters.ToString();
+        public static Parser<Collection> AsParser => Map(
+            converter: (parameters) => new Collection(parameters),
+            ARRAY<GenericParameter>.MakeParser('\0', ',', '\0')
+        );
+    }
+
+    public override string ToString() {
+        StringBuilder sb = new();
+        if(Attributes is not null) {
+            sb.Append($"{Attributes} ");
+        }
+        if(Constraints is not null) {
+            sb.Append($"( {Constraints}) ");
+        }
+        if(Id is not null) {
+            sb.Append(Id);
+        }
+        return sb.ToString();
+    }
+    public static Parser<GenericParameter> AsParser => RunAll(
+        converter: parts => new GenericParameter(parts[0].Attributes, parts[1].Constraints, parts[2].Id),
+        Map(
+            converter: attrs => new GenericParameter(attrs, null, null),
+            GenParamAttribute.Collection.AsParser
+        ),
+        TryRun(
+            converter: constraints => new GenericParameter(null, constraints, null),
+            RunAll(
+                converter: vals => vals[1],
+                Discard<Type.Collection, char>(ConsumeChar(Core.Id, '(')),
+                GenericConstraints.AsParser,
+                Discard<Type.Collection, char>(ConsumeChar(Core.Id, ')'))
+            ),
+            Empty<Type.Collection>()
+        ),
+        Map(
+            converter: id => new GenericParameter(null, null, id),
+            Identifier.AsParser
+        )
+    );
+}
+
+/*
+GenPars ::= GenPar [ ‘,’ GenPars ]
+GenPar::= [ GenParAttribs ]* [ ‘(’ [ GenConstraints ] ‘)’ ] Id 
+
+*/
+

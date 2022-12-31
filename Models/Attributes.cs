@@ -201,3 +201,22 @@ public record ClassAttribute(String Attribute) : IDeclaration<ClassAttribute> {
         }).ToArray()
     );
 }
+
+public record GenParamAttribute(string keyword) : IDeclaration<GenParamAttribute> {
+    private static String[] PossibleValues = { "+", "-", "class", "valuetype", "new" };
+    
+    public record Collection(ARRAY<GenParamAttribute> Attributes) : IDeclaration<GenParamAttribute.Collection> {
+        public override string ToString() => Attributes.ToString(' ');
+        public static Parser<GenParamAttribute.Collection> AsParser => Map(
+            converter: (attrs) => new GenParamAttribute.Collection(attrs),
+            ARRAY<GenParamAttribute>.MakeParser('\0', '\0', '\0')
+        );
+    }
+
+    public override string ToString() => keyword;
+
+    public static Parser<GenParamAttribute> AsParser => TryRun(
+        converter: (vals) => new GenParamAttribute(vals),
+        PossibleValues.Select((word) => ConsumeWord(Id, word)).ToArray()
+    );
+}
