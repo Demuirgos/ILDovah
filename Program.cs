@@ -1,8 +1,8 @@
 ﻿using static Core;
 
-var (source, index) = ("char*(\"test\")", 0);
+var (source, index) = (".permissionsetdeny=(deadbeef)", 0);
 
-if(IDeclaration<DataItem>.Parse(ref index, source, out DataItem resultVal)) {
+if(IDeclaration<SecurityBlock>.Parse(ref index, source, out SecurityBlock resultVal)) {
     Console.WriteLine(resultVal);
 } else {
     Console.WriteLine("Failed to parse");

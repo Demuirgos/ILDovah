@@ -104,10 +104,6 @@ public record MethodBodyItem(bool IsEntrypoint = false) : IDeclaration<MethodBod
         | .entrypoint 
         
         | Instr 
-
-        | ScopeBlock 
-        | SecurityDecl
-        | SEHBlock
     */
     public record Collection(ARRAY<MethodBodyItem> Items) : IDeclaration<Collection> {
         public override string ToString() => Items.ToString(' ');
@@ -311,6 +307,22 @@ public record MethodBodyItem(bool IsEntrypoint = false) : IDeclaration<MethodBod
         );
     }
 
+    public record SecurtyDeclarationItem(SecurityBlock Declaration) : IDeclaration<SecurtyDeclarationItem> {
+        public override string ToString() => Declaration.ToString();
+        public static Parser<SecurtyDeclarationItem> AsParser => Map(
+            converter: declaration => new SecurtyDeclarationItem(declaration),
+            SecurityBlock.AsParser
+        );
+    }
+    
+    public record ExceptionHandlingBlock(StructuralExceptionBlock Block) : IDeclaration<ExceptionHandlingBlock> {
+        public override string ToString() => Block.ToString();
+        public static Parser<ExceptionHandlingBlock> AsParser => Map(
+            converter: block => new ExceptionHandlingBlock(block),
+            StructuralExceptionBlock.AsParser
+        );
+    }
+    
     public static Parser<MethodBodyItem> AsParser => throw  new NotImplementedException();
 }
 
