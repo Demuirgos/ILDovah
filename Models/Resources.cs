@@ -14,7 +14,8 @@ public record TypeReference(ResolutionScope Scope, ARRAY<DottedName> Names) : ID
         converter: (vals) => new TypeReference(vals[0]?.Scope, vals[1].Names),
         TryRun(
             converter: (scope) =>  new TypeReference(scope, null),
-            ResolutionScope.AsParser
+            ResolutionScope.AsParser,
+            Empty<ResolutionScope>()
         ),
         Map(
             converter: (name) =>  new TypeReference(null, name),

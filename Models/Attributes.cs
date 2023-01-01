@@ -1,6 +1,23 @@
 using System.Text;
 using static Core;
 
+public record PropertyAttribute(string Value) : IDeclaration<PropertyAttribute> {
+    public record Collection(ARRAY<PropertyAttribute> Attributes) : IDeclaration<Collection> {
+        public override string ToString() => Attributes.ToString(' ');
+        public static Parser<Collection> AsParser => Map(
+            converter: items => new Collection(items),
+            ARRAY<PropertyAttribute>.MakeParser('\0', '\0', '\0')
+        );
+    }
+    public static String[] ValidNames = { "specialname", "rtspecialname" };
+    public override string ToString() => Value;
+
+    public static Parser<PropertyAttribute> AsParser => TryRun(
+        converter: (name) => new PropertyAttribute(name),
+        ValidNames.Select((name) => ConsumeWord(Id, name)).ToArray()
+    );
+}
+
 public record FieldAttribute : IDeclaration<FieldAttribute> {
     public record Collection(ARRAY<FieldAttribute> Attributes) : FieldAttribute, IDeclaration<Collection> {
         public override string ToString() => Attributes.ToString(' ');
