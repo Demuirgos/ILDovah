@@ -1,6 +1,40 @@
 using System.Text;
 using static Core;
 
+public record FieldAttribute : IDeclaration<FieldAttribute> {
+    public record Collection(ARRAY<FieldAttribute> Attributes) : FieldAttribute, IDeclaration<Collection> {
+        public override string ToString() => Attributes.ToString(' ');
+        public static Parser<Collection> AsParser => Map(
+            converter: items => new Collection(items),
+            ARRAY<FieldAttribute>.MakeParser('\0', '\0', '\0')
+        );
+    }
+    public record SimpleAttribute(String Name) : FieldAttribute, IDeclaration<SimpleAttribute> {
+        public static String[] ValidNames = new String[] { "assembly", "famandassem", "family", "famorassem", "initonly", "literal", "notserialized", "private", "compilercontrolled", "public", "rtspecialname", "specialname", "static"};
+        public override string ToString() => Name;
+        public static Parser<SimpleAttribute> AsParser => TryRun(
+            converter: (name) => new SimpleAttribute(name),
+            ValidNames.Select((name) => ConsumeWord(Id, name)).ToArray()
+        );
+    }
+
+    public record MarshalAttribute(NativeType Type) : FieldAttribute, IDeclaration<MarshalAttribute> {
+        public override string ToString() => $"marshal( {Type} )";
+        public static Parser<MarshalAttribute> AsParser => RunAll(
+            converter: (vals) => new MarshalAttribute(vals[2]),
+            Discard<NativeType, string>(ConsumeWord(Id, "marshal")),
+            Discard<NativeType, char>(ConsumeChar(Id, '(')),
+            NativeType.AsParser,
+            Discard<NativeType, char>(ConsumeChar(Id, ')'))
+        );
+    }
+    public static Parser<FieldAttribute> AsParser => TryRun(
+        converter: Id,
+        Cast<FieldAttribute, SimpleAttribute>(SimpleAttribute.AsParser),
+        Cast<FieldAttribute, MarshalAttribute>(MarshalAttribute.AsParser)
+    );
+}
+
 public record CustomAttribute(MethodName AttributeCtor, ARRAY<BYTE>? Arguments) : IDeclaration<CustomAttribute> {
     public override string ToString() {
         StringBuilder sb = new();

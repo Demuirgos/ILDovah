@@ -1,8 +1,10 @@
 ﻿using static Core;
 
-var (source, index) = ("nullref", 0);
+// Note(Ayman) : Add whitespace skipping to all parsers, and add a parser for whitespace
 
-if(IDeclaration<FieldInit>.Parse(ref index, source, out FieldInit resultVal)) {
+var (source, index) = (".field [23] public static int32 count".Replace(" ", String.Empty), 0);
+
+if(IDeclaration<Field>.Parse(ref index, source, out Field resultVal)) {
     Console.WriteLine(resultVal);
 } else {
     Console.WriteLine("Failed to parse");

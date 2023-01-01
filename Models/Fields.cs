@@ -1,6 +1,82 @@
 using System.Reflection.Emit;
 using static Core;
 using static Extensions;
+
+public record Field(INT? Index, FieldAttribute.Collection Attributes, Type Type, Identifier Id, Field.Initialization? Value) : IDeclaration<Field>
+{
+    public record Initialization : IDeclaration<Initialization> {
+        public record LabelReference(DataLabel Label) : Initialization, IDeclaration<LabelReference> {
+            public override string ToString() => $"at {Label}";
+            public static Parser<LabelReference> AsParser => Map(
+                converter: label => new LabelReference(label),
+                RunAll(
+                    converter: parts => parts[1],
+                    Discard<DataLabel, string>(ConsumeWord(Core.Id, "at")),
+                    DataLabel.AsParser
+                )
+            );
+        }
+
+        public record FieldValue(FieldInit Value) : Initialization, IDeclaration<FieldValue> {
+            public override string ToString() => $"= {Value}";
+            public static Parser<FieldValue> AsParser => Map(
+                converter: val => new FieldValue(val),
+                RunAll(
+                    converter: parts => parts[1],
+                    Discard<FieldInit, string>(ConsumeWord(Core.Id, "=")),
+                    FieldInit.AsParser
+                )
+            );
+        }
+
+        public static Parser<Initialization> AsParser => TryRun(
+            Core.Id,
+            Cast<Initialization, LabelReference>(LabelReference.AsParser),
+            Cast<Initialization, FieldValue>(FieldValue.AsParser)
+        );
+    }
+
+    public override string ToString() => $"{(Index is null ? String.Empty : $"[{Index}]")} {Attributes} {Type} {Id} {Value?.ToString() ?? String.Empty }";
+
+    public static Parser<Field> AsParser => RunAll(
+        converter: parts => new Field(
+            parts[1].Index,
+            parts[2].Attributes,
+            parts[3].Type,
+            parts[4].Id,
+            parts[5].Value
+        ),
+        Discard<Field, string>(ConsumeWord(Core.Id, ".field")),
+        TryRun(
+            converter: idx => Construct<Field>(5, 0, idx),
+            RunAll(
+                parts => parts[1],
+                Discard<INT, char>(ConsumeChar(Core.Id, '[')),
+                INT.AsParser,
+                Discard<INT, char>(ConsumeChar(Core.Id, ']'))
+            ),
+            Empty<INT>()
+        ),
+        Map(
+            converter: attr => Construct<Field>(5, 1, attr),
+            FieldAttribute.Collection.AsParser
+        ),
+        Map(
+            converter: type => Construct<Field>(5, 2, type),
+            Type.AsParser
+        ),
+        Map(
+            converter: id => Construct<Field>(5, 3, id),
+            Identifier.AsParser
+        ),
+        TryRun(
+            converter: val => Construct<Field>(5, 4, val),
+            Initialization.AsParser,
+            Empty<Initialization>()
+        )
+    );
+}
+
 public record FieldInit : IDeclaration<FieldInit> {
     public record BoolItem(BOOL Value) : FieldInit, IDeclaration<BoolItem> {
         public override string ToString() => $"bool({Value})";
@@ -38,9 +114,7 @@ public record FieldInit : IDeclaration<FieldInit> {
     }
 
     public record IntegralItem : FieldInit, IDeclaration<IntegralItem> {
-        private Object _value;
-        private IntegralItem(Object value) => _value = value;
-        public record FloatItem(FLOAT Value, INT BitSize) : IntegralItem(Value), IDeclaration<FloatItem> {
+        public record FloatItem(FLOAT Value, INT BitSize) : IntegralItem, IDeclaration<FloatItem> {
             public override string ToString() => $"float{BitSize}({Value})";
             public static Parser<FloatItem> AsParser => RunAll(
                 converter: parts => new FloatItem(parts[3].Value, parts[1].BitSize), 
@@ -65,7 +139,7 @@ public record FieldInit : IDeclaration<FieldInit> {
             );
         }
 
-        public record IntegerItem(INT Value, INT BitSize, bool IsUnsigned) : IntegralItem(Value), IDeclaration<IntegerItem> {
+        public record IntegerItem(INT Value, INT BitSize, bool IsUnsigned) : IntegralItem, IDeclaration<IntegerItem> {
             public override string ToString() => $"{(IsUnsigned ? "unsigned" : String.Empty)} int{BitSize}({Value})";
             public static Parser<IntegerItem> AsParser => RunAll(
                 converter: parts => new IntegerItem(parts[4].Value, parts[2].BitSize, parts[0]?.IsUnsigned ?? false), 
@@ -87,16 +161,22 @@ public record FieldInit : IDeclaration<FieldInit> {
                 Discard<IntegerItem, char>(ConsumeChar(Id, ')'))
             );
         }
-     
-        public override string ToString() => _value switch {
-            FloatItem f => f.ToString(),
-            IntegerItem i => i.ToString(),
-            _ => throw new NotImplementedException()
-        };
+
         public static Parser<IntegralItem> AsParser => TryRun(
             Id,
             Cast<IntegralItem, FloatItem>(FloatItem.AsParser),
             Cast<IntegralItem, IntegerItem>(IntegerItem.AsParser)
+        );
+    }
+
+    public record BytearrayItem(ARRAY<BYTE> Bytes) : FieldInit, IDeclaration<BytearrayItem> {
+        public override string ToString() => $"bytearray({Bytes.ToString(' ')})";
+        public static Parser<BytearrayItem> AsParser => RunAll(
+            converter: parts => new BytearrayItem(parts[2]),
+            Discard<ARRAY<BYTE>, string>(ConsumeWord(Core.Id, "bytearray")),
+            Discard<ARRAY<BYTE>, char>(ConsumeChar(Core.Id, '(')),
+            ARRAY<BYTE>.MakeParser('\0','\0','\0'),
+            Discard<ARRAY<BYTE>, char>(ConsumeChar(Core.Id, ')'))
         );
     }
 
@@ -111,6 +191,7 @@ public record FieldInit : IDeclaration<FieldInit> {
     public static Parser<FieldInit> AsParser => TryRun(
         Id,
         Cast<FieldInit, BoolItem>(BoolItem.AsParser),
+        Cast<FieldInit, BytearrayItem>(BytearrayItem.AsParser),
         Cast<FieldInit, StringItem>(StringItem.AsParser),
         Cast<FieldInit, CharItem>(CharItem.AsParser),
         Cast<FieldInit, IntegralItem>(IntegralItem.AsParser),

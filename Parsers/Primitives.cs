@@ -139,13 +139,4 @@ public record ARRAY<T>(T[] Values) : IDeclaration<ARRAY<T>> where T : IDeclarati
     }
 }  
 
-public record Bytearray(ARRAY<BYTE> Bytes) : IDeclaration<Bytearray> {
-    public override string ToString() => $"bytearray({Bytes})";
-    public static Parser<Bytearray> AsParser => RunAll(
-        converter: parts => new Bytearray(parts[2]),
-        Discard<ARRAY<BYTE>, string>(ConsumeWord(Core.Id, "bytearray")),
-        Discard<ARRAY<BYTE>, char>(ConsumeChar(Core.Id, '(')),
-        ARRAY<BYTE>.MakeParser('\0','\0','\0'),
-        Discard<ARRAY<BYTE>, char>(ConsumeChar(Core.Id, ')'))
-    );
-}
+

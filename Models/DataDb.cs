@@ -25,8 +25,7 @@ public record Data(DataLabel? Label, DataBody Body) : IDeclaration<Data>
 
 public record DataItem : IDeclaration<DataItem>
 {   
-    private Object _value;
-    public record Collection(ARRAY<DataItem> Items) : IDeclaration<DataBody> {
+    public record Collection(ARRAY<DataItem> Items) : DataItem, IDeclaration<DataBody> {
         public override string ToString() => Items.ToString(',');
         public static Parser<DataBody> AsParser => Map(
             converter: items => new DataBody(items),
@@ -34,7 +33,7 @@ public record DataItem : IDeclaration<DataItem>
         );
     }
 
-    public record LabelPointer(Identifier Id) : IDeclaration<DataLabel> {
+    public record LabelPointer(Identifier Id) : DataItem, IDeclaration<DataLabel> {
         public override string ToString() => $"&({Id})";
         public static Parser<LabelPointer> AsParser => RunAll(
             converter: parts => new LabelPointer(parts[2]),
@@ -45,8 +44,18 @@ public record DataItem : IDeclaration<DataItem>
         );
     }
 
+    public record BytearrayItem(ARRAY<BYTE> Bytes) : DataItem, IDeclaration<BytearrayItem> {
+        public override string ToString() => $"bytearray({Bytes.ToString(' ')})";
+        public static Parser<BytearrayItem> AsParser => RunAll(
+            converter: parts => new BytearrayItem(parts[2]),
+            Discard<ARRAY<BYTE>, string>(ConsumeWord(Core.Id, "bytearray")),
+            Discard<ARRAY<BYTE>, char>(ConsumeChar(Core.Id, '(')),
+            ARRAY<BYTE>.MakeParser('\0','\0','\0'),
+            Discard<ARRAY<BYTE>, char>(ConsumeChar(Core.Id, ')'))
+        );
+    }
 
-    public record StringItem(QSTRING String) : IDeclaration<StringItem> {
+    public record StringItem(QSTRING String) : DataItem, IDeclaration<StringItem> {
         public override string ToString() => $"char*({String})";
         public static Parser<StringItem> AsParser => RunAll(
             converter: parts => new StringItem(parts[2]),
@@ -57,7 +66,7 @@ public record DataItem : IDeclaration<DataItem>
         );
     }
 
-    public record IntegralItem(string Typename, long BitSize, INT? ReplicationCount) : IDeclaration<IntegralItem> {
+    public record IntegralItem(string Typename, long BitSize, INT? ReplicationCount) : DataItem, IDeclaration<IntegralItem> {
         private Object Value;
 
         private static Parser<IntegralItem> TryParseMap(string typename) => 
@@ -108,12 +117,11 @@ public record DataItem : IDeclaration<DataItem>
         );
     }
     
-    public override string ToString() => _value.ToString();
     public static Parser<DataItem> AsParser => TryRun(
-        converter: item => new DataItem { _value = item },
-        Cast<Object, IntegralItem>(IntegralItem.AsParser),
-        Cast<Object, StringItem>(StringItem.AsParser),
-        Cast<Object, Bytearray>(Bytearray.AsParser),
-        Cast<Object, LabelPointer>(LabelPointer.AsParser)
+        converter: Id,
+        Cast<DataItem, IntegralItem>(IntegralItem.AsParser),
+        Cast<DataItem, StringItem>(StringItem.AsParser),
+        Cast<DataItem, BytearrayItem>(BytearrayItem.AsParser),
+        Cast<DataItem, LabelPointer>(LabelPointer.AsParser)
     );
 }

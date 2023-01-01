@@ -6,6 +6,15 @@ using System.Text;
 public static class Core {
     public static T Id<T>(T value) => value;
     public delegate bool Parser<T>(string source, ref int index, [NotNullWhen(true)] out T result);
+    
+    public static Parser<T> Whitespace<T>() => (string code, ref int index, out T result) => {
+        result = default;
+        while(index < code.Length && Char.IsWhiteSpace(code[index])) {
+            index++;
+        }
+        return true;
+    };
+
     public static Parser<T> Empty<T>() => (string code, ref int index, out T result) => {
         result = default;
         return true;
