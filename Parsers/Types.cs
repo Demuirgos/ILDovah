@@ -124,7 +124,7 @@ public record Type : IDeclaration<Type> {
     public Type.TypeSuffix[] Suffixes {get; set;}
     public record TypePrefix : IDeclaration<TypePrefix> {
         public record TypePrimitive(String TypeName) : TypePrefix, IDeclaration<TypePrimitive> {
-            private static String[] _primitives = new String[] { "bool","char","class","float32","float64","int8","int16","int32","int64","object","string","typedref","valuetype","void", "unsigned","native" };
+            private static String[] _primitives = new String[] { "bool","char","float32","float64","int8","int16","int32","int64","object","string","typedref","valuetype","void", "unsigned","native" };
 
             public override string ToString() => TypeName;
             public static Parser<TypePrimitive> AsParser => TryRun(
@@ -203,10 +203,23 @@ public record Type : IDeclaration<Type> {
                 Discard<MethodDefinition, char>(ConsumeChar(Id, ')'))
             );
         }
+        
+        public record ClassTypeReference(TypeReference Reference) : TypePrefix, IDeclaration<ClassTypeReference> {
+            public override string ToString() => $"class {Reference}";
+            public static Parser<ClassTypeReference> AsParser => RunAll(
+                converter: (vals) => new ClassTypeReference(vals[1].Reference),
+                Discard<ClassTypeReference, string>(ConsumeWord(Id, "class")),
+                Map(
+                    converter: (vals) => new ClassTypeReference(vals),
+                    Lazy(() => TypeReference.AsParser)
+                )
+            );
+        }
         public static Parser<TypePrefix> AsParser => TryRun(
             converter: Id,
             Cast<TypePrefix, TypePrimitive>(TypePrimitive.AsParser),
             Cast<TypePrefix, GenericTypeParameter>(GenericTypeParameter.AsParser),
+            Lazy(() => Cast<TypePrefix, ClassTypeReference>(ClassTypeReference.AsParser)),
             Lazy(() => Cast<TypePrefix, MethodDefinition>(MethodDefinition.AsParser))
         );
     }

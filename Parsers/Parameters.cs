@@ -20,13 +20,13 @@ public record Parameter() : IDeclaration<Parameter> {
         public override string ToString() {
             StringBuilder sb = new();
             if(Attributes is not null) {
-                sb.Append($"{Attributes} ");
+                sb.Append($"{Attributes}");
             }
             if(TypeDecl is not null) {
-                sb.Append(TypeDecl);
+                sb.Append($"{TypeDecl}");
             }
             if(MarshalledType is not null) {
-                sb.Append($" marshal ({MarshalledType})");
+                sb.Append($"marshal({MarshalledType}) ");
             }
             if(Id is not null) {
                 sb.Append($" {Id} ");

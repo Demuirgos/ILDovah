@@ -1,8 +1,8 @@
 ﻿using static Core;
 
-var (source, index) = (".property int32 Count() { .get instance int32 MyCount::get_Count() .set instance void MyCount::set_Count(int32) .other instance void MyCount::reset_Count() }", 0);
+var (source, index) = (".event TimeUpEventHandler startStopEvent {.addon instance void Counter::add_TimeUp() .removeon instance void Counter::remove_TimeUp(class TimeUpEventHandler 'handler') .fire instance void Counter::fire_TimeUpEvent() }", 0);
 
-TestConstruct<Property>(ref index, source);
+TestConstruct<Event>(ref index, source);
 
 void TestConstruct<T>(ref int index, string source)
     where T : IDeclaration<T>

@@ -78,7 +78,10 @@ public record BOOL(bool Value) : IDeclaration<BOOL> {
 }
 
 public record QSTRING(String Value, bool IsSingleyQuoted) : IDeclaration<QSTRING> {
-    public override string ToString() => $"\"{Value}\"";
+    public override string ToString() {
+        char quotationChar = IsSingleyQuoted ? '\'' : '"';
+        return $"{quotationChar}{Value}{quotationChar}";
+    } 
     public static Parser<QSTRING> AsParser => TryRun(
         converter: Id,
         new[] {'"', '\''}.Select(quotationChar=>  
