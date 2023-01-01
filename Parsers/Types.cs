@@ -2,15 +2,16 @@ using System.Text;
 using static Core;
 using GenArgs = Type.Collection;
 
-public record TypeSpecification() : IDeclaration<TypeSpecification> {
+public record TypeSpecification : IDeclaration<TypeSpecification> {
     private Object _value;
     public record NamedModuleSpecification(DottedName Name, bool IsModule) : IDeclaration<NamedModuleSpecification> {
-        public override string ToString() => $"{(IsModule ? ".module " : "")} {Name}";
+        public override string ToString() => $"{(IsModule ? ".module " : String.Empty)}{Name} ";
         public static Parser<NamedModuleSpecification> AsParser => RunAll(
             converter: (vals) => new NamedModuleSpecification(vals[1].Name, vals[0].IsModule),
             TryRun(
                 converter: (module) => new NamedModuleSpecification(null, module is not null),
-                Discard<NamedModuleSpecification, string>(ConsumeWord(Id, ".module"))
+                Discard<NamedModuleSpecification, string>(ConsumeWord(Id, ".module")),
+                Empty<NamedModuleSpecification>()
             ),
             Map(
                 converter: (name) => new NamedModuleSpecification(name, false),
@@ -37,10 +38,10 @@ public record TypeSpecification() : IDeclaration<TypeSpecification> {
         Map(
             converter : (type) => new TypeSpecification { _value = type },
             RunAll(
-                converter : (vals) => new TypeSpecification { _value = vals[1] },
-                Discard<NamedModuleSpecification, string>(ConsumeWord(Id, "[")),
+                converter : (vals) => vals[1],
+                Discard<NamedModuleSpecification, char>(ConsumeChar(Id, '[')),
                 NamedModuleSpecification.AsParser,
-                Discard<NamedModuleSpecification, string>(ConsumeWord(Id, "]"))
+                Discard<NamedModuleSpecification, char>(ConsumeChar(Id, ']'))
             )
         )
     );

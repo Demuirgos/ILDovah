@@ -5,7 +5,7 @@ public record TypeReference(ResolutionScope Scope, ARRAY<DottedName> Names) : ID
     public override string ToString() {
         StringBuilder sb = new();
         if(Scope is not null) {
-            sb.Append($"{Scope} ");
+            sb.Append($"{Scope.ToString(true)} ");
         }
         sb.Append(Names.ToString());
         return sb.ToString();
@@ -42,9 +42,9 @@ public record ResolutionScope : IDeclaration<ResolutionScope> {
         );
     }
 
-    public override string ToString() {
+    public string ToString(bool wrap = true) {
         StringBuilder sb = new();
-        sb.Append('[');
+        if(wrap) sb.Append('[');
         switch(this) {
             case Module m:
                 sb.Append(m);
@@ -53,25 +53,28 @@ public record ResolutionScope : IDeclaration<ResolutionScope> {
                 sb.Append(a);
                 break;
         }
-        sb.Append(']');
+        if(wrap) sb.Append(']');
         return sb.ToString();
     }
 
     public static Parser<ResolutionScope> AsParser => RunAll(
         converter: (vals) => vals[1],
-        Cast<ResolutionScope, char>(ConsumeChar(Id, '[')),
+        Discard<ResolutionScope, char>(ConsumeChar(Id, '[')),
         TryRun(
             converter: (vals) => vals,
             Cast<ResolutionScope, Module>(Module.AsParser),
             Cast<ResolutionScope, AssemblyRef>(AssemblyRef.AsParser)
         ),
-        Cast<ResolutionScope, char>(ConsumeChar(Id, ']'))
+        Discard<ResolutionScope, char>(ConsumeChar(Id, ']'))
     );
 }
 
-public record AssemblyRefName(DottedName Name) : DottedName(Name), IDeclaration<AssemblyRefName> {
+public record AssemblyRefName(DottedName Name) : IDeclaration<AssemblyRefName> {
     public override string ToString() => Name.ToString();
-    public static Parser<AssemblyRefName> AsParser => Cast<AssemblyRefName, DottedName>(DottedName.AsParser);
+    public static Parser<AssemblyRefName> AsParser => Map(
+        converter: (name) => new AssemblyRefName(name),
+        DottedName.AsParser
+    );
 }
 
 public record FileName(String Name) : IDeclaration<FileName> {

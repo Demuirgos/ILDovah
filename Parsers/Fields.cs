@@ -36,7 +36,7 @@ public record Field(INT? Index, FieldAttribute.Collection Attributes, Type Type,
         );
     }
 
-    public override string ToString() => $"{(Index is null ? String.Empty : $"[{Index}] ")}{Attributes} {Type} {Id} {Value?.ToString() ?? String.Empty }";
+    public override string ToString() => $".field {(Index is null ? String.Empty : $"[{Index}] ")}{Attributes} {Type} {Id} {Value?.ToString() ?? String.Empty }";
 
     public static Parser<Field> AsParser => RunAll(
         converter: parts => new Field(

@@ -90,7 +90,7 @@ public record ImplAttribute(String Name, ImplAttribute.ModifierBehaviour Type) :
             ARRAY<ImplAttribute>.MakeParser('\0', '\0', '\0')
         );
     }
-    private static String[] AttributeWords = { "forwardref", "internalcall", "managed", "noinlining", "nooptimization", "runtime", "synchronized", "unmanaged" };
+    private static String[] AttributeWords = { "cil", "native", "forwardref", "internalcall", "managed", "noinlining", "nooptimization", "runtime", "synchronized", "unmanaged" };
     public override string ToString() => Name;
     public static Parser<ImplAttribute> AsParser => TryRun(
         converter: (vals) => new ImplAttribute(vals, BehaviourOf(vals)),
@@ -232,7 +232,7 @@ public record ClassAttribute(String Attribute) : IDeclaration<ClassAttribute> {
     }
 
     public override string ToString() => Attribute;
-    private static String[] AttributeWords = {"public", "private", "value", "enum", "interface", "sealed", "abstract", "auto", "sequential", "explicit", "ansi", "unicode", "autochar", "import", "serializable", "nested", "beforefieldinit", "specialname", "rtspecialname"};
+    private static String[] AttributeWords = {"public", "private", "value", "enum", "interface", "sealed", "abstract", "sequential", "explicit", "ansi", "unicode", "autochar", "import", "serializable", "nested", "beforefieldinit", "specialname", "rtspecialname", "auto"};
     private static String[] NestedWords = {"public", "private", "family", "assembly", "famandassem", "famorassem"};
     public static Parser<ClassAttribute> AsParser => TryRun(
         converter: (attr) => new ClassAttribute(attr),

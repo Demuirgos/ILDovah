@@ -3,6 +3,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 
+public class NotImplementedAttribute : System.Attribute { }
 public static class Extensions {
     public static T Construct<T>(int argsCount, int argIndex, Object? argument) {
         var constructor = typeof(T).GetConstructors()

@@ -1,8 +1,14 @@
 ﻿using static Core;
 
-var (source, index) = (".event TimeUpEventHandler startStopEvent {.addon instance void Counter::add_TimeUp() .removeon instance void Counter::remove_TimeUp(class TimeUpEventHandler 'handler') .fire instance void Counter::fire_TimeUpEvent() }", 0);
+// Note(Ayman) : Fix whitespace in ToString methods
+// Note(Ayman) : Add Extra checks to Nested Self referential Parsers to avoid 
+//               infinite loops or stack overflows 
 
-TestConstruct<Event>(ref index, source);
+var (source, index) = (".class C implements I { .method virtual public void M2() { } .override I::M with instance void C::M2() }", 0);
+
+
+
+TestConstruct<Class>(ref index, source);
 
 void TestConstruct<T>(ref int index, string source)
     where T : IDeclaration<T>
