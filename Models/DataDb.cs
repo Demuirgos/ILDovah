@@ -45,16 +45,6 @@ public record DataItem : IDeclaration<DataItem>
         );
     }
 
-    public record BytearrayItem(ARRAY<BYTE> Bytes) : IDeclaration<BytearrayItem> {
-        public override string ToString() => $"bytearray({Bytes})";
-        public static Parser<BytearrayItem> AsParser => RunAll(
-            converter: parts => new BytearrayItem(parts[2]),
-            Discard<ARRAY<BYTE>, string>(ConsumeWord(Core.Id, "bytearray")),
-            Discard<ARRAY<BYTE>, char>(ConsumeChar(Core.Id, '(')),
-            ARRAY<BYTE>.MakeParser('\0','\0','\0'),
-            Discard<ARRAY<BYTE>, char>(ConsumeChar(Core.Id, ')'))
-        );
-    }
 
     public record StringItem(QSTRING String) : IDeclaration<StringItem> {
         public override string ToString() => $"char*({String})";
@@ -123,7 +113,7 @@ public record DataItem : IDeclaration<DataItem>
         converter: item => new DataItem { _value = item },
         Cast<Object, IntegralItem>(IntegralItem.AsParser),
         Cast<Object, StringItem>(StringItem.AsParser),
-        Cast<Object, BytearrayItem>(BytearrayItem.AsParser),
+        Cast<Object, Bytearray>(Bytearray.AsParser),
         Cast<Object, LabelPointer>(LabelPointer.AsParser)
     );
 }

@@ -1,8 +1,8 @@
 ﻿using static Core;
 
-var (source, index) = (".permissionsetdeny=(deadbeef)", 0);
+var (source, index) = ("nullref", 0);
 
-if(IDeclaration<SecurityBlock>.Parse(ref index, source, out SecurityBlock resultVal)) {
+if(IDeclaration<FieldInit>.Parse(ref index, source, out FieldInit resultVal)) {
     Console.WriteLine(resultVal);
 } else {
     Console.WriteLine("Failed to parse");

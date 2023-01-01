@@ -7,6 +7,8 @@ public record INT(Int64 Value, int BitsSize) : IDeclaration<INT> {
         },
         1, Int32.MaxValue, ConsumeIf(Id, Char.IsDigit)
     );
+
+    public static explicit operator INT(FLOAT value) => new INT((int)value.Value, value.BitSize);
 }
 
 public record FLOAT(double Value, int BitSize, bool IsCast) : IDeclaration<FLOAT> {
@@ -33,6 +35,8 @@ public record FLOAT(double Value, int BitSize, bool IsCast) : IDeclaration<FLOAT
         CastParser,
         StraightParser
     );
+
+    public static explicit operator FLOAT(INT value) => new FLOAT((double)value.Value, value.BitsSize, false);
 }
 
 public record BYTE(byte Value) : IDeclaration<BYTE> {
@@ -135,4 +139,13 @@ public record ARRAY<T>(T[] Values) : IDeclaration<ARRAY<T>> where T : IDeclarati
     }
 }  
 
-
+public record Bytearray(ARRAY<BYTE> Bytes) : IDeclaration<Bytearray> {
+    public override string ToString() => $"bytearray({Bytes})";
+    public static Parser<Bytearray> AsParser => RunAll(
+        converter: parts => new Bytearray(parts[2]),
+        Discard<ARRAY<BYTE>, string>(ConsumeWord(Core.Id, "bytearray")),
+        Discard<ARRAY<BYTE>, char>(ConsumeChar(Core.Id, '(')),
+        ARRAY<BYTE>.MakeParser('\0','\0','\0'),
+        Discard<ARRAY<BYTE>, char>(ConsumeChar(Core.Id, ')'))
+    );
+}
