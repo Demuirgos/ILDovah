@@ -1,13 +1,9 @@
-using System.Runtime.CompilerServices;
 using System.Text;
 using static Core;
 using GenArgs = Type.Collection;
 
 public record TypeSpecification() : IDeclaration<TypeSpecification> {
     private Object _value;
-    /*
-    TypeSpec ::= ‘[’ [ .module ] DottedName ‘]’
-*/
     public record NamedModuleSpecification(DottedName Name, bool IsModule) : IDeclaration<NamedModuleSpecification> {
         public override string ToString() => $"{(IsModule ? ".module " : "")} {Name}";
         public static Parser<NamedModuleSpecification> AsParser => RunAll(
@@ -26,7 +22,7 @@ public record TypeSpecification() : IDeclaration<TypeSpecification> {
         Type t => t.ToString(),
         TypeReference t => t.ToString(),
         NamedModuleSpecification t => $"[{t}]",
-        _ => throw new NotImplementedException()
+        _ => throw new System.Diagnostics.UnreachableException()
     };
     public static Parser<TypeSpecification> AsParser => TryRun(
         converter : Id,

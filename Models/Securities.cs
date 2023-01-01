@@ -1,5 +1,4 @@
 using static Core;
-using static Extensions;
 
 public record SecurityBlock :IDeclaration<SecurityBlock> {
     public record PermissionSet(SecurityAction Action, ARRAY<BYTE> Bytes) : SecurityBlock, IDeclaration<PermissionSet> {
@@ -46,7 +45,7 @@ public record SecurityBlock :IDeclaration<SecurityBlock> {
     public override string ToString() => this switch {
         PermissionSet permissionSet => permissionSet.ToString(),
         Permission permission => permission.ToString(),
-        _ => throw new NotImplementedException()
+        _ => throw new System.Diagnostics.UnreachableException()
     };
 
     public static Parser<SecurityBlock> AsParser => TryRun(

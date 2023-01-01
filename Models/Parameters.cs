@@ -64,7 +64,7 @@ public record Parameter() : IDeclaration<Parameter> {
     public override string ToString() => _value switch {
         DefaultParameter param => param.ToString(),
         VarargParameter param => param.ToString(),
-        _ => throw new Exception("Invalid parameter type")
+        _ => throw new System.Diagnostics.UnreachableException()
     };
     public static Parser<Parameter> AsParser => TryRun(
         converter: (param) => param,

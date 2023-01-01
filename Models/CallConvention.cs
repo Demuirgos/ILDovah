@@ -37,7 +37,7 @@ public record CallConvention : IDeclaration<CallConvention> {
     public override string ToString() => _value switch {
         CallConventionPrimitive primitive => primitive.ToString(),
         CallKind kind => kind.ToString(),
-        _ => throw new NotImplementedException()
+        _ => throw new System.Diagnostics.UnreachableException()
     };
     public static Parser<CallConvention> AsParser => TryRun(
         converter: Id,

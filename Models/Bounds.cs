@@ -1,4 +1,3 @@
-using System.Text;
 using static Core;
 public record Bound(INT Lower, INT Upper, Bound.BoundType Type) : IDeclaration<Bound> {
     public record Collection(ARRAY<Bound> Bounds) : IDeclaration<Collection> {
@@ -17,7 +16,7 @@ public record Bound(INT Lower, INT Upper, Bound.BoundType Type) : IDeclaration<B
         BoundType.BothBounds => $"{Lower}...{Upper}",
         BoundType.UpperBound => $"{Upper}",
         BoundType.LowerBound => $"{Lower}...",
-        _ => throw new NotImplementedException()
+        _ => throw new System.Diagnostics.UnreachableException()
     };
 
     public static Parser<Bound> AsParser => RunAll(

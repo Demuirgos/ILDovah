@@ -70,7 +70,7 @@ public record ImplAttribute(String Name, ImplAttribute.ModifierBehaviour Type) :
         public override string ToString() => Attributes.ToString(' ');
         public static Parser<ImplAttribute.Collection> AsParser => Map(
             converter: (attrs) => new ImplAttribute.Collection(attrs),
-            ARRAY<ImplAttribute>.AsParser
+            ARRAY<ImplAttribute>.MakeParser('\0', '\0', '\0')
         );
     }
     private static String[] AttributeWords = { "forwardref", "internalcall", "managed", "noinlining", "nooptimization", "runtime", "synchronized", "unmanaged" };
@@ -93,7 +93,7 @@ public record MethodAttribute(MethodAttribute.ModifierBehaviour Type) : IDeclara
     public override string ToString() => Value switch {
         MethodSimpleAttribute simple => simple.ToString(),
         MethodPInvokeAttribute pinvoke => pinvoke.ToString(),
-        _ => throw new Exception("Unknown method attribute")
+        _ => throw new System.Diagnostics.UnreachableException()
     };
 
     private static String[] AttributeWords = { "abstract", "assembly", "compilercontrolled", "famandassem", "family", "famorassem", "final", "hidebysig", "newslot", "private", "public", "rtspecialname", "specialname", "static", "virtual", "strict"};
@@ -156,7 +156,7 @@ public record MethodAttribute(MethodAttribute.ModifierBehaviour Type) : IDeclara
         "newslot" or "abstract" => ModifierBehaviour.Override,
         "rtspecialname" or "specialname" => ModifierBehaviour.Handling,
         "pinvokeimpl" => ModifierBehaviour.Interop,
-        _ => throw new Exception("Unknown modifier")
+        _ => throw new System.Diagnostics.UnreachableException()
     };
 
     public static Parser<MethodAttribute> AsParser => TryRun(

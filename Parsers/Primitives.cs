@@ -100,7 +100,9 @@ public record ARRAY<T>(T[] Values) : IDeclaration<ARRAY<T>> where T : IDeclarati
     public virtual (char start, char separator, char end) Delimiters {get; set;} = ('[', ',', ']');
     public override string ToString() => ToString(Delimiters.separator);
     public new string ToString(char? overrideDelim = null) => $"{Delimiters.start}{string.Join(overrideDelim ?? Delimiters.separator, Values.Select(v => v.ToString()))}{Delimiters.end}";
-    public static Parser<ARRAY<T>> AsParser => throw new NotImplementedException();
+    
+    [Obsolete("Use MakeParser instead", true)]
+    public static Parser<ARRAY<T>> AsParser => throw new TypeLoadException("Use MakeParser instead");
     public static Parser<ARRAY<T>> MakeParser(char start, char separator, char end) => RunAll(
         converter: (vals) => new ARRAY<T>(vals[1]) {
             Delimiters = (start, separator, end)
@@ -130,8 +132,9 @@ public record ARRAY<T>(T[] Values) : IDeclaration<ARRAY<T>> where T : IDeclarati
         end != '\0' ? ConsumeChar(_ => Array.Empty<T>(), end) : Empty<T[]>()
     );
 
+    [Obsolete("Use Parse with SpecialCharacters argument instead", true)]
     public static bool Parse(ref int index, string source, out ARRAY<T> arrayVal)
-        => throw new NotImplementedException();
+        => throw new TypeLoadException("Use Parse with SpecialCharacters argument instead");
     
     public static bool Parse(ref int index, string source, out ARRAY<T> arrayVal, (char start, char separator, char end) specialCharacters) {
         if(MakeParser(specialCharacters.start, specialCharacters.separator, specialCharacters.end)(source, ref index, out arrayVal)) {

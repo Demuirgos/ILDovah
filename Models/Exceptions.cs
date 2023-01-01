@@ -1,11 +1,6 @@
 using System.Linq.Expressions;
 using static Core;
 using static Extensions;
-/*
-SEHBlock ::=
- TryBlock SEHClause [ SEHClause* ]
-
-*/
 
 public record StructuralExceptionBlock(TryBlock TryBlock, WireBlock.Collection Clauses) : IDeclaration<StructuralExceptionBlock> {
     public override string ToString() => $"{TryBlock} {Clauses}";

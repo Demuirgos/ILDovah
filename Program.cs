@@ -4,10 +4,14 @@
 
 var (source, index) = (".field public static int32 count = int32(23)", 0);
 
-if(IDeclaration<Field>.Parse(ref index, source, out Field resultVal)) {
-    Console.WriteLine(resultVal);
-} else {
-    Console.WriteLine("Failed to parse");
-}
+TestConstruct<Field>(ref index, source);
 
-record PersonTest(string Name, int Age);
+void TestConstruct<T>(ref int index, string source)
+    where T : IDeclaration<T>
+    {
+        if(IDeclaration<T>.Parse(ref index, source, out T resultVal)) {
+            Console.WriteLine(resultVal);
+        } else {
+            Console.WriteLine("Failed to parse");
+        }
+    }
