@@ -96,7 +96,7 @@ public record NativeType(NativeType Type, bool IsArray, INT Length, INT Supplied
         Map(primType => new[] { primType as NativeType }, NativeTypePrimitive.AsParser),
         RunMany(
             converter: Id,
-            0, Int32.MaxValue,
+            0, Int32.MaxValue, true,
             RunAll(
                 converter: (vals) => new NativeType(null, true, vals[1], vals[2]),
                 Discard<INT, char>(ConsumeChar(Id, '[')),
@@ -294,7 +294,7 @@ public record Type : IDeclaration<Type> {
             },
             RunMany(
                 converter: Id,
-                0, Int32.MaxValue,
+                0, Int32.MaxValue, true,
                 TypeSuffix.AsParser
             )
         )

@@ -6,14 +6,23 @@ using System.Text;
 public static class Core {
     public static T Id<T>(T value) => value;
     public delegate bool Parser<T>(string source, ref int index, [NotNullWhen(true)] out T result);
-    
-    public static Parser<T> Whitespace<T>() => (string code, ref int index, out T result) => {
-        result = default;
-        while(index < code.Length && Char.IsWhiteSpace(code[index])) {
-            index++;
-        }
-        return true;
-    };
+
+    public static Parser<T> Trim<T>(Parser<T> parser) {
+        Parser<T> Whitespace<T>() => (string code, ref int index, out T result) => {
+            result = default;
+            while(index < code.Length && Char.IsWhiteSpace(code[index])) {
+                index++;
+            }
+            return true;
+        };
+
+        return RunAll(
+            ps => ps[1], false,
+            Whitespace<T>(),
+            parser,
+            Whitespace<T>()
+        );
+    } 
 
     public static Parser<T> Empty<T>() => (string code, ref int index, out T result) => {
         result = default;
@@ -112,13 +121,14 @@ public static class Core {
         };
     }
 
-    public static Parser<U> RunMany<T, U>(Func<T[], U> converter, int min, int max, Parser<T> parser) {
+    public static Parser<U> RunMany<T, U>(Func<T[], U> converter, int min, int max, bool skipWs, Parser<T> parser) {
         return (string code, ref int index, out U result) => {
             int oldIndex = index;
             var resultAcc = new List<T>();
             for (int i = 0; i < max; i++)
             {
-                if(!parser(code, ref index, out T single) || index > code.Length) {
+                var parserToUse = skipWs ? Trim(parser) : parser;
+                if(!parserToUse(code, ref index, out T single) || index > code.Length) {
                     if(i < min) {
                         index = oldIndex;
                         result = default;
@@ -132,13 +142,16 @@ public static class Core {
             return true;
         };
     }
-    public static Parser<U> RunAll<T, U>(Func<T[], U> converter, params Parser<T>[] parsers) {
+    public static Parser<U> RunAll<T, U>(Func<T[], U> converter, params Parser<T>[] parsers)
+        => RunAll(converter, true, parsers);
+    public static Parser<U> RunAll<T, U>(Func<T[], U> converter, bool skipWhitespace, params Parser<T>[] parsers) {
         return (string code, ref int index, out U result) => {
             int oldIndex = index;
             var resultAcc = new List<T>();
             foreach (Parser<T> parser in parsers)
             {
-                if(!parser(code, ref index, out T single) || 
+                var parserToUse = skipWhitespace ? Trim(parser) : parser;
+                if(!parserToUse(code, ref index, out T single) || 
                     index > code.Length) {
                     index = oldIndex;
                     result = default;
@@ -154,7 +167,7 @@ public static class Core {
     public static Parser<(T, U)> If<T, U>(Parser<T> condP, Parser<U> thenP, Parser<U> elseP) {
         return (string code, ref int index, out (T, U) result) => {
             int oldIndex = index;
-            if(condP(code, ref index, out T cond)) {
+            if(Trim(condP)(code, ref index, out T cond)) {
                 if(thenP(code, ref index, out U then)) {
                     result = (cond, then);
                     return true;

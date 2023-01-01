@@ -36,7 +36,7 @@ public record Field(INT? Index, FieldAttribute.Collection Attributes, Type Type,
         );
     }
 
-    public override string ToString() => $"{(Index is null ? String.Empty : $"[{Index}]")} {Attributes} {Type} {Id} {Value?.ToString() ?? String.Empty }";
+    public override string ToString() => $"{(Index is null ? String.Empty : $"[{Index}] ")}{Attributes} {Type} {Id} {Value?.ToString() ?? String.Empty }";
 
     public static Parser<Field> AsParser => RunAll(
         converter: parts => new Field(
@@ -117,11 +117,15 @@ public record FieldInit : IDeclaration<FieldInit> {
         public record FloatItem(FLOAT Value, INT BitSize) : IntegralItem, IDeclaration<FloatItem> {
             public override string ToString() => $"float{BitSize}({Value})";
             public static Parser<FloatItem> AsParser => RunAll(
-                converter: parts => new FloatItem(parts[3].Value, parts[1].BitSize), 
-                Discard<FloatItem, string>(ConsumeWord(Id, "float")),
-                Map(
-                    converter: num => Construct<FloatItem>(2, 1, num),
-                    INT.AsParser
+                converter: parts => new FloatItem(parts[2].Value, parts[0].BitSize), 
+                RunAll(
+                    converter: parts => parts[1],
+                    skipWhitespace: false,
+                    Discard<FloatItem, string>(ConsumeWord(Id, "float")),
+                    Map(
+                        converter: num => Construct<FloatItem>(2, 1, num),
+                        INT.AsParser
+                    )
                 ),
                 Discard<FloatItem, char>(ConsumeChar(Id, '(')),
                 Map(
@@ -142,16 +146,20 @@ public record FieldInit : IDeclaration<FieldInit> {
         public record IntegerItem(INT Value, INT BitSize, bool IsUnsigned) : IntegralItem, IDeclaration<IntegerItem> {
             public override string ToString() => $"{(IsUnsigned ? "unsigned" : String.Empty)} int{BitSize}({Value})";
             public static Parser<IntegerItem> AsParser => RunAll(
-                converter: parts => new IntegerItem(parts[4].Value, parts[2].BitSize, parts[0]?.IsUnsigned ?? false), 
+                converter: parts => new IntegerItem(parts[3].Value, parts[1].BitSize, parts[0]?.IsUnsigned ?? false), 
                 TryRun(
                     converter: word => Construct<IntegerItem>(3, 2, word is not null),
                     ConsumeWord(Id, "unsigned"),
                     Empty<string>()
                 ),
-                Discard<IntegerItem, string>(ConsumeWord(Id, "int")),
-                Map(
-                    converter: num => Construct<IntegerItem>(3, 1, num),
-                    INT.AsParser
+                RunAll(
+                    converter: parts => parts[1],
+                    skipWhitespace: false,
+                    Discard<IntegerItem, string>(ConsumeWord(Id, "int")),
+                    Map(
+                        converter: num => Construct<IntegerItem>(3, 1, num),
+                        INT.AsParser
+                    )
                 ),
                 Discard<IntegerItem, char>(ConsumeChar(Id, '(')),
                 Map(

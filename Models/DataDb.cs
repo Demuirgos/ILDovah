@@ -87,17 +87,21 @@ public record DataItem : IDeclaration<DataItem>
             IntegralTypes.Select(typeword => 
                 RunAll(
                     converter: parts => {
-                        var result = new IntegralItem(parts[0].Typename, parts[1].BitSize, parts[5]?.ReplicationCount);
+                        var result = new IntegralItem(parts[0].Typename, parts[0].BitSize, parts[4]?.ReplicationCount);
                         result.Value = parts[3].Value;
                         return result; 
                     },
-                    Map(
-                        converter: typename => Construct<IntegralItem>(3, 0, typename),
-                        ConsumeWord(Core.Id, typeword)
-                    ),
-                    Map(
-                        converter: bitsize => Construct<IntegralItem>(3, 1, bitsize.Value),
-                        INT.AsParser
+                    RunAll(
+                        converter: items => new IntegralItem(items[0].Typename, items[0].BitSize, null),
+                        skipWhitespace: false,
+                        Map(
+                            converter: typename => Construct<IntegralItem>(3, 0, typename),
+                            ConsumeWord(Core.Id, typeword)
+                        ),
+                        Map(
+                            converter: bitsize => Construct<IntegralItem>(3, 1, bitsize.Value),
+                            INT.AsParser
+                        )
                     ),
                     Discard<IntegralItem, char>(ConsumeChar(Core.Id, '(')),
                     IntegralItem.TryParseMap(typeword),

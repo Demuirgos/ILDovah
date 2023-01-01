@@ -5,7 +5,7 @@ public record INT(Int64 Value, int BitsSize) : IDeclaration<INT> {
         converter: chars => {
             return new INT(Int64.Parse(new string(chars.ToArray())), chars.Length);
         },
-        1, Int32.MaxValue, ConsumeIf(Id, Char.IsDigit)
+        1, Int32.MaxValue, false, ConsumeIf(Id, Char.IsDigit)
     );
 
     public static explicit operator INT(FLOAT value) => new INT((int)value.Value, value.BitSize);
@@ -50,7 +50,8 @@ public record BYTE(byte Value) : IDeclaration<BYTE> {
     private static char[] hexChars = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F', 'a', 'b', 'c', 'd', 'e', 'f' };
     public static Parser<BYTE> AsParser => RunMany(
         converter: (bytes) => new BYTE((byte)(bytes[0] * 16 + bytes[1])),
-        2, 2, ConsumeIf(converter: charVal, x => hexChars.Contains(x))
+        2, 2, false,
+        ConsumeIf(converter: charVal, x => hexChars.Contains(x))
     );
 
 }
@@ -61,7 +62,8 @@ public record ID(String Value) : IDeclaration<ID> {
         converter: (vals) => new ID(vals[0]),
         RunMany(
             converter:chars => new string(chars.ToArray()),
-            1, Int32.MaxValue, ConsumeIf(Id, c => Char.IsLetterOrDigit(c) || c == '_')
+            1, Int32.MaxValue, false,
+            ConsumeIf(Id, c => Char.IsLetterOrDigit(c) || c == '_')
         )
     );
 }
@@ -85,7 +87,8 @@ public record QSTRING(String Value, bool IsSingleyQuoted) : IDeclaration<QSTRING
                 ConsumeChar((_) => String.Empty, quotationChar),
                 RunMany (
                     converter: chars => new string(chars.ToArray()),
-                    1, Int32.MaxValue, ConsumeIf(Id, c => c != quotationChar)
+                    1, Int32.MaxValue, false,
+                    ConsumeIf(Id, c => c != quotationChar)
                 ),
                 ConsumeChar((_) => String.Empty, quotationChar)
                 )
@@ -112,7 +115,7 @@ public record ARRAY<T>(T[] Values) : IDeclaration<ARRAY<T>> where T : IDeclarati
                 condP: Map(val => new T[] { val }, IDeclaration<T>.AsParser),
                 thenP: RunMany(
                     converter: (vals) => vals,
-                    0, Int32.MaxValue,
+                    0, Int32.MaxValue, false,
                     RunAll(
                         converter: (vals) => vals[1],
                         separator == '\0' 
