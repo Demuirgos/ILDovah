@@ -288,3 +288,21 @@ public record VTFixupAttribute(String keyword) : IDeclaration<VTFixupAttribute> 
         PossibleValues.Select((word) => ConsumeWord(Id, word)).ToArray()
     );
 }
+
+
+public record ExportAttribute(String keyword) : IDeclaration<ExportAttribute> {
+    private static String[] PossibleValues = { "public", "nested", "extern", "forwarder" };
+    public record Collection(ARRAY<ExportAttribute> Attributes) : IDeclaration<ExportAttribute.Collection> {
+        public override string ToString() => Attributes.ToString(' ');
+        public static Parser<ExportAttribute.Collection> AsParser => Map(
+            converter: (attrs) => new ExportAttribute.Collection(attrs),
+            ARRAY<ExportAttribute>.MakeParser('\0', '\0', '\0')
+        );
+    }
+
+    public override string ToString() => keyword;
+    public static Parser<ExportAttribute> AsParser => TryRun(
+        converter: (vals) => new ExportAttribute(vals),
+        PossibleValues.Select((word) => ConsumeWord(Id, word)).ToArray()
+    );
+}

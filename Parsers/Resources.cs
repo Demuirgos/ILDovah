@@ -1,5 +1,62 @@
 using System.Text;
 using static Core;
+using static Extensions;
+
+public record FileReference(String Attribute, FileName File, ARRAY<BYTE>? Hash, bool IsEntryPoint) : IDeclaration<FileReference> {
+    public override string ToString()
+    {
+        StringBuilder sb = new();
+        sb.Append($".file ");
+        sb.Append(Attribute is null ? String.Empty : $"{Attribute} ");
+        sb.Append($"{File} ");
+        if(Hash is not null) {
+            sb.Append($".hash = ({Hash.ToString()})");
+        }
+        if(IsEntryPoint) {
+            sb.Append(" .entrypoint");
+        }
+
+        return sb.ToString();
+    }
+
+    public static Parser<FileReference> AsParser => RunAll(
+        converter: parts => new FileReference(
+            parts[1]?.Attribute,
+            parts[2].File,
+            parts[3]?.Hash,
+            parts[4]?.IsEntryPoint ?? false
+        ),
+        Discard<FileReference, string>(ConsumeWord(Id, ".file")),
+        TryRun(
+            converter: (attr) => Construct<FileReference>(4, 0, attr),
+            ConsumeWord(Id, "nometadata"),
+            Empty<String>()
+        ),
+        Map(
+            converter: (name) => {
+                var cleanedName = name.Name.EndsWith(".hash") ? name.Name.Substring(0, name.Name.Length - 5) : name.Name;
+                return Construct<FileReference>(4, 1, new FileName(cleanedName));
+            },
+            FileName.AsParser
+        ),
+        TryRun(
+            converter: (hash) => Construct<FileReference>(4, 2, hash),
+            RunAll(
+                converter: (vals) => vals[2],
+                Discard<ARRAY<BYTE>, char>(ConsumeChar(Id, '=')),
+                Discard<ARRAY<BYTE>, char>(ConsumeChar(Id, '(')),
+                ARRAY<BYTE>.MakeParser('\0', '\0', '\0'),
+                Discard<ARRAY<BYTE>, char>(ConsumeChar(Id, ')'))
+            ),
+            Empty<ARRAY<BYTE>>()
+        ),
+        TryRun(
+            converter: (string res) => Construct<FileReference>(4, 3, res is not null),
+            ConsumeWord(Id, ".entrypoint"),
+            Empty<string>()
+        )
+    );
+}
 
 public record TypeReference(ResolutionScope Scope, ARRAY<DottedName> Names) : IDeclaration<TypeReference> {
     public override string ToString() {
