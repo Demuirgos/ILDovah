@@ -1,4 +1,45 @@
 using static Core;
+using static Extensions;
+
+public record HashClause(INT AlgorithmId) : IDeclaration<HashClause> {
+    public override string ToString() => $".hash algorithm {AlgorithmId} ";
+    public static Parser<HashClause> AsParser => RunAll(
+        converter: parts => new HashClause(parts[2].AlgorithmId),
+        Discard<HashClause, string>(ConsumeWord(Core.Id, ".hash")),
+        Discard<HashClause, string>(ConsumeWord(Core.Id, "algorithm")),
+        Map(
+            converter: id => Construct<HashClause>(2, 0, id),
+            INT.AsParser
+        )
+    );
+}
+public static class PublicKey {
+    public record PKClause(ARRAY<BYTE> Bytes) : IDeclaration<PKClause> {
+        public override string ToString() => $".publickey = ({Bytes.ToString(' ')})";
+        public static Parser<PKClause> AsParser => RunAll(
+            converter: parts => new PKClause(parts[3].Bytes),
+            Discard<PKClause, string>(ConsumeWord(Core.Id, ".publickey")),
+            Discard<PKClause, char>(ConsumeChar(Core.Id, '=')),
+            Map(
+                converter: bytes => Construct<PKClause>(1, 0, bytes),
+                ARRAY<BYTE>.MakeParser('(', '\0', ')')
+            )
+        );
+    }
+
+    public record PKTokenClause(ARRAY<BYTE> Bytes) : IDeclaration<PKTokenClause> {
+        public override string ToString() => $".publickeytoken = ({Bytes.ToString(' ')})";
+        public static Parser<PKTokenClause> AsParser => RunAll(
+            converter: parts => new PKTokenClause(parts[3].Bytes),
+            Discard<PKTokenClause, string>(ConsumeWord(Core.Id, ".publickeytoken")),
+            Discard<PKTokenClause, char>(ConsumeChar(Core.Id, '=')),
+            Map(
+                converter: bytes => Construct<PKTokenClause>(1, 0, bytes),
+                ARRAY<BYTE>.MakeParser('(', '\0', ')')
+            )
+        );
+    }
+} 
 
 public record SecurityBlock :IDeclaration<SecurityBlock> {
     public record PermissionSet(SecurityAction Action, ARRAY<BYTE> Bytes) : SecurityBlock, IDeclaration<PermissionSet> {
