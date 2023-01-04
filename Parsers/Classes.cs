@@ -135,19 +135,19 @@ public record Class(Class.Prefix Header, Class.Member.Collection Members) : IDec
             );
         }
         
-        public record SubstitutionClause(MethodBodyItem.OverrideMethodItem.OverrideMethodSignature Target, MethodBodyItem.OverrideMethodItem.OverrideMethodSignature Substitution) : Member, IDeclaration<SubstitutionClause> {
+        public record SubstitutionClause(Method.Member.OverrideMethodItem.OverrideMethodSignature Target, Method.Member.OverrideMethodItem.OverrideMethodSignature Substitution) : Member, IDeclaration<SubstitutionClause> {
             public override string ToString() => $".override {Target} with {Substitution}";
             public static Parser<SubstitutionClause> AsParser => RunAll(
                 converter: parts => new SubstitutionClause(parts[1].Target, parts[3].Substitution),
                 Discard<SubstitutionClause, string>(ConsumeWord(Id, ".override")),
                 Map(
                     converter: target => Construct<SubstitutionClause>(2, 0, target),
-                    MethodBodyItem.OverrideMethodItem.OverrideMethodSignature.AsParser
+                    Method.Member.OverrideMethodItem.OverrideMethodSignature.AsParser
                 ),
                 Discard<SubstitutionClause, string>(ConsumeWord(Id, "with")),
                 Map(
                     converter: substitution => Construct<SubstitutionClause>(2, 1, substitution),
-                    MethodBodyItem.OverrideMethodItem.OverrideMethodSignature.AsParser
+                    Method.Member.OverrideMethodItem.OverrideMethodSignature.AsParser
                 )
             );
         }

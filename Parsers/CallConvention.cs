@@ -1,7 +1,6 @@
 using static Core;
 public record CallConvention : IDeclaration<CallConvention> {
-    private Object _value;
-    public record CallConventionPrimitive(string[] values) : IDeclaration<CallConventionPrimitive> {
+    public record CallConventionPrimitive(string[] values) : CallConvention, IDeclaration<CallConventionPrimitive> {
         public override string ToString() => String.Join(" ", values);
         public static Parser<CallConventionPrimitive> AsParser => RunAll(
             converter: labels => new CallConventionPrimitive(labels.Where(x => !String.IsNullOrEmpty(x)).ToArray()),
@@ -10,7 +9,7 @@ public record CallConvention : IDeclaration<CallConvention> {
         );
     }
 
-    public record CallKind(String Kind) : IDeclaration<CallKind> {
+    public record CallKind(String Kind) : CallConvention, IDeclaration<CallKind> {
         private static String[] PrimaryKeywords = {"default", "vararg", "unmanaged"};
         private static String[] SecondaryWords  = {"cdecl", "fastcall", "stdcall", "thiscall"};
 
@@ -33,22 +32,10 @@ public record CallConvention : IDeclaration<CallConvention> {
             }).ToArray()
         );
     }
-
-    public override string ToString() => _value switch {
-        CallConventionPrimitive primitive => primitive.ToString(),
-        CallKind kind => kind.ToString(),
-        _ => String.Empty
-    };
     public static Parser<CallConvention> AsParser => TryRun(
         converter: Id,
-        Map(
-            converter: (kind) => new CallConvention { _value = kind },
-            CallConventionPrimitive.AsParser
-        ),
-        Map(
-            converter: (kind) => new CallConvention { _value = kind },
-            CallKind.AsParser
-        ),
+        Cast<CallConvention, CallConventionPrimitive>(CallConventionPrimitive.AsParser),
+        Cast<CallConvention, CallKind>(CallKind.AsParser),
         Empty<CallConvention>()
     );
 }

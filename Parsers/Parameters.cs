@@ -2,8 +2,7 @@ using System.Reflection.Metadata;
 using System.Text;
 using static Core;
 using GenericConstraints = Type.Collection;
-public record Parameter() : IDeclaration<Parameter> {
-    private Object _value;
+public record Parameter : IDeclaration<Parameter> {
     public record Collection(ARRAY<Parameter> Parameters) : IDeclaration<Collection> {
         public override string ToString() => Parameters.ToString();
         public static Parser<Collection> AsParser => Map(
@@ -11,11 +10,11 @@ public record Parameter() : IDeclaration<Parameter> {
             ARRAY<Parameter>.MakeParser('\0', ',', '\0')
         );
     }
-    public record VarargParameter() : Parameter {
+    public record VarargParameter() : Parameter, IDeclaration<VarargParameter> {
         public override string ToString() => "...";
         public static Parser<VarargParameter> AsParser => ConsumeWord(_ => new VarargParameter(), "...");
     }
-    public record DefaultParameter(ParamAttribute.Collection Attributes, Type TypeDecl, NativeType MarshalledType, Identifier Id) : Parameter {
+    public record DefaultParameter(ParamAttribute.Collection Attributes, Type TypeDecl, NativeType MarshalledType, Identifier Id) : Parameter, IDeclaration<DefaultParameter> {
         // Note : Test this after implementing Type.AsParser
         public override string ToString() {
             StringBuilder sb = new();
@@ -60,22 +59,10 @@ public record Parameter() : IDeclaration<Parameter> {
             )
         );
     }
-
-    public override string ToString() => _value switch {
-        DefaultParameter param => param.ToString(),
-        VarargParameter param => param.ToString(),
-        _ => throw new System.Diagnostics.UnreachableException()
-    };
     public static Parser<Parameter> AsParser => TryRun(
         converter: (param) => param,
-        Map(
-            converter: res => new Parameter() { _value = res },
-            DefaultParameter.AsParser
-        ),
-        Map(
-            converter : res => new Parameter() { _value = res },
-            VarargParameter.AsParser
-        )
+        Cast<Parameter, DefaultParameter>(DefaultParameter.AsParser),
+        Cast<Parameter, VarargParameter>(VarargParameter.AsParser)
     );
 }
 

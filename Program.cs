@@ -3,8 +3,6 @@
 // Note(Ayman) : Fix whitespace in ToString methods
 // Note(Ayman) : Add Extra checks to Nested Self referential Parsers to avoid 
 //               infinite loops or stack overflows 
-// Note(Ayman) : Wrap partial type (header, members etc) in their containing type
-
 
 var (source, index) = (".file File.dll", 0);
 

@@ -1,7 +1,7 @@
 using static Core;
 using static Extensions;
 
-public record ExternAssembly(ExternAssemblyHeader Header, ExternAssemblyBodyMember.Collection Declarations) : IDeclaration<Assembly> {
+public record ExternAssembly(ExternAssembly.Prefix Header, ExternAssembly.Member.Collection Declarations) : IDeclaration<Assembly> {
     public override string ToString() => $".assembly extern {Header} {{ {Declarations} }}";
     public static Parser<ExternAssembly> AsParser => RunAll(
         converter: parts => new ExternAssembly(
@@ -12,105 +12,105 @@ public record ExternAssembly(ExternAssemblyHeader Header, ExternAssemblyBodyMemb
         Discard<ExternAssembly, string>(ConsumeWord(Core.Id, "extern")),
         Map(
             converter: header => Construct<ExternAssembly>(2, 0, header),
-            ExternAssemblyHeader.AsParser
+            Prefix.AsParser
         ),
         Discard<ExternAssembly, string>(ConsumeWord(Core.Id, "{")),
         Map(
             converter: decls => Construct<ExternAssembly>(2, 1, decls),
-            ExternAssemblyBodyMember.Collection.AsParser
+            Member.Collection.AsParser
         ),
         Discard<ExternAssembly, string>(ConsumeWord(Core.Id, "}"))
     );
 
-}
 
-public record ExternAssemblyHeader(DottedName Name, DottedName Alias) : IDeclaration<ExternAssemblyHeader> {
-    public override string ToString() => $"{Name} {(Alias is not null ? $"as {Alias} " : String.Empty)}";
-    public static Parser<ExternAssemblyHeader> AsParser => RunAll(
-        converter: parts => new ExternAssemblyHeader(
-            parts[1], parts[2]
-        ),
-        Discard<DottedName, string>(ConsumeWord(Core.Id, ".assembly")),
-        DottedName.AsParser,
-        TryRun(
-            converter: Id,
-            RunAll(
-                converter: parts => parts[1],
-                Discard<DottedName, string>(ConsumeWord(Core.Id, "as")),
-                DottedName.AsParser
+    public record Prefix(DottedName Name, DottedName Alias) : IDeclaration<Prefix> {
+        public override string ToString() => $"{Name} {(Alias is not null ? $"as {Alias} " : String.Empty)}";
+        public static Parser<Prefix> AsParser => RunAll(
+            converter: parts => new Prefix(
+                parts[1], parts[2]
             ),
-            Empty<DottedName>()
-        )
-    );
-}
-
-public record ExternAssemblyBodyMember : IDeclaration<ExternAssemblyBodyMember> {
-    public record Collection(ARRAY<ExternAssemblyBodyMember> Members) : IDeclaration<Collection> {
-        public override string ToString() => Members.ToString();
-        public static Parser<Collection> AsParser => Map(
-            converter: members => new Collection(members),
-            ARRAY<ExternAssemblyBodyMember>.MakeParser('\0', '\0', '\0')
+            Discard<DottedName, string>(ConsumeWord(Core.Id, ".assembly")),
+            DottedName.AsParser,
+            TryRun(
+                converter: Id,
+                RunAll(
+                    converter: parts => parts[1],
+                    Discard<DottedName, string>(ConsumeWord(Core.Id, "as")),
+                    DottedName.AsParser
+                ),
+                Empty<DottedName>()
+            )
         );
     }
 
-    public record CustomAttributeMember(CustomAttribute Attribute) : ExternAssemblyBodyMember, IDeclaration<CustomAttributeMember> {
-        public override string ToString() => Attribute.ToString();
-        public static Parser<CustomAttributeMember> AsParser => Map(
-            converter: attr => new CustomAttributeMember(attr),
-            CustomAttribute.AsParser
+    public record Member : IDeclaration<Member> {
+        public record Collection(ARRAY<Member> Members) : IDeclaration<Collection> {
+            public override string ToString() => Members.ToString();
+            public static Parser<Collection> AsParser => Map(
+                converter: members => new Collection(members),
+                ARRAY<Member>.MakeParser('\0', '\0', '\0')
+            );
+        }
+
+        public record CustomAttributeMember(CustomAttribute Attribute) : Member, IDeclaration<CustomAttributeMember> {
+            public override string ToString() => Attribute.ToString();
+            public static Parser<CustomAttributeMember> AsParser => Map(
+                converter: attr => new CustomAttributeMember(attr),
+                CustomAttribute.AsParser
+            );
+        }
+
+        public record PublicKeyTokenClause(PublicKey.PKTokenClause Token) : Member, IDeclaration<PublicKeyTokenClause> {
+            public override string ToString() => Token.ToString();
+            public static Parser<PublicKeyTokenClause> AsParser => Map(
+                converter: token => new PublicKeyTokenClause(token),
+                PublicKey.PKTokenClause.AsParser
+            );
+        }
+
+        public record CultureClauseMember(Culture Culture) : Member, IDeclaration<CultureClauseMember> {
+            public override string ToString() => Culture.ToString();
+            public static Parser<CultureClauseMember> AsParser => Map(
+                converter: culture => new CultureClauseMember(culture),
+                Culture.AsParser
+            );
+        }
+
+        public record VersionClauseMember(Version Version) : Member, IDeclaration<VersionClauseMember> {
+            public override string ToString() => Version.ToString();
+            public static Parser<VersionClauseMember> AsParser => Map(
+                converter: version => new VersionClauseMember(version),
+                Version.AsParser
+            );
+        }
+
+        public record PublicKeyClauseMember(PublicKey.PKClause Token) : Member, IDeclaration<PublicKeyClauseMember> {
+            public override string ToString() => Token.ToString();
+            public static Parser<PublicKeyClauseMember> AsParser => Map(
+                converter: token => new PublicKeyClauseMember(token),
+                PublicKey.PKClause.AsParser
+            );
+        }
+
+        public record HashClauseMember(HashClause Hash) : Member, IDeclaration<HashClauseMember> {
+            public override string ToString() => Hash.ToString();
+            public static Parser<HashClauseMember> AsParser => Map(
+                converter: hash => new HashClauseMember(hash),
+                HashClause.AsParser
+            );
+        }
+
+        public static Parser<Member> AsParser => RunAll(
+            converter: parts => parts[0],
+            TryRun(
+                converter: attr => Construct<Member>(1, 0, attr),
+                Cast<Member, CustomAttributeMember>(CustomAttributeMember.AsParser),
+                Cast<Member, PublicKeyTokenClause>(PublicKeyTokenClause.AsParser),
+                Cast<Member, CultureClauseMember>(CultureClauseMember.AsParser),
+                Cast<Member, VersionClauseMember>(VersionClauseMember.AsParser),
+                Cast<Member, PublicKeyClauseMember>(PublicKeyClauseMember.AsParser),
+                Cast<Member, HashClauseMember>(HashClauseMember.AsParser)
+            )
         );
     }
-
-    public record PublicKeyTokenClause(PublicKey.PKTokenClause Token) : ExternAssemblyBodyMember, IDeclaration<PublicKeyTokenClause> {
-        public override string ToString() => Token.ToString();
-        public static Parser<PublicKeyTokenClause> AsParser => Map(
-            converter: token => new PublicKeyTokenClause(token),
-            PublicKey.PKTokenClause.AsParser
-        );
-    }
-
-    public record CultureClauseMember(Culture Culture) : ExternAssemblyBodyMember, IDeclaration<CultureClauseMember> {
-        public override string ToString() => Culture.ToString();
-        public static Parser<CultureClauseMember> AsParser => Map(
-            converter: culture => new CultureClauseMember(culture),
-            Culture.AsParser
-        );
-    }
-
-    public record VersionClauseMember(Version Version) : ExternAssemblyBodyMember, IDeclaration<VersionClauseMember> {
-        public override string ToString() => Version.ToString();
-        public static Parser<VersionClauseMember> AsParser => Map(
-            converter: version => new VersionClauseMember(version),
-            Version.AsParser
-        );
-    }
-
-    public record PublicKeyClauseMember(PublicKey.PKClause Token) : ExternAssemblyBodyMember, IDeclaration<PublicKeyClauseMember> {
-        public override string ToString() => Token.ToString();
-        public static Parser<PublicKeyClauseMember> AsParser => Map(
-            converter: token => new PublicKeyClauseMember(token),
-            PublicKey.PKClause.AsParser
-        );
-    }
-
-    public record HashClauseMember(HashClause Hash) : ExternAssemblyBodyMember, IDeclaration<HashClauseMember> {
-        public override string ToString() => Hash.ToString();
-        public static Parser<HashClauseMember> AsParser => Map(
-            converter: hash => new HashClauseMember(hash),
-            HashClause.AsParser
-        );
-    }
-
-    public static Parser<ExternAssemblyBodyMember> AsParser => RunAll(
-        converter: parts => parts[0],
-        TryRun(
-            converter: attr => Construct<ExternAssemblyBodyMember>(1, 0, attr),
-            Cast<ExternAssemblyBodyMember, CustomAttributeMember>(CustomAttributeMember.AsParser),
-            Cast<ExternAssemblyBodyMember, PublicKeyTokenClause>(PublicKeyTokenClause.AsParser),
-            Cast<ExternAssemblyBodyMember, CultureClauseMember>(CultureClauseMember.AsParser),
-            Cast<ExternAssemblyBodyMember, VersionClauseMember>(VersionClauseMember.AsParser),
-            Cast<ExternAssemblyBodyMember, PublicKeyClauseMember>(PublicKeyClauseMember.AsParser),
-            Cast<ExternAssemblyBodyMember, HashClauseMember>(HashClauseMember.AsParser)
-        )
-    );
 }
