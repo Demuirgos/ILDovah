@@ -3,12 +3,13 @@ using static Extensions;
 using DataBody = Data.DbItem.Collection;
 
 
-public record Data(DataLabel? Label, DataBody Body) : IDeclaration<Data>
+public record Data(DataLabel? Label, DataBody Body) : Declaration, IDeclaration<Data>
 {
     public static Parser<Data> AsParser => RunAll(
-        converter: parts => new Data(parts?[0]?.Label, parts[1].Body),
+        converter: parts => new Data(parts?[1]?.Label, parts[2].Body),
+        Discard<Data, string>(ConsumeWord(Id, ".data")),
         TryRun(
-            converter: item => new Data(item, null),
+            converter: item => Construct<Data>(2, 0, item),
             RunAll(
                 converter: items => items[0],
                 DataLabel.AsParser,
@@ -17,7 +18,7 @@ public record Data(DataLabel? Label, DataBody Body) : IDeclaration<Data>
             Empty<DataLabel>()
         ),
         Map(
-            converter: body => new Data(null, body), 
+            converter: body => Construct<Data>(2, 1, body), 
             DataBody.AsParser
         )
     );

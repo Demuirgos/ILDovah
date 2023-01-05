@@ -1,7 +1,7 @@
 using static Core;
 using static Extensions;
 
-public record Assembly(Assembly.Prefix Header, Assembly.Member.Collection Declarations) : IDeclaration<Assembly> {
+public record Assembly(Assembly.Prefix Header, Assembly.Member.Collection Declarations) : Declaration, IDeclaration<Assembly> {
     public override string ToString() => $".assembly {Header} {{ {Declarations} }}";
     public static Parser<Assembly> AsParser => RunAll(
         converter: parts => new Assembly(

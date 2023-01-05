@@ -1,7 +1,7 @@
 using System.Text;
 using static Core;
 
-public record PropertyAttribute(string Value) : IDeclaration<PropertyAttribute> {
+public record PropertyAttribute(string Value) : Declaration, IDeclaration<PropertyAttribute> {
     public record Collection(ARRAY<PropertyAttribute> Attributes) : IDeclaration<Collection> {
         public override string ToString() => Attributes.ToString(' ');
         public static Parser<Collection> AsParser => Map(

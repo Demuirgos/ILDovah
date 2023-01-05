@@ -2,7 +2,7 @@ using System.Reflection.Metadata;
 using System.Text;
 using static Core;
 using static Extensions;
-public record Method(Method.Prefix Header, Method.Member.Collection Body) : IDeclaration<Method> {
+public record Method(Method.Prefix Header, Method.Member.Collection Body) : Declaration, IDeclaration<Method> {
     public bool IsConstructor => Header.Name.IsConstructor;
     public bool IsEntrypoint => Body?.Items.Values.Any(item => item.IsEntrypoint) ?? false;
     
@@ -389,26 +389,5 @@ public record MethodName(String Name) : IDeclaration<MethodName> {
         ConsumeWord(Id, ".ctor"),
         ConsumeWord(Id, ".cctor"),
         Map((dname) => dname.ToString(), DottedName.AsParser)
-    );
-}
-
-public record VTFFixup(INT Index, VTFixupAttribute.Collection Attributes, DataLabel Label) : IDeclaration<VTFFixup> {
-    public override string ToString() => $".vtfixup {Index} {Attributes} at {Label}";
-    public static Parser<VTFFixup> AsParser => RunAll(
-        converter: parts => new VTFFixup(parts[1].Index, parts[2].Attributes, parts[4].Label),
-        Discard<VTFFixup, string>(ConsumeWord(Id, ".vtfixup")),
-        TryRun(
-            converter: index => Construct<VTFFixup>(3, 0, index), 
-            INT.AsParser, Empty<INT>()
-        ),
-        Map(
-            converter: attributes => Construct<VTFFixup>(3, 1, attributes), 
-            VTFixupAttribute.Collection.AsParser
-        ),
-        Discard<VTFFixup, string>(ConsumeWord(Id, "at")),
-        Map(
-            converter: label => Construct<VTFFixup>(3, 2, label), 
-            DataLabel.AsParser
-        )
     );
 }

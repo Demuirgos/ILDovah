@@ -1,7 +1,7 @@
 using static Core;
 using static Extensions;
 
-public record ManifestResource(ManifestResource.Prefix Header, ManifestResource.Member.Collection Declarations) : IDeclaration<ManifestResource> {
+public record ManifestResource(ManifestResource.Prefix Header, ManifestResource.Member.Collection Declarations) : Declaration, IDeclaration<ManifestResource> {
 
     public override string ToString() => $".mresource {Header} {{ {Declarations} }}";
 

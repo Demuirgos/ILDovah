@@ -2,7 +2,7 @@ using System.Reflection.Emit;
 using static Core;
 using static Extensions;
 
-public record Field(INT? Index, FieldAttribute.Collection Attributes, Type Type, Identifier Id, Field.Initialization? Value) : IDeclaration<Field>
+public record Field(INT? Index, FieldAttribute.Collection Attributes, Type Type, Identifier Id, Field.Initialization? Value) : Declaration, IDeclaration<Field>
 {
     public record Initialization : IDeclaration<Initialization> {
         public record LabelReference(DataLabel Label) : Initialization, IDeclaration<LabelReference> {

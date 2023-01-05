@@ -1,6 +1,6 @@
 using static Core;
 using static Extensions;
-public record Class(Class.Prefix Header, Class.Member.Collection Members) : IDeclaration<Class> {
+public record Class(Class.Prefix Header, Class.Member.Collection Members) : Declaration, IDeclaration<Class> {
     public override string ToString() => $".class {Header} {{ {Members} }}";
     public static Parser<Class> AsParser => RunAll(
         converter : class_ => new Class(class_[1].Header, class_[3].Members),

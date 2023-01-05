@@ -1,7 +1,7 @@
 using static Core;
 using static Extensions;
 
-public record ExternAssembly(ExternAssembly.Prefix Header, ExternAssembly.Member.Collection Declarations) : IDeclaration<Assembly> {
+public record ExternAssembly(ExternAssembly.Prefix Header, ExternAssembly.Member.Collection Declarations) : Declaration, IDeclaration<Assembly> {
     public override string ToString() => $".assembly extern {Header} {{ {Declarations} }}";
     public static Parser<ExternAssembly> AsParser => RunAll(
         converter: parts => new ExternAssembly(

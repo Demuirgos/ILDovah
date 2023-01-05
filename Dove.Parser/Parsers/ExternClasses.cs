@@ -2,7 +2,7 @@ using System.Reflection.Emit;
 using static Core;
 using static Extensions;
 
-public record ExternClass(ExternClass.Prefix Header, ExternClass.Member.Collection Members) : IDeclaration<ExternClass> {
+public record ExternClass(ExternClass.Prefix Header, ExternClass.Member.Collection Members) : Declaration, IDeclaration<ExternClass> {
     public override string ToString() => $".class {Header} {{ {Members} }}";
 
     public record Prefix(ExportAttribute.Collection Attribute, DottedName Name) : IDeclaration<Prefix> {

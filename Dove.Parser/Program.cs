@@ -6,8 +6,7 @@
 
 var (source, index) = (".file File.dll", 0);
 
-TestConstruct<ExternClass>(ref index, source);
-
+TestConstruct<FileReference>(ref index, source);
 void TestConstruct<T>(ref int index, string source)
     where T : IDeclaration<T>
     {

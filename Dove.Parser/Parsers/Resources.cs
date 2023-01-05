@@ -2,58 +2,84 @@ using System.Text;
 using static Core;
 using static Extensions;
 
-public record FileReference(String Attribute, FileName File, ARRAY<BYTE>? Hash, bool IsEntryPoint) : IDeclaration<FileReference> {
-    public override string ToString()
-    {
-        StringBuilder sb = new();
-        sb.Append($".file ");
-        sb.Append(Attribute is null ? String.Empty : $"{Attribute} ");
-        sb.Append($"{File} ");
-        if(Hash is not null) {
-            sb.Append($".hash = ({Hash.ToString()})");
-        }
-        if(IsEntryPoint) {
-            sb.Append(" .entrypoint");
+public record FileReference(FileReference.Prefix Header, FileReference.Body Member) : Declaration, IDeclaration<FileReference> {
+    public record Prefix(String Attribute, FileName File) : IDeclaration<Prefix> {
+        public override string ToString() => $"{Attribute} {File}";
+
+        public static Parser<Prefix> AsParser => RunAll(
+            converter: parts => new Prefix(
+                parts[0]?.Attribute,
+                parts[1].File
+            ),
+            TryRun(
+                converter: (attr) => Construct<Prefix>(2, 0, attr),
+                ConsumeWord(Id, "nometadata"),
+                Empty<String>()
+            ),
+            Map(
+                converter: (name) => {
+                    var cleanedName = name.Name.EndsWith(".hash") ? name.Name.Substring(0, name.Name.Length - 5) : name.Name;
+                    return Construct<Prefix>(2, 1, new FileName(cleanedName));
+                },
+                FileName.AsParser
+            )
+        );
+    }
+
+    public record Body(ARRAY<BYTE>? Hash, bool IsEntryPoint) : IDeclaration<Prefix> {
+        public override string ToString()
+        {
+            StringBuilder sb = new();
+            if(Hash is not null) {
+                sb.Append($".hash = ({Hash.ToString()})");
+            }
+            if(IsEntryPoint) {
+                sb.Append(" .entrypoint");
+            }
+            return sb.ToString();
         }
 
-        return sb.ToString();
+
+        public static Parser<Body> AsParser => RunAll(
+            converter: parts => new Body(
+                parts[0]?.Hash,
+                parts[1].IsEntryPoint
+            ),
+            TryRun(
+                converter: (hash) => Construct<Body>(2, 0, hash),
+                RunAll(
+                    converter: (vals) => vals[2],
+                    Discard<ARRAY<BYTE>, char>(ConsumeChar(Id, '=')),
+                    Discard<ARRAY<BYTE>, char>(ConsumeChar(Id, '(')),
+                    ARRAY<BYTE>.MakeParser('\0', '\0', '\0'),
+                    Discard<ARRAY<BYTE>, char>(ConsumeChar(Id, ')'))
+                ),
+                Empty<ARRAY<BYTE>>()
+            ),
+            TryRun(
+                converter: (string res) => Construct<Body>(2, 1, res is not null),
+                ConsumeWord(Id, ".entrypoint"),
+                Empty<string>()
+            )
+        );
     }
+
+    public override string ToString() => $".file {Header} {Member}";
 
     public static Parser<FileReference> AsParser => RunAll(
         converter: parts => new FileReference(
-            parts[1]?.Attribute,
-            parts[2].File,
-            parts[3]?.Hash,
-            parts[4]?.IsEntryPoint ?? false
+            parts[1].Header,
+            parts[2]?.Member
         ),
         Discard<FileReference, string>(ConsumeWord(Id, ".file")),
-        TryRun(
-            converter: (attr) => Construct<FileReference>(4, 0, attr),
-            ConsumeWord(Id, "nometadata"),
-            Empty<String>()
-        ),
         Map(
-            converter: (name) => {
-                var cleanedName = name.Name.EndsWith(".hash") ? name.Name.Substring(0, name.Name.Length - 5) : name.Name;
-                return Construct<FileReference>(4, 1, new FileName(cleanedName));
-            },
-            FileName.AsParser
+            converter: (header) => Construct<FileReference>(2, 0, header),
+            Prefix.AsParser
         ),
         TryRun(
-            converter: (hash) => Construct<FileReference>(4, 2, hash),
-            RunAll(
-                converter: (vals) => vals[2],
-                Discard<ARRAY<BYTE>, char>(ConsumeChar(Id, '=')),
-                Discard<ARRAY<BYTE>, char>(ConsumeChar(Id, '(')),
-                ARRAY<BYTE>.MakeParser('\0', '\0', '\0'),
-                Discard<ARRAY<BYTE>, char>(ConsumeChar(Id, ')'))
-            ),
-            Empty<ARRAY<BYTE>>()
-        ),
-        TryRun(
-            converter: (string res) => Construct<FileReference>(4, 3, res is not null),
-            ConsumeWord(Id, ".entrypoint"),
-            Empty<string>()
+            converter: (body) => Construct<FileReference>(2, 1, body),
+            Body.AsParser,
+            Empty<Body>()
         )
     );
 }
@@ -139,7 +165,7 @@ public record FileName(String Name) : IDeclaration<FileName> {
     public static Parser<FileName> AsParser => Map((name) => new FileName(name.ToString()), DottedName.AsParser);
 }
 
-public record ExternSource(INT Line, INT? Column, QSTRING? File) : IDeclaration<ExternSource> {
+public record ExternSource(INT Line, INT? Column, QSTRING? File) : Declaration, IDeclaration<ExternSource> {
     public override string ToString() {
         StringBuilder sb = new();
         sb.Append($".line {Line}");

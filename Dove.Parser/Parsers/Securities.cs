@@ -41,7 +41,7 @@ public static class PublicKey {
     }
 } 
 
-public record SecurityBlock :IDeclaration<SecurityBlock> {
+public record SecurityBlock : Declaration, IDeclaration<SecurityBlock> {
     public record PermissionSet(SecurityAction Action, ARRAY<BYTE> Bytes) : SecurityBlock, IDeclaration<PermissionSet> {
         public override string ToString() => $".permissionset {Action} = ({Bytes.ToString(' ')})";
         public static Parser<PermissionSet> AsParser => RunAll(
