@@ -1,6 +1,7 @@
 using System.Reflection.Emit;
 using static Core;
-using static Extensions;
+using static ExtraTools.Extensions;
+using RootDecl;
 
 public record Field(INT? Index, FieldAttribute.Collection Attributes, Type Type, Identifier Id, Field.Initialization? Value) : Declaration, IDeclaration<Field>
 {

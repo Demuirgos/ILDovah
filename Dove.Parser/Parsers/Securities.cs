@@ -1,5 +1,6 @@
 using static Core;
-using static Extensions;
+using static ExtraTools.Extensions;
+using RootDecl;
 
 public record HashClause(INT AlgorithmId) : IDeclaration<HashClause> {
     public override string ToString() => $".hash algorithm {AlgorithmId} ";

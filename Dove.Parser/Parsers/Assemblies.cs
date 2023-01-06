@@ -1,11 +1,12 @@
+using RootDecl;
 using static Core;
-using static Extensions;
-
-public record Assembly(Assembly.Prefix Header, Assembly.Member.Collection Declarations) : Declaration, IDeclaration<Assembly> {
+using static ExtraTools.Extensions;
+public record Assembly(Assembly.Prefix Header, Assembly.Member.Collection Declarations) : Declaration, IDeclaration<Assembly>
+{
     public override string ToString() => $".assembly {Header} {{ {Declarations} }}";
     public static Parser<Assembly> AsParser => RunAll(
         converter: parts => new Assembly(
-            parts[1].Header, 
+            parts[1].Header,
             parts[3].Declarations
         ),
         Discard<Assembly, string>(ConsumeWord(Core.Id, ".assembly")),
@@ -22,7 +23,8 @@ public record Assembly(Assembly.Prefix Header, Assembly.Member.Collection Declar
     );
 
 
-    public record Prefix(DottedName Name) : IDeclaration<Prefix> {
+    public record Prefix(DottedName Name) : IDeclaration<Prefix>
+    {
         public override string ToString() => $"{Name} ";
         public static Parser<Prefix> AsParser => RunAll(
             converter: parts => new Prefix(
@@ -34,8 +36,10 @@ public record Assembly(Assembly.Prefix Header, Assembly.Member.Collection Declar
 
     }
 
-    public record Member : IDeclaration<Member> {
-        public record Collection(ARRAY<Member> Members) : IDeclaration<Collection> {
+    public record Member : IDeclaration<Member>
+    {
+        public record Collection(ARRAY<Member> Members) : IDeclaration<Collection>
+        {
             public override string ToString() => Members.ToString();
             public static Parser<Collection> AsParser => Map(
                 converter: members => new Collection(members),
@@ -43,7 +47,8 @@ public record Assembly(Assembly.Prefix Header, Assembly.Member.Collection Declar
             );
         }
 
-        public record CustomAttributeMember(CustomAttribute Attribute) : Member, IDeclaration<CustomAttributeMember> {
+        public record CustomAttributeMember(CustomAttribute Attribute) : Member, IDeclaration<CustomAttributeMember>
+        {
             public override string ToString() => Attribute.ToString();
             public static Parser<CustomAttributeMember> AsParser => Map(
                 converter: attr => new CustomAttributeMember(attr),
@@ -51,7 +56,8 @@ public record Assembly(Assembly.Prefix Header, Assembly.Member.Collection Declar
             );
         }
 
-        public record SecurityClauseMember(SecurityBlock Clause) : Member, IDeclaration<SecurityClauseMember> {
+        public record SecurityClauseMember(SecurityBlock Clause) : Member, IDeclaration<SecurityClauseMember>
+        {
             public override string ToString() => Clause.ToString();
             public static Parser<SecurityClauseMember> AsParser => Map(
                 converter: clause => new SecurityClauseMember(clause),
@@ -59,7 +65,8 @@ public record Assembly(Assembly.Prefix Header, Assembly.Member.Collection Declar
             );
         }
 
-        public record CultureClauseMember(Culture Culture) : Member, IDeclaration<CultureClauseMember> {
+        public record CultureClauseMember(Culture Culture) : Member, IDeclaration<CultureClauseMember>
+        {
             public override string ToString() => Culture.ToString();
             public static Parser<CultureClauseMember> AsParser => Map(
                 converter: culture => new CultureClauseMember(culture),
@@ -67,7 +74,8 @@ public record Assembly(Assembly.Prefix Header, Assembly.Member.Collection Declar
             );
         }
 
-        public record VersionClauseMember(Version Version) : Member, IDeclaration<VersionClauseMember> {
+        public record VersionClauseMember(Version Version) : Member, IDeclaration<VersionClauseMember>
+        {
             public override string ToString() => Version.ToString();
             public static Parser<VersionClauseMember> AsParser => Map(
                 converter: version => new VersionClauseMember(version),
@@ -75,7 +83,8 @@ public record Assembly(Assembly.Prefix Header, Assembly.Member.Collection Declar
             );
         }
 
-        public record PublicKeyClauseMember(PublicKey.PKClause Token) : Member, IDeclaration<PublicKeyClauseMember> {
+        public record PublicKeyClauseMember(PublicKey.PKClause Token) : Member, IDeclaration<PublicKeyClauseMember>
+        {
             public override string ToString() => Token.ToString();
             public static Parser<PublicKeyClauseMember> AsParser => Map(
                 converter: token => new PublicKeyClauseMember(token),
@@ -83,7 +92,8 @@ public record Assembly(Assembly.Prefix Header, Assembly.Member.Collection Declar
             );
         }
 
-        public record HashClauseMember(HashClause Hash) : Member, IDeclaration<HashClauseMember> {
+        public record HashClauseMember(HashClause Hash) : Member, IDeclaration<HashClauseMember>
+        {
             public override string ToString() => Hash.ToString();
             public static Parser<HashClauseMember> AsParser => Map(
                 converter: hash => new HashClauseMember(hash),

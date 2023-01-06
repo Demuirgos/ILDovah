@@ -1,5 +1,5 @@
 using static Core;
-using static Extensions;
+using static ExtraTools.Extensions;
 
 public record Culture(QSTRING Value) : IDeclaration<Culture> {
     public override string ToString() => $".culture {Value} ";

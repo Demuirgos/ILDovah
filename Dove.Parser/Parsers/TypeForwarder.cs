@@ -1,6 +1,6 @@
 using System.Reflection.Emit;
 using static Core;
-using static Extensions;
+using static ExtraTools.Extensions;
 
 public record TypeForwarder(TypeForwarder.Prefix Header, TypeForwarder.Member Members) : IDeclaration<TypeForwarder> {
     public override string ToString() => $".class {Header} {{ {Members} }}";

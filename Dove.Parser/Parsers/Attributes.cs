@@ -1,8 +1,12 @@
+using MethodDecl;
+using RootDecl;
 using System.Text;
 using static Core;
 
-public record PropertyAttribute(string Value) : Declaration, IDeclaration<PropertyAttribute> {
-    public record Collection(ARRAY<PropertyAttribute> Attributes) : IDeclaration<Collection> {
+public record PropertyAttribute(string Value) : Declaration, IDeclaration<PropertyAttribute>
+{
+    public record Collection(ARRAY<PropertyAttribute> Attributes) : IDeclaration<Collection>
+    {
         public override string ToString() => Attributes.ToString(' ');
         public static Parser<Collection> AsParser => Map(
             converter: items => new Collection(items),
@@ -18,16 +22,19 @@ public record PropertyAttribute(string Value) : Declaration, IDeclaration<Proper
     );
 }
 
-public record FieldAttribute : IDeclaration<FieldAttribute> {
-    public record Collection(ARRAY<FieldAttribute> Attributes) : FieldAttribute, IDeclaration<Collection> {
+public record FieldAttribute : IDeclaration<FieldAttribute>
+{
+    public record Collection(ARRAY<FieldAttribute> Attributes) : FieldAttribute, IDeclaration<Collection>
+    {
         public override string ToString() => Attributes.ToString(' ');
         public static Parser<Collection> AsParser => Map(
             converter: items => new Collection(items),
             ARRAY<FieldAttribute>.MakeParser('\0', '\0', '\0')
         );
     }
-    public record SimpleAttribute(String Name) : FieldAttribute, IDeclaration<SimpleAttribute> {
-        public static String[] ValidNames = new String[] { "assembly", "famandassem", "family", "famorassem", "initonly", "literal", "notserialized", "private", "compilercontrolled", "public", "rtspecialname", "specialname", "static"};
+    public record SimpleAttribute(String Name) : FieldAttribute, IDeclaration<SimpleAttribute>
+    {
+        public static String[] ValidNames = new String[] { "assembly", "famandassem", "family", "famorassem", "initonly", "literal", "notserialized", "private", "compilercontrolled", "public", "rtspecialname", "specialname", "static" };
         public override string ToString() => Name;
         public static Parser<SimpleAttribute> AsParser => TryRun(
             converter: (name) => new SimpleAttribute(name),
@@ -35,7 +42,8 @@ public record FieldAttribute : IDeclaration<FieldAttribute> {
         );
     }
 
-    public record MarshalAttribute(NativeType Type) : FieldAttribute, IDeclaration<MarshalAttribute> {
+    public record MarshalAttribute(NativeType Type) : FieldAttribute, IDeclaration<MarshalAttribute>
+    {
         public override string ToString() => $"marshal( {Type} )";
         public static Parser<MarshalAttribute> AsParser => RunAll(
             converter: (vals) => new MarshalAttribute(vals[2]),
@@ -52,18 +60,22 @@ public record FieldAttribute : IDeclaration<FieldAttribute> {
     );
 }
 
-public record CustomAttribute(MethodName AttributeCtor, ARRAY<BYTE>? Arguments) : IDeclaration<CustomAttribute> {
-    public override string ToString() {
+public record CustomAttribute(MethodName AttributeCtor, ARRAY<BYTE>? Arguments) : IDeclaration<CustomAttribute>
+{
+    public override string ToString()
+    {
         StringBuilder sb = new();
         sb.Append(AttributeCtor);
-        if(Arguments is not null) {
+        if (Arguments is not null)
+        {
             sb.Append($" = ({Arguments})");
         }
         return sb.ToString();
     }
     public static Parser<CustomAttribute> AsParser => RunAll(
-        converter: (vals) => {
-            if(vals[0].AttributeCtor.IsConstructor == false)
+        converter: (vals) =>
+        {
+            if (vals[0].AttributeCtor.IsConstructor == false)
                 throw new Exception("Custom attribute must be a constructor");
             return new CustomAttribute(vals[0].AttributeCtor, vals[1].Arguments);
         },
@@ -80,13 +92,15 @@ public record CustomAttribute(MethodName AttributeCtor, ARRAY<BYTE>? Arguments) 
     );
 }
 
-public record ImplAttribute(String Name, ImplAttribute.ModifierBehaviour Type) : IDeclaration<ImplAttribute> {
+public record ImplAttribute(String Name, ImplAttribute.ModifierBehaviour Type) : IDeclaration<ImplAttribute>
+{
 
     public enum ModifierBehaviour { Implementation, MemoryManagement, Information }
-    public record Collection(ARRAY<ImplAttribute> Attributes) : IDeclaration<Collection> {
+    public record Collection(ARRAY<ImplAttribute> Attributes) : IDeclaration<Collection>
+    {
         public override string ToString() => Attributes.ToString(' ');
-        public static Parser<ImplAttribute.Collection> AsParser => Map(
-            converter: (attrs) => new ImplAttribute.Collection(attrs),
+        public static Parser<Collection> AsParser => Map(
+            converter: (attrs) => new Collection(attrs),
             ARRAY<ImplAttribute>.MakeParser('\0', '\0', '\0')
         );
     }
@@ -97,35 +111,42 @@ public record ImplAttribute(String Name, ImplAttribute.ModifierBehaviour Type) :
         AttributeWords.Select((word) => ConsumeWord(Id, word)).ToArray()
     );
 
-    private static ModifierBehaviour BehaviourOf(String word) => word switch {
+    private static ModifierBehaviour BehaviourOf(String word) => word switch
+    {
         "cil" or "native" or "runtime" => ModifierBehaviour.Implementation,
         "managed" or "unmanaged" => ModifierBehaviour.MemoryManagement,
         _ => ModifierBehaviour.Information,
     };
 }
 
-public record MethodAttribute(MethodAttribute.ModifierBehaviour Type) : IDeclaration<MethodAttribute> {
+public record MethodAttribute(MethodAttribute.ModifierBehaviour Type) : IDeclaration<MethodAttribute>
+{
     internal Object Value { get; init; }
 
-    public override string ToString() => Value switch {
+    public override string ToString() => Value switch
+    {
         MethodSimpleAttribute simple => simple.ToString(),
         MethodPInvokeAttribute pinvoke => pinvoke.ToString(),
-        _ => throw new System.Diagnostics.UnreachableException()
+        _ => throw new Exception()
     };
 
-    private static String[] AttributeWords = { "abstract", "assembly", "compilercontrolled", "famandassem", "family", "famorassem", "final", "hidebysig", "newslot", "private", "public", "rtspecialname", "specialname", "static", "virtual", "strict"};
-    public record MethodSimpleAttribute(String Name) : IDeclaration<MethodSimpleAttribute> {
+    private static String[] AttributeWords = { "abstract", "assembly", "compilercontrolled", "famandassem", "family", "famorassem", "final", "hidebysig", "newslot", "private", "public", "rtspecialname", "specialname", "static", "virtual", "strict" };
+    public record MethodSimpleAttribute(String Name) : IDeclaration<MethodSimpleAttribute>
+    {
         public override string ToString() => Name;
         public static Parser<MethodSimpleAttribute> AsParser => TryRun(
             converter: (vals) => new MethodSimpleAttribute(vals),
             AttributeWords.Select((word) => ConsumeWord(Id, word)).ToArray()
         );
     }
-    public record MethodPInvokeAttribute(QSTRING Name, QSTRING Alias, PinvAttribute.Collection Attributes) : MethodAttribute(MethodAttribute.ModifierBehaviour.Interop) , IDeclaration<MethodPInvokeAttribute> {
-        public override string ToString() {
+    public record MethodPInvokeAttribute(QSTRING Name, QSTRING Alias, PinvAttribute.Collection Attributes) : MethodAttribute(MethodAttribute.ModifierBehaviour.Interop), IDeclaration<MethodPInvokeAttribute>
+    {
+        public override string ToString()
+        {
             StringBuilder sb = new();
             sb.Append($"pinvokeimpl({Name} ");
-            if(Alias is not null) {
+            if (Alias is not null)
+            {
                 sb.Append($"as {Alias} ");
             }
             sb.Append(Attributes);
@@ -134,7 +155,8 @@ public record MethodAttribute(MethodAttribute.ModifierBehaviour Type) : IDeclara
         }
 
         public static Parser<MethodPInvokeAttribute> AsParser => RunAll(
-            converter: (vals) => {
+            converter: (vals) =>
+            {
                 vals = vals.Where((val) => val is not null).ToArray();
                 return new MethodPInvokeAttribute(vals[0].Name, vals[1].Alias, vals[2].Attributes);
             },
@@ -155,19 +177,22 @@ public record MethodAttribute(MethodAttribute.ModifierBehaviour Type) : IDeclara
             Discard<MethodPInvokeAttribute, char>(ConsumeChar(Id, ')'))
         );
     }
-    public record Collection(ARRAY<MethodAttribute> Attributes) : IDeclaration<MethodAttribute.Collection> {
+    public record Collection(ARRAY<MethodAttribute> Attributes) : IDeclaration<Collection>
+    {
         public override string ToString() => Attributes.ToString(' ');
-        public static Parser<MethodAttribute.Collection> AsParser => Map(
-            converter: (attrs) => new MethodAttribute.Collection(attrs),
+        public static Parser<Collection> AsParser => Map(
+            converter: (attrs) => new Collection(attrs),
             ARRAY<MethodAttribute>.MakeParser('\0', '\0', '\0')
         );
     }
 
-    public enum ModifierBehaviour {
-        Access, Contract, Interop, Override, Handling,  
+    public enum ModifierBehaviour
+    {
+        Access, Contract, Interop, Override, Handling,
     }
 
-    private static ModifierBehaviour BehaviourOf(String word) => word switch {
+    private static ModifierBehaviour BehaviourOf(String word) => word switch
+    {
         "assembly" or "compilercontrolled" or "famandassem" or "famorassem" or "private" or "family" or "public" => ModifierBehaviour.Access,
         "final" or "hidebysig" or "static" or "virtual" or "strict" => ModifierBehaviour.Contract,
         "newslot" or "abstract" => ModifierBehaviour.Override,
@@ -183,12 +208,14 @@ public record MethodAttribute(MethodAttribute.ModifierBehaviour Type) : IDeclara
     );
 }
 
-public record ParamAttribute(string Attribute) : IDeclaration<ParamAttribute> {
+public record ParamAttribute(string Attribute) : IDeclaration<ParamAttribute>
+{
     private static String[] AttributeWords = { "in", "opt", "out" };
-    public record Collection(ARRAY<ParamAttribute> Attributes) : IDeclaration<ParamAttribute.Collection> {
+    public record Collection(ARRAY<ParamAttribute> Attributes) : IDeclaration<Collection>
+    {
         public override string ToString() => Attributes.ToString(' ');
-        public static Parser<ParamAttribute.Collection> AsParser => Map(
-            converter: (attrs) => new ParamAttribute.Collection(attrs),
+        public static Parser<Collection> AsParser => Map(
+            converter: (attrs) => new Collection(attrs),
             ARRAY<ParamAttribute>.MakeParser('\0', '\0', '\0')
         );
     }
@@ -205,12 +232,14 @@ public record ParamAttribute(string Attribute) : IDeclaration<ParamAttribute> {
     );
 }
 
-public record PinvAttribute(string Attribute) : IDeclaration<PinvAttribute> {
-    private static String[] AttributeWords = { "ansi", "autochar", "cdecl", "fastcall","stdcall", "thiscall", "unicode","platformapi"};
-    public record Collection(ARRAY<PinvAttribute> Attributes) : IDeclaration<PinvAttribute.Collection> {
-        public override string ToString() => Attributes.ToString(' '); 
-        public static Parser<PinvAttribute.Collection> AsParser => Map(
-            converter: (attrs) => new PinvAttribute.Collection(attrs),
+public record PinvAttribute(string Attribute) : IDeclaration<PinvAttribute>
+{
+    private static String[] AttributeWords = { "ansi", "autochar", "cdecl", "fastcall", "stdcall", "thiscall", "unicode", "platformapi" };
+    public record Collection(ARRAY<PinvAttribute> Attributes) : IDeclaration<Collection>
+    {
+        public override string ToString() => Attributes.ToString(' ');
+        public static Parser<Collection> AsParser => Map(
+            converter: (attrs) => new Collection(attrs),
             ARRAY<PinvAttribute>.MakeParser('\0', '\0', '\0')
         );
     }
@@ -222,24 +251,28 @@ public record PinvAttribute(string Attribute) : IDeclaration<PinvAttribute> {
     );
 }
 
-public record ClassAttribute(String Attribute) : IDeclaration<ClassAttribute> {
-    public record Collection(ARRAY<ClassAttribute> Attributes) : IDeclaration<ClassAttribute.Collection> {
+public record ClassAttribute(String Attribute) : IDeclaration<ClassAttribute>
+{
+    public record Collection(ARRAY<ClassAttribute> Attributes) : IDeclaration<Collection>
+    {
         public override string ToString() => Attributes.ToString(' ');
-        public static Parser<ClassAttribute.Collection> AsParser => Map(
-            converter: (attrs) => new ClassAttribute.Collection(attrs),
+        public static Parser<Collection> AsParser => Map(
+            converter: (attrs) => new Collection(attrs),
             ARRAY<ClassAttribute>.MakeParser('\0', '\0', '\0')
         );
     }
 
     public override string ToString() => Attribute;
-    private static String[] AttributeWords = {"public", "private", "value", "enum", "interface", "sealed", "abstract", "sequential", "explicit", "ansi", "unicode", "autochar", "import", "serializable", "nested", "beforefieldinit", "specialname", "rtspecialname", "auto"};
-    private static String[] NestedWords = {"public", "private", "family", "assembly", "famandassem", "famorassem"};
+    private static String[] AttributeWords = { "public", "private", "value", "enum", "interface", "sealed", "abstract", "sequential", "explicit", "ansi", "unicode", "autochar", "import", "serializable", "nested", "beforefieldinit", "specialname", "rtspecialname", "auto" };
+    private static String[] NestedWords = { "public", "private", "family", "assembly", "famandassem", "famorassem" };
     public static Parser<ClassAttribute> AsParser => TryRun(
         converter: (attr) => new ClassAttribute(attr),
-        AttributeWords.Select((word) => {
-            if(word != "nested")
+        AttributeWords.Select((word) =>
+        {
+            if (word != "nested")
                 return ConsumeWord(Id, word);
-            else {
+            else
+            {
                 return RunAll(
                     converter: (vals) => $"{vals[0]} {vals[1]}",
                     ConsumeWord(Id, "nested"),
@@ -253,13 +286,15 @@ public record ClassAttribute(String Attribute) : IDeclaration<ClassAttribute> {
     );
 }
 
-public record GenParamAttribute(string keyword) : IDeclaration<GenParamAttribute> {
+public record GenParamAttribute(string keyword) : IDeclaration<GenParamAttribute>
+{
     private static String[] PossibleValues = { "+", "-", "class", "valuetype", "new" };
-    
-    public record Collection(ARRAY<GenParamAttribute> Attributes) : IDeclaration<GenParamAttribute.Collection> {
+
+    public record Collection(ARRAY<GenParamAttribute> Attributes) : IDeclaration<Collection>
+    {
         public override string ToString() => Attributes.ToString(' ');
-        public static Parser<GenParamAttribute.Collection> AsParser => Map(
-            converter: (attrs) => new GenParamAttribute.Collection(attrs),
+        public static Parser<Collection> AsParser => Map(
+            converter: (attrs) => new Collection(attrs),
             ARRAY<GenParamAttribute>.MakeParser('\0', '\0', '\0')
         );
     }
@@ -272,12 +307,14 @@ public record GenParamAttribute(string keyword) : IDeclaration<GenParamAttribute
     );
 }
 
-public record VTFixupAttribute(String keyword) : IDeclaration<VTFixupAttribute> {
+public record VTFixupAttribute(String keyword) : IDeclaration<VTFixupAttribute>
+{
     private static String[] PossibleValues = { "fromunmanaged", "int32", "int64" };
-    public record Collection(ARRAY<VTFixupAttribute> Attributes) : IDeclaration<VTFixupAttribute.Collection> {
+    public record Collection(ARRAY<VTFixupAttribute> Attributes) : IDeclaration<Collection>
+    {
         public override string ToString() => Attributes.ToString(' ');
-        public static Parser<VTFixupAttribute.Collection> AsParser => Map(
-            converter: (attrs) => new VTFixupAttribute.Collection(attrs),
+        public static Parser<Collection> AsParser => Map(
+            converter: (attrs) => new Collection(attrs),
             ARRAY<VTFixupAttribute>.MakeParser('\0', '\0', '\0')
         );
     }
@@ -290,12 +327,14 @@ public record VTFixupAttribute(String keyword) : IDeclaration<VTFixupAttribute> 
 }
 
 
-public record ExportAttribute(String keyword) : IDeclaration<ExportAttribute> {
+public record ExportAttribute(String keyword) : IDeclaration<ExportAttribute>
+{
     private static String[] PossibleValues = { "public", "nested", "extern", "forwarder" };
-    public record Collection(ARRAY<ExportAttribute> Attributes) : IDeclaration<ExportAttribute.Collection> {
+    public record Collection(ARRAY<ExportAttribute> Attributes) : IDeclaration<Collection>
+    {
         public override string ToString() => Attributes.ToString(' ');
-        public static Parser<ExportAttribute.Collection> AsParser => Map(
-            converter: (attrs) => new ExportAttribute.Collection(attrs),
+        public static Parser<Collection> AsParser => Map(
+            converter: (attrs) => new Collection(attrs),
             ARRAY<ExportAttribute>.MakeParser('\0', '\0', '\0')
         );
     }

@@ -1,5 +1,5 @@
 using static Core;
-using static Extensions;
+using static ExtraTools.Extensions;
 
 public record Version(ARRAY<INT> SubVersions) : IDeclaration<Version> {
     public override string ToString() => $".ver {SubVersions.ToString(':')} ";

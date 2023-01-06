@@ -1,6 +1,7 @@
 using System.Text;
 using static Core;
-using static Extensions;
+using static ExtraTools.Extensions;
+using RootDecl;
 
 public record FileReference(FileReference.Prefix Header, FileReference.Body Member) : Declaration, IDeclaration<FileReference> {
     public record Prefix(String Attribute, FileName File) : IDeclaration<Prefix> {

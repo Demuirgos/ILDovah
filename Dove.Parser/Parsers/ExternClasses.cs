@@ -1,6 +1,7 @@
 using System.Reflection.Emit;
 using static Core;
-using static Extensions;
+using static ExtraTools.Extensions;
+using RootDecl;
 
 public record ExternClass(ExternClass.Prefix Header, ExternClass.Member.Collection Members) : Declaration, IDeclaration<ExternClass> {
     public override string ToString() => $".class {Header} {{ {Members} }}";

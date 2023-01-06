@@ -1,5 +1,6 @@
 using static Core;
-using static Extensions;
+using static ExtraTools.Extensions;
+using RootDecl;
 
 public record ManifestResource(ManifestResource.Prefix Header, ManifestResource.Member.Collection Declarations) : Declaration, IDeclaration<ManifestResource> {
 

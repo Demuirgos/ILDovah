@@ -1,5 +1,6 @@
 using static Core;
-using static Extensions;
+using static ExtraTools.Extensions;
+using RootDecl;
 
 public record ExternAssembly(ExternAssembly.Prefix Header, ExternAssembly.Member.Collection Declarations) : Declaration, IDeclaration<Assembly> {
     public override string ToString() => $".assembly extern {Header} {{ {Declarations} }}";

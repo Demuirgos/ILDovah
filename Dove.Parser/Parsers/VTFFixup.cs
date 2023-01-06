@@ -1,5 +1,6 @@
 using static Core;
-using static Extensions;
+using static ExtraTools.Extensions;
+using RootDecl;
 
 public record VTFFixup(INT Index, VTFixupAttribute.Collection Attributes, DataLabel Label) : Declaration, IDeclaration<VTFFixup> {
     public override string ToString() => $".vtfixup {Index} {Attributes} at {Label}";

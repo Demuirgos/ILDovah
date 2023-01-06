@@ -1,12 +1,14 @@
+using MethodDecl;
 using static Core;
-using static Extensions;
+using static ExtraTools.Extensions;
 
-public record Property(Property.Prefix Header, Property.Member.Collection Members) : IDeclaration<Property> {
+public record Property(Property.Prefix Header, Property.Member.Collection Members) : IDeclaration<Property>
+{
     public override string ToString() => $".property {Header} {{ {Members} }}";
     public static Parser<Property> AsParser => RunAll(
         converter: parts => new Property(parts[0].Header, parts[1].Members),
         RunAll(
-            converter : header => Construct<Property>(2, 0, header[1]),
+            converter: header => Construct<Property>(2, 0, header[1]),
             Discard<Prefix, string>(ConsumeWord(Core.Id, ".property")),
             Prefix.AsParser
         ),
@@ -18,14 +20,15 @@ public record Property(Property.Prefix Header, Property.Member.Collection Member
         )
     );
 
-    public record Prefix(PropertyAttribute.Collection Attributes, CallConvention Convention, Type Type, Identifier Id, Parameter.Collection Parameters) : IDeclaration<Prefix> {
+    public record Prefix(PropertyAttribute.Collection Attributes, CallConvention Convention, Type Type, Identifier Id, Parameter.Collection Parameters) : IDeclaration<Prefix>
+    {
         public override string ToString() => $"{Attributes} {Convention} {Type} {Id}({Parameters})";
         public static Parser<Prefix> AsParser => RunAll(
             converter: parts => new Prefix(
-                parts[0].Attributes, 
-                parts[1].Convention, 
-                parts[2].Type, 
-                parts[3].Id, 
+                parts[0].Attributes,
+                parts[1].Convention,
+                parts[2].Type,
+                parts[3].Id,
                 parts[4].Parameters
             ),
             Map(
@@ -56,15 +59,18 @@ public record Property(Property.Prefix Header, Property.Member.Collection Member
         );
     }
 
-    public record Member : IDeclaration<Member> {
-        public record Collection(ARRAY<Member> Members) : IDeclaration<Collection> {
+    public record Member : IDeclaration<Member>
+    {
+        public record Collection(ARRAY<Member> Members) : IDeclaration<Collection>
+        {
             public override string ToString() => Members.ToString(' ');
             public static Parser<Collection> AsParser => Map(
                 converter: members => new Collection(members),
                 ARRAY<Member>.MakeParser('\0', '\0', '\0')
             );
         }
-        public record PropertyAttributeItem(CustomAttribute Attribute) : Member, IDeclaration<PropertyAttributeItem> {
+        public record PropertyAttributeItem(CustomAttribute Attribute) : Member, IDeclaration<PropertyAttributeItem>
+        {
             public override string ToString() => $".custom {Attribute}";
             public static Parser<PropertyAttributeItem> AsParser => RunAll(
                 converter: parts => new PropertyAttributeItem(parts[1]),
@@ -73,7 +79,8 @@ public record Property(Property.Prefix Header, Property.Member.Collection Member
             );
         }
 
-        public record ExternalSourceItem(ExternSource Attribute) : Member, IDeclaration<ExternalSourceItem> {
+        public record ExternalSourceItem(ExternSource Attribute) : Member, IDeclaration<ExternalSourceItem>
+        {
             public override string ToString() => $".extern {Attribute}";
             public static Parser<ExternalSourceItem> AsParser => RunAll(
                 converter: parts => new ExternalSourceItem(parts[1]),
@@ -82,16 +89,17 @@ public record Property(Property.Prefix Header, Property.Member.Collection Member
             );
         }
 
-        public record SpecialMethodReference(String SpecialName, CallConvention Convention, Type Type, TypeSpecification? Specification, MethodName Name, Parameter.Collection Parameters) : Member, IDeclaration<SpecialMethodReference> {
+        public record SpecialMethodReference(String SpecialName, CallConvention Convention, Type Type, TypeSpecification? Specification, MethodName Name, Parameter.Collection Parameters) : Member, IDeclaration<SpecialMethodReference>
+        {
             public override string ToString() => $"{SpecialName} {Convention} {(Specification is null ? "" : $"{Specification}::")}{Name}({Parameters})";
             public static string[] SpecialNames = new string[] { ".get", ".other", ".set" };
             public static Parser<SpecialMethodReference> AsParser => RunAll(
-                converter:parts => new SpecialMethodReference(
-                    parts[0].SpecialName, 
-                    parts[1].Convention, 
+                converter: parts => new SpecialMethodReference(
+                    parts[0].SpecialName,
+                    parts[1].Convention,
                     parts[2].Type,
                     parts[3].Specification,
-                    parts[4].Name, 
+                    parts[4].Name,
                     parts[5].Parameters
                 ),
                 TryRun(
@@ -125,7 +133,7 @@ public record Property(Property.Prefix Header, Property.Member.Collection Member
                     Parameter.Collection.AsParser,
                     Discard<Parameter.Collection, char>(ConsumeChar(Core.Id, ')'))
                 )
-            );  
+            );
         }
 
         public static Parser<Member> AsParser => TryRun(Id,
@@ -133,5 +141,5 @@ public record Property(Property.Prefix Header, Property.Member.Collection Member
             Cast<Member, ExternalSourceItem>(ExternalSourceItem.AsParser),
             Cast<Member, SpecialMethodReference>(SpecialMethodReference.AsParser)
         );
-    } 
+    }
 }

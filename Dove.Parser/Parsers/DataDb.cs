@@ -1,7 +1,9 @@
+using RootDecl;
 using static Core;
-using static Extensions;
-using DataBody = Data.DbItem.Collection;
+using static ExtraTools.Extensions;
 
+namespace DataDecl;
+using DataBody = Data.DbItem.Collection;
 
 public record Data(DataLabel? Label, DataBody Body) : Declaration, IDeclaration<Data>
 {
@@ -18,13 +20,14 @@ public record Data(DataLabel? Label, DataBody Body) : Declaration, IDeclaration<
             Empty<DataLabel>()
         ),
         Map(
-            converter: body => Construct<Data>(2, 1, body), 
+            converter: body => Construct<Data>(2, 1, body),
             DataBody.AsParser
         )
     );
     public record DbItem : IDeclaration<DbItem>
-    {   
-        public record Collection(ARRAY<DbItem> Items) : DbItem, IDeclaration<DataBody> {
+    {
+        public record Collection(ARRAY<DbItem> Items) : DbItem, IDeclaration<DataBody>
+        {
             public override string ToString() => Items.ToString(',');
             public static Parser<DataBody> AsParser => Map(
                 converter: items => new DataBody(items),
@@ -32,7 +35,8 @@ public record Data(DataLabel? Label, DataBody Body) : Declaration, IDeclaration<
             );
         }
 
-        public record LabelPointer(Identifier Id) : DbItem, IDeclaration<DataLabel> {
+        public record LabelPointer(Identifier Id) : DbItem, IDeclaration<DataLabel>
+        {
             public override string ToString() => $"&({Id})";
             public static Parser<LabelPointer> AsParser => RunAll(
                 converter: parts => new LabelPointer(parts[2]),
@@ -43,18 +47,20 @@ public record Data(DataLabel? Label, DataBody Body) : Declaration, IDeclaration<
             );
         }
 
-        public record BytearrayItem(ARRAY<BYTE> Bytes) : DbItem, IDeclaration<BytearrayItem> {
+        public record BytearrayItem(ARRAY<BYTE> Bytes) : DbItem, IDeclaration<BytearrayItem>
+        {
             public override string ToString() => $"bytearray({Bytes.ToString(' ')})";
             public static Parser<BytearrayItem> AsParser => RunAll(
                 converter: parts => new BytearrayItem(parts[2]),
                 Discard<ARRAY<BYTE>, string>(ConsumeWord(Core.Id, "bytearray")),
                 Discard<ARRAY<BYTE>, char>(ConsumeChar(Core.Id, '(')),
-                ARRAY<BYTE>.MakeParser('\0','\0','\0'),
+                ARRAY<BYTE>.MakeParser('\0', '\0', '\0'),
                 Discard<ARRAY<BYTE>, char>(ConsumeChar(Core.Id, ')'))
             );
         }
 
-        public record StringItem(QSTRING String) : DbItem, IDeclaration<StringItem> {
+        public record StringItem(QSTRING String) : DbItem, IDeclaration<StringItem>
+        {
             public override string ToString() => $"char*({String})";
             public static Parser<StringItem> AsParser => RunAll(
                 converter: parts => new StringItem(parts[2]),
@@ -65,12 +71,13 @@ public record Data(DataLabel? Label, DataBody Body) : Declaration, IDeclaration<
             );
         }
 
-        public record IntegralItem(string Typename, long BitSize, INT? ReplicationCount) : DbItem, IDeclaration<IntegralItem> {
+        public record IntegralItem(string Typename, long BitSize, INT? ReplicationCount) : DbItem, IDeclaration<IntegralItem>
+        {
             private Object Value;
 
-            private static Parser<IntegralItem> TryParseMap(string typename) => 
-                typename == "int" 
-                ? Map (
+            private static Parser<IntegralItem> TryParseMap(string typename) =>
+                typename == "int"
+                ? Map(
                     converter: value => new IntegralItem(typename, default, null) { Value = value },
                     INT.AsParser
                 )
@@ -82,13 +89,14 @@ public record Data(DataLabel? Label, DataBody Body) : Declaration, IDeclaration<
             private static String[] IntegralTypes = new String[] { "float", "int" };
             public override string ToString() => $"{Typename}{BitSize}({Value}){(ReplicationCount is null ? string.Empty : $"[{ReplicationCount}]")}";
             public static Parser<IntegralItem> AsParser => TryRun(
-                converter:Id,
-                IntegralTypes.Select(typeword => 
+                converter: Id,
+                IntegralTypes.Select(typeword =>
                     RunAll(
-                        converter: parts => {
+                        converter: parts =>
+                        {
                             var result = new IntegralItem(parts[0].Typename, parts[0].BitSize, parts[4]?.ReplicationCount);
                             result.Value = parts[3].Value;
-                            return result; 
+                            return result;
                         },
                         RunAll(
                             converter: items => new IntegralItem(items[0].Typename, items[0].BitSize, null),
@@ -119,7 +127,7 @@ public record Data(DataLabel? Label, DataBody Body) : Declaration, IDeclaration<
                 ).ToArray()
             );
         }
-        
+
         public static Parser<DbItem> AsParser => TryRun(
             converter: Id,
             Cast<DbItem, IntegralItem>(IntegralItem.AsParser),

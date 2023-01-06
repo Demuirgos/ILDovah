@@ -1,5 +1,5 @@
 using static Core;
-using static Extensions;
+using static ExtraTools.Extensions;
 public record Module(FileName File, bool IsExtern) : IDeclaration<Module> {
     public override string ToString() => $".module {(IsExtern ? "extern" : String.Empty)} {File}";
     public static Parser<Module> AsParser => RunAll(

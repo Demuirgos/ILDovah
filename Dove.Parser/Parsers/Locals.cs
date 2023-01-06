@@ -1,5 +1,5 @@
 using static Core;
-using static Extensions;
+using static ExtraTools.Extensions;
 using LocalsSignature = Local.Collection; 
 
 public record Local(Type Type, Identifier Id) : IDeclaration<Local> {
@@ -15,11 +15,11 @@ public record Local(Type Type, Identifier Id) : IDeclaration<Local> {
     public static Parser<Local> AsParser => RunAll(
         converter: parts => new Local(parts[0].Type, parts[1]?.Id),
         Map(
-            converter: type => Extensions.Construct<Local>(2, 0, type), 
+            converter: type => Construct<Local>(2, 0, type), 
             Type.AsParser
         ),
         TryRun(
-            converter: id => Extensions.Construct<Local>(2, 1, id), 
+            converter: id => Construct<Local>(2, 1, id), 
             Identifier.AsParser, Empty<Identifier>()
         )
     );

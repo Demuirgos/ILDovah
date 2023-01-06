@@ -1,5 +1,6 @@
 using static Core;
-using static Extensions;
+using static ExtraTools.Extensions;
+using RootDecl;
 public record SubSystem(INT Number) : Declaration, IDeclaration<Module> {
     public override string ToString() => $".subsystem {Number}";
     public static Parser<SubSystem> AsParser => RunAll(
