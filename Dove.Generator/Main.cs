@@ -26,41 +26,45 @@ public class ParserGenerator : ISourceGenerator
 
     private String GetAllWrapperClasses(Compilation context, RecordDeclarationSyntax baseName)
     {
-        var typeName = baseName.AttributeLists
+        var typesNames = baseName.AttributeLists
             .SelectMany(al => al.Attributes)
             .Where(a => a.Name.GetText().ToString().StartsWith("WrapParser"))
             .SelectMany(a => a.DescendantNodes())
             .OfType<GenericNameSyntax>()
-            .Select(par => par.TypeArgumentList?.Arguments[0].GetText())
-            .FirstOrDefault().ToString();
-
-        var targetSubType = String.Empty;
-        bool containsDot = false;
-        if (typeName.Contains('.'))
-        {
-            containsDot = true;
-            if (typeName.Substring(0, typeName.IndexOf('.')).EndsWith("Decl"))
+            .SelectMany(par => par.TypeArgumentList?.Arguments.Select(arg => arg.GetText()))
+            .ToList();
+        if(typesNames.Count == 1) {
+            var typeName = typesNames[0].ToString();
+            var targetSubType = String.Empty;
+            bool containsDot = false;
+            if (typeName.Contains('.'))
             {
-                return typeName;
+                containsDot = true;
+                if (typeName.Substring(0, typeName.IndexOf('.')).EndsWith("Decl"))
+                {
+                    return typeName;
+                }
+                targetSubType = typeName.Substring(typeName.IndexOf(".") + 1);
+                typeName = typeName.Substring(0, typeName.IndexOf("."));
             }
-            targetSubType = typeName.Substring(typeName.IndexOf(".") + 1);
-            typeName = typeName.Substring(0, typeName.IndexOf("."));
-        }
 
-        var targetType = context.SyntaxTrees
-            .SelectMany(st => st.GetRoot()
-                    .DescendantNodes()
-                    .OfType<RecordDeclarationSyntax>()
-                    .Where(c => c.Identifier.ToString() == typeName)
-            )
-            .FirstOrDefault();
-        if (containsDot)
-        {
-            return $"{(targetType is not null ? GetFullPathName(targetType, new List<string>()) : typeName)}.{targetSubType}";
-        }
-        else
-        {
-            return targetType is not null ? GetFullPathName(targetType, new List<string>()) : typeName;
+            var targetType = context.SyntaxTrees
+                .SelectMany(st => st.GetRoot()
+                        .DescendantNodes()
+                        .OfType<RecordDeclarationSyntax>()
+                        .Where(c => c.Identifier.ToString() == typeName)
+                )
+                .FirstOrDefault();
+            if (containsDot)
+            {
+                return $"{(targetType is not null ? GetFullPathName(targetType, new List<string>()) : typeName)}.{targetSubType}";
+            }
+            else
+            {
+                return targetType is not null ? GetFullPathName(targetType, new List<string>()) : typeName;
+            }
+        } else {
+            
         }
     }
 

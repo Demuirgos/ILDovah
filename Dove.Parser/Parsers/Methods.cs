@@ -10,6 +10,7 @@ using ParameterDecl;
 using ResourceDecl;
 using RootDecl;
 using SecurityDecl;
+using SigArgumentDecl;
 using System.Text;
 using TypeDecl;
 using static Core;
@@ -359,5 +360,61 @@ public record EntrypointClause() : Member, IDeclaration<EntrypointClause>
     public static Parser<EntrypointClause> AsParser => Map(
         converter: item => new EntrypointClause(),
         ConsumeWord(Id, ".entrypoint")
+    );
+}
+
+public record MethodReference(CallConvention? Convention, TypeDecl.Type Type, TypeSpecification Spec, MethodName Name, SigArgumentDecl.SigArgument.Collection SigArgs) : IDeclaration<MethodReference>
+{
+    public override string ToString()
+    {
+        var sb = new StringBuilder();
+        if (Convention != null)
+        {
+            sb.Append($"{Convention} ");
+        }
+        sb.Append($"{Type} ");
+        if (Spec != null)
+        {
+            sb.Append($"{Spec}::");
+        }
+        sb.Append($"{Name} ");
+        sb.Append($"({SigArgs}) ");
+        return sb.ToString();
+    }
+    public static Parser<MethodReference> AsParser => RunAll(
+        converter: parts => new MethodReference(
+            parts[0].Convention,
+            parts[1].Type,
+            parts[2]?.Spec,
+            parts[3].Name,
+            parts[4].SigArgs
+        ),
+        Map(
+            converter: conv => Construct<MethodReference>(5, 0, conv),
+            CallConvention.AsParser
+        ),
+        Map(
+            converter: type => Construct<MethodReference>(5, 1, type),
+            TypeDecl.Type.AsParser
+        ),
+        TryRun(
+            converter: type => Construct<MethodReference>(5, 2, type),
+            RunAll(
+                converter : parts => parts[0],
+                TypeSpecification.AsParser,
+                Discard<TypeSpecification, string>(ConsumeWord(Core.Id, "::"))
+            ),
+            Empty<TypeSpecification>()
+        ),
+        Map(
+            converter: name => Construct<MethodReference>(5, 3, name),
+            MethodName.AsParser
+        ),
+        RunAll(
+            converter: pars => Construct<Prefix>(5, 4, pars[1]),
+            Discard<Parameter.Collection, char>(ConsumeChar(Id, '(')),
+            SigArgument.Collection.AsParser,
+            Discard<Parameter.Collection, char>(ConsumeChar(Id, ')'))
+        )
     );
 }
