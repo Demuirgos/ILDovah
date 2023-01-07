@@ -1,29 +1,11 @@
-using System.Reflection.Emit;
+using IdentifierDecl;
 using static Core;
 using static ExtraTools.Extensions;
 
-public record TypeForwarder(TypeForwarder.Prefix Header, TypeForwarder.Member Members) : IDeclaration<TypeForwarder> {
+namespace TypeForwarderDecl;
+public record TypeForwarder(Prefix Header, Member Members) : IDeclaration<TypeForwarder>
+{
     public override string ToString() => $".class {Header} {{ {Members} }}";
-    public record Prefix(DottedName Name) : IDeclaration<Prefix> {
-        public override string ToString() => $"extern forwarder {Name}";
-        public static Parser<Prefix> AsParser => RunAll(
-            converter: parts => new Prefix(parts[2].Name),
-            Discard<Prefix, string>(ConsumeWord(Core.Id, "extern")),
-            Discard<Prefix, string>(ConsumeWord(Core.Id, "forwarder")),
-            Map(
-                converter: name => Construct<Prefix>(2, 1, name),
-                DottedName.AsParser
-            )
-        );
-    }
-
-    public record Member(ExternAssembly.Prefix ReferencedAssembly) : IDeclaration<Member> {
-        public override string ToString() => ReferencedAssembly.ToString();
-        public static Parser<Member> AsParser =>  Map(
-            converter: prefix => new Member(prefix),
-            ExternAssembly.Prefix.AsParser
-        );
-    }
 
     public static Parser<TypeForwarder> AsParser => RunAll(
         converter: parts => new TypeForwarder(parts[1].Header, parts[3].Members),
@@ -40,3 +22,19 @@ public record TypeForwarder(TypeForwarder.Prefix Header, TypeForwarder.Member Me
         Discard<TypeForwarder, string>(ConsumeWord(Core.Id, "}"))
     );
 }
+
+public record Prefix(DottedName Name) : IDeclaration<Prefix>
+{
+    public override string ToString() => $"extern forwarder {Name}";
+    public static Parser<Prefix> AsParser => RunAll(
+        converter: parts => new Prefix(parts[2].Name),
+        Discard<Prefix, string>(ConsumeWord(Core.Id, "extern")),
+        Discard<Prefix, string>(ConsumeWord(Core.Id, "forwarder")),
+        Map(
+            converter: name => Construct<Prefix>(2, 1, name),
+            DottedName.AsParser
+        )
+    );
+}
+
+[WrapParser<ExternAssemblyDecl.Prefix>] public partial record Member : IDeclaration<Member>;

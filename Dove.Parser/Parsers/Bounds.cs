@@ -1,17 +1,23 @@
 using static Core;
-public record Bound(INT Lower, INT Upper, Bound.BoundType Type) : IDeclaration<Bound> {
-    public record Collection(ARRAY<Bound> Bounds) : IDeclaration<Collection> {
+
+namespace BoundsDecl;
+public record Bound(INT Lower, INT Upper, Bound.BoundType Type) : IDeclaration<Bound>
+{
+    public record Collection(ARRAY<Bound> Bounds) : IDeclaration<Collection>
+    {
         public override string ToString() => Bounds.ToString();
         public static Parser<Collection> AsParser => Map(
             converter: (bounds) => new Collection(bounds),
             ARRAY<Bound>.MakeParser('\0', ',', '\0')
         );
     }
-    public enum BoundType {
+    public enum BoundType
+    {
         None = 0, LowerBound = 1, UpperBound = 2, BothBounds = LowerBound | UpperBound
     }
 
-    public override string ToString() => Type switch {
+    public override string ToString() => Type switch
+    {
         BoundType.None => "...",
         BoundType.BothBounds => $"{Lower}...{Upper}",
         BoundType.UpperBound => $"{Upper}",

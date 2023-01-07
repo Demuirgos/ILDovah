@@ -1,6 +1,10 @@
+using ResourceDecl;
 using static Core;
 using static ExtraTools.Extensions;
-public record Module(FileName File, bool IsExtern) : IDeclaration<Module> {
+
+namespace ModuleDecl;
+public record Module(FileName File, bool IsExtern) : IDeclaration<Module>
+{
     public override string ToString() => $".module {(IsExtern ? "extern" : String.Empty)} {File}";
     public static Parser<Module> AsParser => RunAll(
         converter: (vals) => new Module(vals[2].File, vals[1].IsExtern),

@@ -24,23 +24,44 @@ public class ParserGenerator : ISourceGenerator
             .Where(c => c.BaseList?.Types.Any(t => t.ToString() == baseClass.Identifier.ToString()) ?? false))
             .Where(c => GetNamespace(c) == GetNamespace(baseClass) || baseClass.Identifier.ToString() == "Declaration"); // find a more general way to do this from attribute side
 
-    private RecordDeclarationSyntax GetAllWrapperClasses(Compilation context, RecordDeclarationSyntax baseName)
+    private String GetAllWrapperClasses(Compilation context, RecordDeclarationSyntax baseName)
     {
-        var typeNamee = baseName.AttributeLists
+        var typeName = baseName.AttributeLists
             .SelectMany(al => al.Attributes)
             .Where(a => a.Name.GetText().ToString().StartsWith("WrapParser"))
             .SelectMany(a => a.DescendantNodes())
             .OfType<GenericNameSyntax>()
             .Select(par => par.TypeArgumentList?.Arguments[0].GetText())
-            .FirstOrDefault();
+            .FirstOrDefault().ToString();
 
-        return context.SyntaxTrees
+        var targetSubType = String.Empty;
+        bool containsDot = false;
+        if (typeName.Contains('.'))
+        {
+            containsDot = true;
+            if (typeName.Substring(0, typeName.IndexOf('.')).EndsWith("Decl"))
+            {
+                return typeName;
+            }
+            targetSubType = typeName.Substring(typeName.IndexOf(".") + 1);
+            typeName = typeName.Substring(0, typeName.IndexOf("."));
+        }
+
+        var targetType = context.SyntaxTrees
             .SelectMany(st => st.GetRoot()
-                 .DescendantNodes()
-                 .OfType<RecordDeclarationSyntax>()
-                 .Where(c => c.Identifier.ToString() == typeNamee.ToString())
+                    .DescendantNodes()
+                    .OfType<RecordDeclarationSyntax>()
+                    .Where(c => c.Identifier.ToString() == typeName)
             )
             .FirstOrDefault();
+        if (containsDot)
+        {
+            return $"{(targetType is not null ? GetFullPathName(targetType, new List<string>()) : typeName)}.{targetSubType}";
+        }
+        else
+        {
+            return targetType is not null ? GetFullPathName(targetType, new List<string>()) : typeName;
+        }
     }
 
     public static string GetNamespace(SyntaxNode node)
@@ -117,8 +138,7 @@ public class ParserGenerator : ISourceGenerator
         var className = classDef.Identifier.ToString();
         var namespaceName = GetNamespace(classDef);
 
-        var targetName = GetFullPathName(GetAllWrapperClasses(context, classDef), new List<string>());
-
+        var targetName = GetAllWrapperClasses(context, classDef);
 
         return (GetFullPathName(classDef, new List<string>()), $$$"""
             using static Core;

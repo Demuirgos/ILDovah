@@ -1,7 +1,12 @@
+using AttributeDecl;
+using IdentifierDecl;
+using ResourceDecl;
 using RootDecl;
+using SecurityDecl;
 using static Core;
 using static ExtraTools.Extensions;
-public record Assembly(Assembly.Prefix Header, Assembly.Member.Collection Declarations) : Declaration, IDeclaration<Assembly>
+namespace AssemblyDecl;
+public record Assembly(Prefix Header, Member.Collection Declarations) : Declaration, IDeclaration<Assembly>
 {
     public override string ToString() => $".assembly {Header} {{ {Declarations} }}";
     public static Parser<Assembly> AsParser => RunAll(
@@ -21,98 +26,36 @@ public record Assembly(Assembly.Prefix Header, Assembly.Member.Collection Declar
         ),
         Discard<Assembly, string>(ConsumeWord(Core.Id, "}"))
     );
+}
 
+public record Prefix(DottedName Name) : IDeclaration<Prefix>
+{
+    public override string ToString() => $"{Name} ";
+    public static Parser<Prefix> AsParser => RunAll(
+        converter: parts => new Prefix(
+            parts[1]
+        ),
+        Discard<DottedName, string>(ConsumeWord(Core.Id, ".assembly")),
+        DottedName.AsParser
+    );
 
-    public record Prefix(DottedName Name) : IDeclaration<Prefix>
+}
+
+[GenerateParser]
+public partial record Member : IDeclaration<Member>
+{
+    public record Collection(ARRAY<Member> Members) : IDeclaration<Collection>
     {
-        public override string ToString() => $"{Name} ";
-        public static Parser<Prefix> AsParser => RunAll(
-            converter: parts => new Prefix(
-                parts[1]
-            ),
-            Discard<DottedName, string>(ConsumeWord(Core.Id, ".assembly")),
-            DottedName.AsParser
+        public override string ToString() => Members.ToString();
+        public static Parser<Collection> AsParser => Map(
+            converter: members => new Collection(members),
+            ARRAY<Member>.MakeParser('\0', '\0', '\0')
         );
-
-    }
-
-    public record Member : IDeclaration<Member>
-    {
-        public record Collection(ARRAY<Member> Members) : IDeclaration<Collection>
-        {
-            public override string ToString() => Members.ToString();
-            public static Parser<Collection> AsParser => Map(
-                converter: members => new Collection(members),
-                ARRAY<Member>.MakeParser('\0', '\0', '\0')
-            );
-        }
-
-        public record CustomAttributeMember(CustomAttribute Attribute) : Member, IDeclaration<CustomAttributeMember>
-        {
-            public override string ToString() => Attribute.ToString();
-            public static Parser<CustomAttributeMember> AsParser => Map(
-                converter: attr => new CustomAttributeMember(attr),
-                CustomAttribute.AsParser
-            );
-        }
-
-        public record SecurityClauseMember(SecurityBlock Clause) : Member, IDeclaration<SecurityClauseMember>
-        {
-            public override string ToString() => Clause.ToString();
-            public static Parser<SecurityClauseMember> AsParser => Map(
-                converter: clause => new SecurityClauseMember(clause),
-                SecurityBlock.AsParser
-            );
-        }
-
-        public record CultureClauseMember(Culture Culture) : Member, IDeclaration<CultureClauseMember>
-        {
-            public override string ToString() => Culture.ToString();
-            public static Parser<CultureClauseMember> AsParser => Map(
-                converter: culture => new CultureClauseMember(culture),
-                Culture.AsParser
-            );
-        }
-
-        public record VersionClauseMember(Version Version) : Member, IDeclaration<VersionClauseMember>
-        {
-            public override string ToString() => Version.ToString();
-            public static Parser<VersionClauseMember> AsParser => Map(
-                converter: version => new VersionClauseMember(version),
-                Version.AsParser
-            );
-        }
-
-        public record PublicKeyClauseMember(PublicKey.PKClause Token) : Member, IDeclaration<PublicKeyClauseMember>
-        {
-            public override string ToString() => Token.ToString();
-            public static Parser<PublicKeyClauseMember> AsParser => Map(
-                converter: token => new PublicKeyClauseMember(token),
-                PublicKey.PKClause.AsParser
-            );
-        }
-
-        public record HashClauseMember(HashClause Hash) : Member, IDeclaration<HashClauseMember>
-        {
-            public override string ToString() => Hash.ToString();
-            public static Parser<HashClauseMember> AsParser => Map(
-                converter: hash => new HashClauseMember(hash),
-                HashClause.AsParser
-            );
-        }
-
-        public static Parser<Member> AsParser => RunAll(
-            converter: parts => parts[0],
-            TryRun(
-                converter: attr => Construct<Member>(1, 0, attr),
-                Cast<Member, CustomAttributeMember>(CustomAttributeMember.AsParser),
-                Cast<Member, SecurityClauseMember>(SecurityClauseMember.AsParser),
-                Cast<Member, CultureClauseMember>(CultureClauseMember.AsParser),
-                Cast<Member, VersionClauseMember>(VersionClauseMember.AsParser),
-                Cast<Member, PublicKeyClauseMember>(PublicKeyClauseMember.AsParser),
-                Cast<Member, HashClauseMember>(HashClauseMember.AsParser)
-            )
-        );
-
     }
 }
+[WrapParser<CustomAttribute>] public partial record CustomAttributeMember : Member, IDeclaration<CustomAttributeMember>;
+[WrapParser<SecurityBlock>] public partial record SecurityClauseMember : Member, IDeclaration<SecurityClauseMember>;
+[WrapParser<Culture>] public partial record CultureClauseMember : Member, IDeclaration<CultureClauseMember>;
+[WrapParser<Version>] public partial record VersionClauseMember : Member, IDeclaration<VersionClauseMember>;
+[WrapParser<PKClause>] public partial record PublicKeyClauseMember : Member, IDeclaration<PublicKeyClauseMember>;
+[WrapParser<HashClause>] public partial record HashClauseMember : Member, IDeclaration<HashClauseMember>;

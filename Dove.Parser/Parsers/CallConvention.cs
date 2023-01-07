@@ -1,6 +1,9 @@
 using static Core;
-public record CallConvention : IDeclaration<CallConvention> {
-    public record CallConventionPrimitive(string[] values) : CallConvention, IDeclaration<CallConventionPrimitive> {
+namespace MethodDecl;
+public record CallConvention : IDeclaration<CallConvention>
+{
+    public record CallConventionPrimitive(string[] values) : CallConvention, IDeclaration<CallConventionPrimitive>
+    {
         public override string ToString() => String.Join(" ", values);
         public static Parser<CallConventionPrimitive> AsParser => RunAll(
             converter: labels => new CallConventionPrimitive(labels.Where(x => !String.IsNullOrEmpty(x)).ToArray()),
@@ -9,24 +12,29 @@ public record CallConvention : IDeclaration<CallConvention> {
         );
     }
 
-    public record CallKind(String Kind) : CallConvention, IDeclaration<CallKind> {
-        private static String[] PrimaryKeywords = {"default", "vararg", "unmanaged"};
-        private static String[] SecondaryWords  = {"cdecl", "fastcall", "stdcall", "thiscall"};
+    public record CallKind(String Kind) : CallConvention, IDeclaration<CallKind>
+    {
+        private static String[] PrimaryKeywords = { "default", "vararg", "unmanaged" };
+        private static String[] SecondaryWords = { "cdecl", "fastcall", "stdcall", "thiscall" };
 
         public override string ToString() => Kind;
         public static Parser<CallKind> AsParser => TryRun(
             converter: (vals) => new CallKind(vals),
-            PrimaryKeywords.Select(word => {
-                if(word == "unmanaged") {
+            PrimaryKeywords.Select(word =>
+            {
+                if (word == "unmanaged")
+                {
                     return RunAll(
-                        converter: vals => String.Join(' ', vals.Where(x => !String.IsNullOrEmpty(x))), 
+                        converter: vals => String.Join(' ', vals.Where(x => !String.IsNullOrEmpty(x))),
                         ConsumeWord(Id, word),
                         TryRun(
                             converter: Id,
                             SecondaryWords.Select(word => ConsumeWord(Id, word)).ToArray()
                         )
                     );
-                } else {
+                }
+                else
+                {
                     return ConsumeWord(Id, word);
                 }
             }).ToArray()

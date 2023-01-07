@@ -1,10 +1,14 @@
+using IdentifierDecl;
+using RootDecl;
 using System.Text;
 using static Core;
 using static ExtraTools.Extensions;
-using RootDecl;
 
-public record FileReference(FileReference.Prefix Header, FileReference.Body Member) : Declaration, IDeclaration<FileReference> {
-    public record Prefix(String Attribute, FileName File) : IDeclaration<Prefix> {
+namespace ResourceDecl;
+public record FileReference(FileReference.Prefix Header, FileReference.Body Member) : Declaration, IDeclaration<FileReference>
+{
+    public record Prefix(String Attribute, FileName File) : IDeclaration<Prefix>
+    {
         public override string ToString() => $"{Attribute} {File}";
 
         public static Parser<Prefix> AsParser => RunAll(
@@ -18,7 +22,8 @@ public record FileReference(FileReference.Prefix Header, FileReference.Body Memb
                 Empty<String>()
             ),
             Map(
-                converter: (name) => {
+                converter: (name) =>
+                {
                     var cleanedName = name.Name.EndsWith(".hash") ? name.Name.Substring(0, name.Name.Length - 5) : name.Name;
                     return Construct<Prefix>(2, 1, new FileName(cleanedName));
                 },
@@ -27,14 +32,17 @@ public record FileReference(FileReference.Prefix Header, FileReference.Body Memb
         );
     }
 
-    public record Body(ARRAY<BYTE>? Hash, bool IsEntryPoint) : IDeclaration<Prefix> {
+    public record Body(ARRAY<BYTE>? Hash, bool IsEntryPoint) : IDeclaration<Prefix>
+    {
         public override string ToString()
         {
             StringBuilder sb = new();
-            if(Hash is not null) {
+            if (Hash is not null)
+            {
                 sb.Append($".hash = ({Hash.ToString()})");
             }
-            if(IsEntryPoint) {
+            if (IsEntryPoint)
+            {
                 sb.Append(" .entrypoint");
             }
             return sb.ToString();
@@ -85,31 +93,10 @@ public record FileReference(FileReference.Prefix Header, FileReference.Body Memb
     );
 }
 
-public record TypeReference(ResolutionScope Scope, ARRAY<DottedName> Names) : IDeclaration<TypeReference> {
-    public override string ToString() {
-        StringBuilder sb = new();
-        if(Scope is not null) {
-            sb.Append($"{Scope.ToString(true)} ");
-        }
-        sb.Append(Names.ToString());
-        return sb.ToString();
-    }
-    public static Parser<TypeReference> AsParser => RunAll(
-        converter: (vals) => new TypeReference(vals[0]?.Scope, vals[1].Names),
-        TryRun(
-            converter: (scope) =>  new TypeReference(scope, null),
-            ResolutionScope.AsParser,
-            Empty<ResolutionScope>()
-        ),
-        Map(
-            converter: (name) =>  new TypeReference(null, name),
-            ARRAY<DottedName>.MakeParser('\0', '/', '\0')
-        )
-    );
-}
-
-public record ResolutionScope : IDeclaration<ResolutionScope> {
-    public record Module(FileName File) : ResolutionScope {
+public record ResolutionScope : IDeclaration<ResolutionScope>
+{
+    public record Module(FileName File) : ResolutionScope
+    {
         public override string ToString() => $".module {File}";
         public static Parser<Module> AsParser => RunAll(
             converter: (vals) => new Module(vals[1]),
@@ -118,7 +105,8 @@ public record ResolutionScope : IDeclaration<ResolutionScope> {
         );
     }
 
-    public record AssemblyRef(AssemblyRefName Name) : ResolutionScope {
+    public record AssemblyRef(AssemblyRefName Name) : ResolutionScope
+    {
         public override string ToString() => $"{Name}";
         public static Parser<AssemblyRef> AsParser => Map(
             converter: (name) => new AssemblyRef(name),
@@ -126,10 +114,12 @@ public record ResolutionScope : IDeclaration<ResolutionScope> {
         );
     }
 
-    public string ToString(bool wrap = true) {
+    public string ToString(bool wrap = true)
+    {
         StringBuilder sb = new();
-        if(wrap) sb.Append('[');
-        switch(this) {
+        if (wrap) sb.Append('[');
+        switch (this)
+        {
             case Module m:
                 sb.Append(m);
                 break;
@@ -137,7 +127,7 @@ public record ResolutionScope : IDeclaration<ResolutionScope> {
                 sb.Append(a);
                 break;
         }
-        if(wrap) sb.Append(']');
+        if (wrap) sb.Append(']');
         return sb.ToString();
     }
 
@@ -153,7 +143,8 @@ public record ResolutionScope : IDeclaration<ResolutionScope> {
     );
 }
 
-public record AssemblyRefName(DottedName Name) : IDeclaration<AssemblyRefName> {
+public record AssemblyRefName(DottedName Name) : IDeclaration<AssemblyRefName>
+{
     public override string ToString() => Name.ToString();
     public static Parser<AssemblyRefName> AsParser => Map(
         converter: (name) => new AssemblyRefName(name),
@@ -161,19 +152,24 @@ public record AssemblyRefName(DottedName Name) : IDeclaration<AssemblyRefName> {
     );
 }
 
-public record FileName(String Name) : IDeclaration<FileName> {
+public record FileName(String Name) : IDeclaration<FileName>
+{
     public override string ToString() => Name;
     public static Parser<FileName> AsParser => Map((name) => new FileName(name.ToString()), DottedName.AsParser);
 }
 
-public record ExternSource(INT Line, INT? Column, QSTRING? File) : Declaration, IDeclaration<ExternSource> {
-    public override string ToString() {
+public record ExternSource(INT Line, INT? Column, QSTRING? File) : Declaration, IDeclaration<ExternSource>
+{
+    public override string ToString()
+    {
         StringBuilder sb = new();
         sb.Append($".line {Line}");
-        if(Column is not null) {
+        if (Column is not null)
+        {
             sb.Append($" : {Column.Value}");
         }
-        if(File is not null) {
+        if (File is not null)
+        {
             sb.Append($" '{File.Value}'");
         }
         return sb.ToString();
@@ -192,5 +188,20 @@ public record ExternSource(INT Line, INT? Column, QSTRING? File) : Declaration, 
             Empty<INT>()
         ),
         TryRun((name) => new ExternSource(null, null, name), QSTRING.AsParser, Empty<QSTRING>())
+    );
+}
+public record Culture(QSTRING Value) : IDeclaration<Culture>
+{
+    public override string ToString() => $".culture {Value} ";
+
+    public static Parser<Culture> AsParser => RunAll(
+        converter: parts => new Culture(
+            parts[1].Value
+        ),
+        Discard<Culture, string>(ConsumeWord(Core.Id, ".culture")),
+        Map(
+            converter: value => Construct<Culture>(1, 0, value),
+            QSTRING.AsParser
+        )
     );
 }

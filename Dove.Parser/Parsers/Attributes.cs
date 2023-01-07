@@ -1,8 +1,10 @@
 using MethodDecl;
 using RootDecl;
 using System.Text;
+using TypeDecl;
 using static Core;
 
+namespace AttributeDecl;
 public record PropertyAttribute(string Value) : Declaration, IDeclaration<PropertyAttribute>
 {
     public record Collection(ARRAY<PropertyAttribute> Attributes) : IDeclaration<Collection>

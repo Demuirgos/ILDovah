@@ -2,6 +2,8 @@
 // Note(Ayman) : Add Extra checks to Nested Self referential Parsers to avoid 
 //               infinite loops or stack overflows 
 // Note(Ayman) : Fix sourge generator clumping types with same names as same type
+using ResourceDecl;
+
 var (source, index) = (".file File.dll", 0);
 
 TestConstruct<FileReference>(ref index, source);

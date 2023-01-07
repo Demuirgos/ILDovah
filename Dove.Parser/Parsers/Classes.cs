@@ -1,6 +1,14 @@
+using AttributeDecl;
 using DataDecl;
+using FieldDecl;
+using IdentifierDecl;
 using MethodDecl;
+using ParameterDecl;
+using PropertyDecl;
+using ResourceDecl;
 using RootDecl;
+using SecurityDecl;
+using TypeDecl;
 using static Core;
 using static ExtraTools.Extensions;
 namespace ClassDecl;
@@ -104,7 +112,7 @@ public partial record Member : IDeclaration<Member>
 [WrapParser<CustomAttribute>] public partial record CustomAttributeClause : Member, IDeclaration<CustomAttributeClause>;
 [WrapParser<Method>] public partial record MethodDefinition : Member, IDeclaration<MethodDefinition>;
 [WrapParser<Property>] public partial record PropertyDefinition : Member, IDeclaration<PropertyDefinition>;
-[WrapParser<Event>] public partial record EventDefinition : Member, IDeclaration<EventDefinition>;
+[WrapParser<EventDecl.Event>] public partial record EventDefinition : Member, IDeclaration<EventDefinition>;
 [WrapParser<Field>] public partial record FieldDefinition : Member, IDeclaration<FieldDefinition>;
 [WrapParser<SecurityBlock>] public partial record SecurityClause : Member, IDeclaration<SecurityClause>;
 [WrapParser<ExternSource>] public partial record ExternSourceReference : Member, IDeclaration<ExternSourceReference>;
@@ -150,7 +158,7 @@ public record ParamAttributeClause(INT Index) : Member, IDeclaration<ParamAttrib
 
 
 
-public record SubstitutionClause(OverrideMethodItem.OverrideMethodSignature Target, OverrideMethodItem.OverrideMethodSignature Substitution) : Member, IDeclaration<SubstitutionClause>
+public record SubstitutionClause(OverrideMethodSignature Target, OverrideMethodSignature Substitution) : Member, IDeclaration<SubstitutionClause>
 {
     public override string ToString() => $".override {Target} with {Substitution}";
     public static Parser<SubstitutionClause> AsParser => RunAll(
@@ -158,12 +166,12 @@ public record SubstitutionClause(OverrideMethodItem.OverrideMethodSignature Targ
         Discard<SubstitutionClause, string>(ConsumeWord(Id, ".override")),
         Map(
             converter: target => Construct<SubstitutionClause>(2, 0, target),
-            OverrideMethodItem.OverrideMethodSignature.AsParser
+            OverrideMethodSignature.AsParser
         ),
         Discard<SubstitutionClause, string>(ConsumeWord(Id, "with")),
         Map(
             converter: substitution => Construct<SubstitutionClause>(2, 1, substitution),
-            OverrideMethodItem.OverrideMethodSignature.AsParser
+            OverrideMethodSignature.AsParser
         )
     );
 }

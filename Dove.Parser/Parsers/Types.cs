@@ -1,10 +1,43 @@
+using BoundsDecl;
+using IdentifierDecl;
+using MethodDecl;
+using ParameterDecl;
+using ResourceDecl;
 using System.Text;
 using static Core;
+namespace TypeDecl;
 using GenArgs = Type.Collection;
 
-public record TypeSpecification : IDeclaration<TypeSpecification> {
+public record TypeReference(ResolutionScope Scope, ARRAY<DottedName> Names) : IDeclaration<TypeReference>
+{
+    public override string ToString()
+    {
+        StringBuilder sb = new();
+        if (Scope is not null)
+        {
+            sb.Append($"{Scope.ToString(true)} ");
+        }
+        sb.Append(Names.ToString());
+        return sb.ToString();
+    }
+    public static Parser<TypeReference> AsParser => RunAll(
+        converter: (vals) => new TypeReference(vals[0]?.Scope, vals[1].Names),
+        TryRun(
+            converter: (scope) => new TypeReference(scope, null),
+            ResolutionScope.AsParser,
+            Empty<ResolutionScope>()
+        ),
+        Map(
+            converter: (name) => new TypeReference(null, name),
+            ARRAY<DottedName>.MakeParser('\0', '/', '\0')
+        )
+    );
+}
+public record TypeSpecification : IDeclaration<TypeSpecification>
+{
     private Object _value;
-    public record NamedModuleSpecification(DottedName Name, bool IsModule) : IDeclaration<NamedModuleSpecification> {
+    public record NamedModuleSpecification(DottedName Name, bool IsModule) : IDeclaration<NamedModuleSpecification>
+    {
         public override string ToString() => $"{(IsModule ? ".module " : String.Empty)}{Name} ";
         public static Parser<NamedModuleSpecification> AsParser => RunAll(
             converter: (vals) => new NamedModuleSpecification(vals[1].Name, vals[0].IsModule),
@@ -19,26 +52,27 @@ public record TypeSpecification : IDeclaration<TypeSpecification> {
             )
         );
     }
-    public override string ToString() => _value switch {
+    public override string ToString() => _value switch
+    {
         Type t => t.ToString(),
         TypeReference t => t.ToString(),
         NamedModuleSpecification t => $"[{t}]",
         _ => throw new System.Diagnostics.UnreachableException()
     };
     public static Parser<TypeSpecification> AsParser => TryRun(
-        converter : Id,
+        converter: Id,
         Map(
-            converter : (type) => new TypeSpecification { _value = type },
+            converter: (type) => new TypeSpecification { _value = type },
             Type.AsParser
         ),
         Map(
-            converter : (type) => new TypeSpecification { _value = type },
+            converter: (type) => new TypeSpecification { _value = type },
             TypeReference.AsParser
         ),
         Map(
-            converter : (type) => new TypeSpecification { _value = type },
+            converter: (type) => new TypeSpecification { _value = type },
             RunAll(
-                converter : (vals) => vals[1],
+                converter: (vals) => vals[1],
                 Discard<NamedModuleSpecification, char>(ConsumeChar(Id, '[')),
                 NamedModuleSpecification.AsParser,
                 Discard<NamedModuleSpecification, char>(ConsumeChar(Id, ']'))
@@ -47,32 +81,41 @@ public record TypeSpecification : IDeclaration<TypeSpecification> {
     );
 }
 
-public record NativeType(NativeType Type, bool IsArray, INT Length, INT Supplied) : IDeclaration<NativeType> {
-    public override string ToString() {
+public record NativeType(NativeType Type, bool IsArray, INT Length, INT Supplied) : IDeclaration<NativeType>
+{
+    public override string ToString()
+    {
         StringBuilder sb = new();
-        if(Type is not null) {
+        if (Type is not null)
+        {
             sb.Append(Type.ToString());
         }
 
-        if(IsArray) {
+        if (IsArray)
+        {
             sb.Append("[");
-            if(Length is not null) {
+            if (Length is not null)
+            {
                 sb.Append($"{Length}");
             }
-            if(Supplied is not null) {
+            if (Supplied is not null)
+            {
                 sb.Append($" + {Supplied}");
             }
             sb.Append("]");
         }
         return sb.ToString();
     }
-    public record NativeTypePrimitive(String TypeName) : NativeType(null, false, null, null), IDeclaration<NativeTypePrimitive> {
+    public record NativeTypePrimitive(String TypeName) : NativeType(null, false, null, null), IDeclaration<NativeTypePrimitive>
+    {
         private static String[] _primitives = new String[] { "[]", "bool", "float32", "float64", "int", "int8", "int16", "int32", "int64", "lpstr", "lpwstr", "method", "unsigned" };
         public override string ToString() => TypeName;
         public static Parser<NativeTypePrimitive> AsParser => TryRun(
             converter: (vals) => new NativeTypePrimitive(vals),
-            _primitives.Select((primitive) => {
-                if(primitive == "unsigned") {
+            _primitives.Select((primitive) =>
+            {
+                if (primitive == "unsigned")
+                {
                     return RunAll(
                         converter: (vals) => $"{vals[0]} {vals[1]}",
                         ConsumeWord(Id, primitive),
@@ -81,7 +124,9 @@ public record NativeType(NativeType Type, bool IsArray, INT Length, INT Supplied
                             _primitives.Take(4..9).Select((primitive2) => ConsumeWord(Id, primitive2)).ToArray()
                         )
                     );
-                } else {
+                }
+                else
+                {
                     return ConsumeWord(Id, primitive);
                 }
             }).ToArray()
@@ -102,7 +147,7 @@ public record NativeType(NativeType Type, bool IsArray, INT Length, INT Supplied
                     RunAll(
                         converter: (vals) => vals[1],
                         Discard<INT, char>(ConsumeChar(Id, '+')),
-                        Map(Id ,INT.AsParser)
+                        Map(Id, INT.AsParser)
                     ),
                     Empty<INT>()
                 ),
@@ -112,26 +157,33 @@ public record NativeType(NativeType Type, bool IsArray, INT Length, INT Supplied
     );
 }
 
-public record Type : IDeclaration<Type> {
-    public override string ToString() {
+public record Type : IDeclaration<Type>
+{
+    public override string ToString()
+    {
         StringBuilder sb = new();
         sb.Append($"{Basic} ");
-        if(Suffixes is not null) {
+        if (Suffixes is not null)
+        {
             sb.Append(String.Join(" ", Suffixes.Select((suffix) => suffix.ToString())));
         }
         return sb.ToString();
     }
-    public Type.TypePrefix Basic {get; set;}
-    public Type.TypeSuffix[] Suffixes {get; set;}
-    public record TypePrefix : IDeclaration<TypePrefix> {
-        public record TypePrimitive(String TypeName) : TypePrefix, IDeclaration<TypePrimitive> {
-            private static String[] _primitives = new String[] { "bool","char","float32","float64","int8","int16","int32","int64","object","string","typedref","valuetype","void", "unsigned","native" };
+    public Type.TypePrefix Basic { get; set; }
+    public Type.TypeSuffix[] Suffixes { get; set; }
+    public record TypePrefix : IDeclaration<TypePrefix>
+    {
+        public record TypePrimitive(String TypeName) : TypePrefix, IDeclaration<TypePrimitive>
+        {
+            private static String[] _primitives = new String[] { "bool", "char", "float32", "float64", "int8", "int16", "int32", "int64", "object", "string", "typedref", "valuetype", "void", "unsigned", "native" };
 
             public override string ToString() => TypeName;
             public static Parser<TypePrimitive> AsParser => TryRun(
                 converter: (vals) => new TypePrimitive(vals),
-                _primitives.Select((primitive) => {
-                    if(primitive == "unsigned") {
+                _primitives.Select((primitive) =>
+                {
+                    if (primitive == "unsigned")
+                    {
                         return RunAll(
                             converter: (vals) => $"{vals[0]} {vals[1]}",
                             ConsumeWord(Id, primitive),
@@ -141,12 +193,15 @@ public record Type : IDeclaration<Type> {
                             )
                         );
                     }
-                    else if(primitive == "native") {
+                    else if (primitive == "native")
+                    {
                         return RunAll(
-                            converter: (vals) => {
+                            converter: (vals) =>
+                            {
                                 StringBuilder sb = new();
                                 sb.Append(vals[0]);
-                                if(vals[1] is not null) {
+                                if (vals[1] is not null)
+                                {
                                     sb.Append($" {vals[1]}");
                                 }
                                 sb.Append($" {vals[2]} ");
@@ -156,14 +211,17 @@ public record Type : IDeclaration<Type> {
                             TryRun(Id, ConsumeWord(Id, "unsigned"), Empty<String>()),
                             ConsumeWord(Id, "int")
                         );
-                    } else {
+                    }
+                    else
+                    {
                         return ConsumeWord(Id, primitive);
                     }
                 }).ToArray()
             );
         }
 
-        public record GenericTypeParameter(INT Index, GenericTypeParameter.Type TypeParameterType) : TypePrefix, IDeclaration<GenericTypeParameter> {
+        public record GenericTypeParameter(INT Index, GenericTypeParameter.Type TypeParameterType) : TypePrefix, IDeclaration<GenericTypeParameter>
+        {
             public enum Type { Method, Class }
             public override string ToString() => $"{(TypeParameterType is Type.Method ? "!!" : "!")}{Index}";
             public static Parser<GenericTypeParameter> AsParser => RunAll(
@@ -171,19 +229,21 @@ public record Type : IDeclaration<Type> {
                 TryRun(
                     converter: (indicator) => new GenericTypeParameter(null, indicator == "!!" ? Type.Method : Type.Class),
                     ConsumeWord(Id, "!!"),
-                    ConsumeWord(Id,  "!")
+                    ConsumeWord(Id, "!")
                 ),
                 Map(val => new GenericTypeParameter(val, Type.Class), INT.AsParser)
             );
         }
 
-        public record MethodDefinition(CallConvention CallConvention, Type TypeTarget, Parameter.Collection Parameters) : TypePrefix, IDeclaration<MethodDefinition> {
-            public override string ToString() {
+        public record MethodDefinition(CallConvention CallConvention, Type TypeTarget, Parameter.Collection Parameters) : TypePrefix, IDeclaration<MethodDefinition>
+        {
+            public override string ToString()
+            {
                 StringBuilder sb = new();
                 sb.Append($"method {CallConvention} {TypeTarget}* (");
                 sb.Append(Parameters.ToString());
                 sb.Append(")");
-                return sb.ToString();            
+                return sb.ToString();
             }
             public static Parser<MethodDefinition> AsParser => RunAll(
                 converter: parts => new MethodDefinition(parts[1].CallConvention, parts[2].TypeTarget, parts[5].Parameters),
@@ -204,8 +264,9 @@ public record Type : IDeclaration<Type> {
                 Discard<MethodDefinition, char>(ConsumeChar(Id, ')'))
             );
         }
-        
-        public record ClassTypeReference(TypeReference Reference) : TypePrefix, IDeclaration<ClassTypeReference> {
+
+        public record ClassTypeReference(TypeReference Reference) : TypePrefix, IDeclaration<ClassTypeReference>
+        {
             public override string ToString() => $"class {Reference}";
             public static Parser<ClassTypeReference> AsParser => RunAll(
                 converter: (vals) => new ClassTypeReference(vals[1].Reference),
@@ -224,17 +285,20 @@ public record Type : IDeclaration<Type> {
             Lazy(() => Cast<TypePrefix, MethodDefinition>(MethodDefinition.AsParser))
         );
     }
-    
-    public record Collection(ARRAY<Type> Types) : Type, IDeclaration<Collection> {
+
+    public record Collection(ARRAY<Type> Types) : Type, IDeclaration<Collection>
+    {
         public override string ToString() => Types.ToString();
         public static Parser<Collection> AsParser => Map(
             converter: (types) => new Collection(types),
             ARRAY<Type>.MakeParser('\0', ',', '\0')
         );
     }
-    
-    public record TypeSuffix : Type, IDeclaration<TypeSuffix> {
-        public record ReferenceTypeSuffix(bool IsRawPointer) : TypeSuffix, IDeclaration<ReferenceTypeSuffix> {
+
+    public record TypeSuffix : Type, IDeclaration<TypeSuffix>
+    {
+        public record ReferenceTypeSuffix(bool IsRawPointer) : TypeSuffix, IDeclaration<ReferenceTypeSuffix>
+        {
             public override string ToString() => IsRawPointer ? "*" : "&";
             public static Parser<ReferenceTypeSuffix> AsParser => TryRun(
                 converter: (vals) => new ReferenceTypeSuffix(vals == '*'),
@@ -242,7 +306,8 @@ public record Type : IDeclaration<Type> {
             );
         }
 
-        public record BoundedTypeSuffix(Bound.Collection Bounds) : TypeSuffix, IDeclaration<BoundedTypeSuffix> {
+        public record BoundedTypeSuffix(Bound.Collection Bounds) : TypeSuffix, IDeclaration<BoundedTypeSuffix>
+        {
             public override string ToString() => $"[{Bounds}]";
             public static Parser<BoundedTypeSuffix> AsParser => RunAll(
                 converter: (vals) => new BoundedTypeSuffix(vals[1]),
@@ -252,7 +317,8 @@ public record Type : IDeclaration<Type> {
             );
         }
 
-        public record GenericTypeSuffix(GenArgs GenericArguments) : TypeSuffix, IDeclaration<GenericTypeSuffix> {
+        public record GenericTypeSuffix(GenArgs GenericArguments) : TypeSuffix, IDeclaration<GenericTypeSuffix>
+        {
             public override string ToString() => $"<{GenericArguments}>";
             public static Parser<GenericTypeSuffix> AsParser => RunAll(
                 converter: (vals) => new GenericTypeSuffix(vals[1]),
@@ -262,11 +328,14 @@ public record Type : IDeclaration<Type> {
             );
         }
 
-        public record ModifierTypeSuffix(String Modifier, TypeReference ReferencedType) :  TypeSuffix, IDeclaration<ModifierTypeSuffix> {
-            public override string ToString() {
+        public record ModifierTypeSuffix(String Modifier, TypeReference ReferencedType) : TypeSuffix, IDeclaration<ModifierTypeSuffix>
+        {
+            public override string ToString()
+            {
                 StringBuilder sb = new();
                 sb.Append($"{Modifier} ");
-                if(ReferencedType is not null) {
+                if (ReferencedType is not null)
+                {
                     sb.Append($"({ReferencedType})");
                 }
                 return sb.ToString();
@@ -277,7 +346,7 @@ public record Type : IDeclaration<Type> {
                 Map(val => new ModifierTypeSuffix(null, val), TypeReference.AsParser)
             );
         }
-        
+
         public static Parser<TypeSuffix> AsParser => TryRun(
             converter: Id,
             Cast<TypeSuffix, BoundedTypeSuffix>(BoundedTypeSuffix.AsParser),
@@ -288,18 +357,21 @@ public record Type : IDeclaration<Type> {
     }
 
     public static Parser<Type> AsParser => RunAll(
-        converter: parts => new Type {
+        converter: parts => new Type
+        {
             Basic = parts[0].Basic,
             Suffixes = parts[1].Suffixes
         },
         Map(
-            converter: (type) => new Type {
+            converter: (type) => new Type
+            {
                 Basic = type
             },
             TypePrefix.AsParser
         ),
         TryRun(
-            converter: (suffixes) => new Type {
+            converter: (suffixes) => new Type
+            {
                 Suffixes = suffixes
             },
             RunMany(

@@ -1,7 +1,10 @@
-using static Core;
-using static ExtraTools.Extensions;
+using ModuleDecl;
 using RootDecl;
-public record SubSystem(INT Number) : Declaration, IDeclaration<Module> {
+using static Core;
+
+namespace SubSystemDecl;
+public record SubSystem(INT Number) : Declaration, IDeclaration<Module>
+{
     public override string ToString() => $".subsystem {Number}";
     public static Parser<SubSystem> AsParser => RunAll(
         converter: (vals) => new SubSystem(vals[1].Number),

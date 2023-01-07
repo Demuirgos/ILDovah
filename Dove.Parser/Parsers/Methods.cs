@@ -1,6 +1,17 @@
+using AttributeDecl;
 using DataDecl;
+using ExceptionDecl;
+using FieldDecl;
+using IdentifierDecl;
+using InstructionDecl;
+using LabelDecl;
+using LocalDecl;
+using ParameterDecl;
+using ResourceDecl;
 using RootDecl;
+using SecurityDecl;
 using System.Text;
+using TypeDecl;
 using static Core;
 using static ExtraTools.Extensions;
 namespace MethodDecl;
@@ -48,7 +59,7 @@ public record MethodName(String Name) : IDeclaration<MethodName>
     );
 }
 
-public record Prefix(MethodAttribute.Collection MethodAttributes, CallConvention? Convention, Type Type, NativeType? MarshalledType, MethodName Name, GenericParameter.Collection? TypeParameters, Parameter.Collection Parameters, ImplAttribute.Collection ImplementationAttributes) : IDeclaration<Prefix>
+public record Prefix(MethodAttribute.Collection MethodAttributes, CallConvention? Convention, TypeDecl.Type Type, NativeType? MarshalledType, MethodName Name, GenericParameter.Collection? TypeParameters, Parameter.Collection Parameters, ImplAttribute.Collection ImplementationAttributes) : IDeclaration<Prefix>
 {
     public override string ToString()
     {
@@ -96,7 +107,7 @@ public record Prefix(MethodAttribute.Collection MethodAttributes, CallConvention
         ),
         Map(
             converter: type => Construct<Prefix>(8, 2, type),
-            Type.AsParser
+            TypeDecl.Type.AsParser
         ),
         TryRun(
             converter: type => Construct<Prefix>(8, 3, type),
@@ -253,86 +264,74 @@ public record LocalsItem(bool IsInit, Local.Collection Signatures) : Member, IDe
     );
 }
 
-
-
-public record OverrideMethodItem(OverrideMethodItem.OverrideMethodSignature Target) : Member, IDeclaration<OverrideMethodItem>
+[GenerateParser]
+public partial record OverrideMethodSignature : IDeclaration<OverrideMethodSignature>;
+public record OverrideMethodDefault(TypeSpecification Specification, MethodName Name) : OverrideMethodSignature, IDeclaration<OverrideMethodDefault>
 {
-    public record OverrideMethodSignature : IDeclaration<OverrideMethodSignature>
-    {
-        public record OverrideMethodDefault(TypeSpecification Specification, MethodName Name) : OverrideMethodSignature, IDeclaration<OverrideMethodDefault>
-        {
-            public override string ToString() => $"{Specification}::{Name}";
-            public static Parser<OverrideMethodDefault> AsParser => RunAll(
-                converter: parts => new OverrideMethodDefault(parts[0].Specification, parts[2].Name),
-                Map(
-                    converter: spec => Construct<OverrideMethodDefault>(2, 0, spec),
-                    TypeSpecification.AsParser
-                ),
-                Discard<OverrideMethodDefault, string>(ConsumeWord(Id, "::")),
-                Map(
-                    converter: name => Construct<OverrideMethodDefault>(2, 1, name),
-                    MethodName.AsParser
-                )
-            );
-        }
+    public override string ToString() => $"{Specification}::{Name}";
+    public static Parser<OverrideMethodDefault> AsParser => RunAll(
+        converter: parts => new OverrideMethodDefault(parts[0].Specification, parts[2].Name),
+        Map(
+            converter: spec => Construct<OverrideMethodDefault>(2, 0, spec),
+            TypeSpecification.AsParser
+        ),
+        Discard<OverrideMethodDefault, string>(ConsumeWord(Id, "::")),
+        Map(
+            converter: name => Construct<OverrideMethodDefault>(2, 1, name),
+            MethodName.AsParser
+        )
+    );
+}
 
-        public record OverrideMethodGeneric(CallConvention Convention, Type Type, TypeSpecification Specification, MethodName Name, GenericTypeArity Arity, Parameter.Collection Parameters) : OverrideMethodSignature, IDeclaration<OverrideMethodGeneric>
-        {
-            public override string ToString() => $"method {Convention} {Type} {Specification}::{Name} {Arity} ({Parameters})";
-            public static Parser<OverrideMethodGeneric> AsParser => RunAll(
-                converter: parts => new OverrideMethodGeneric(
-                    parts[1].Convention,
-                    parts[2].Type,
-                    parts[3].Specification,
-                    parts[5].Name,
-                    parts[6].Arity,
-                    parts[8].Parameters
-                ),
-                TryRun(
-                    Id,
-                    Discard<OverrideMethodGeneric, string>(ConsumeWord(Id, "method")),
-                    Empty<OverrideMethodGeneric>()
-                ),
-                Map(
-                    converter: conv => Construct<OverrideMethodGeneric>(6, 0, conv),
-                    CallConvention.AsParser
-                ),
-                Map(
-                    converter: type => Construct<OverrideMethodGeneric>(6, 1, type),
-                    Type.AsParser
-                ),
-                Map(
-                    converter: spec => Construct<OverrideMethodGeneric>(6, 2, spec),
-                    TypeSpecification.AsParser
-                ),
-                Discard<OverrideMethodGeneric, string>(ConsumeWord(Id, "::")),
-                Map(
-                    converter: name => Construct<OverrideMethodGeneric>(6, 3, name),
-                    MethodName.AsParser
-                ),
-                Map(
-                    converter: arity => Construct<OverrideMethodGeneric>(6, 4, arity),
-                    GenericTypeArity.AsParser
-                ),
-                Discard<OverrideMethodGeneric, char>(ConsumeChar(Id, '(')),
-                Map(
-                    converter: parameters => Construct<OverrideMethodGeneric>(6, 5, parameters),
-                    Parameter.Collection.AsParser
-                ),
-                Discard<OverrideMethodGeneric, char>(ConsumeChar(Id, ')'))
-            );
-        }
+public record OverrideMethodGeneric(CallConvention Convention, TypeDecl.Type Type, TypeSpecification Specification, MethodName Name, GenericTypeArity Arity, Parameter.Collection Parameters) : OverrideMethodSignature, IDeclaration<OverrideMethodGeneric>
+{
+    public override string ToString() => $"method {Convention} {Type} {Specification}::{Name} {Arity} ({Parameters})";
+    public static Parser<OverrideMethodGeneric> AsParser => RunAll(
+        converter: parts => new OverrideMethodGeneric(
+            parts[1].Convention,
+            parts[2].Type,
+            parts[3].Specification,
+            parts[5].Name,
+            parts[6].Arity,
+            parts[8].Parameters
+        ),
+        TryRun(
+            Id,
+            Discard<OverrideMethodGeneric, string>(ConsumeWord(Id, "method")),
+            Empty<OverrideMethodGeneric>()
+        ),
+        Map(
+            converter: conv => Construct<OverrideMethodGeneric>(6, 0, conv),
+            CallConvention.AsParser
+        ),
+        Map(
+            converter: type => Construct<OverrideMethodGeneric>(6, 1, type),
+            TypeDecl.Type.AsParser
+        ),
+        Map(
+            converter: spec => Construct<OverrideMethodGeneric>(6, 2, spec),
+            TypeSpecification.AsParser
+        ),
+        Discard<OverrideMethodGeneric, string>(ConsumeWord(Id, "::")),
+        Map(
+            converter: name => Construct<OverrideMethodGeneric>(6, 3, name),
+            MethodName.AsParser
+        ),
+        Map(
+            converter: arity => Construct<OverrideMethodGeneric>(6, 4, arity),
+            GenericTypeArity.AsParser
+        ),
+        Discard<OverrideMethodGeneric, char>(ConsumeChar(Id, '(')),
+        Map(
+            converter: parameters => Construct<OverrideMethodGeneric>(6, 5, parameters),
+            Parameter.Collection.AsParser
+        ),
+        Discard<OverrideMethodGeneric, char>(ConsumeChar(Id, ')'))
+    );
+}
 
-        public static Parser<OverrideMethodSignature> AsParser => Map(
-            converter: item => item,
-            TryRun(
-                converter: result => result,
-                Cast<OverrideMethodSignature, OverrideMethodDefault>(OverrideMethodDefault.AsParser),
-                Cast<OverrideMethodSignature, OverrideMethodGeneric>(OverrideMethodGeneric.AsParser)
-            )
-        );
-    }
-
+public record OverrideMethodItem(OverrideMethodSignature Target) : Member, IDeclaration<OverrideMethodItem>
+{
     public override string ToString() => $".override {Target}";
 
     public static Parser<OverrideMethodItem> AsParser => RunAll(
