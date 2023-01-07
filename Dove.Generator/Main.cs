@@ -16,12 +16,13 @@ public class ParserGenerator : ISourceGenerator
                     .SelectMany(al => al.Attributes)
                     .Any(a => a.Name.GetText().ToString().StartsWith(attributeName.Replace("Attribute", String.Empty)))));
 
-    private IEnumerable<RecordDeclarationSyntax> GetAllTargetClasses(Compilation context, string baseName)
+    private IEnumerable<RecordDeclarationSyntax> GetAllTargetClasses(Compilation context, RecordDeclarationSyntax baseClass)
         => context.SyntaxTrees
             .SelectMany(st => st.GetRoot()
             .DescendantNodes()
             .OfType<RecordDeclarationSyntax>()
-            .Where(c => c.BaseList?.Types.Any(t => t.ToString() == baseName) ?? false));
+            .Where(c => c.BaseList?.Types.Any(t => t.ToString() == baseClass.Identifier.ToString()) ?? false))
+            .Where(c => GetNamespace(c) == GetNamespace(baseClass) || baseClass.Identifier.ToString() == "Declaration"); // find a more general way to do this from attribute side
 
     private RecordDeclarationSyntax GetAllWrapperClasses(Compilation context, RecordDeclarationSyntax baseName)
     {
@@ -87,7 +88,7 @@ public class ParserGenerator : ISourceGenerator
         var namespaceName = GetNamespace(classDef);
 
         // get all classes that inherit from this class
-        var children = GetAllTargetClasses(context, className);
+        var children = GetAllTargetClasses(context, classDef);
 
         string body = String.Join(",\n        ", children.Select(c =>
         {

@@ -148,8 +148,8 @@ public partial record Member : IDeclaration<Member>
         );
     }
 }
-[WrapParser<Instruction>] public partial record InstructionItem : Member, IDeclaration<InstructionItem>;
 [WrapParser<CodeLabel>] public partial record LabelItem : Member, IDeclaration<LabelItem>;
+[WrapParser<Instruction>] public partial record InstructionItem : Member, IDeclaration<InstructionItem>;
 [WrapParser<Data>] public partial record DataBodyItem : Member, IDeclaration<DataBodyItem>;
 [WrapParser<SecurityBlock>] public partial record SecurityDeclarationItem : Member, IDeclaration<SecurityDeclarationItem>;
 [WrapParser<ExternSource>] public partial record ExternSourceItem : Member, IDeclaration<ExternSourceItem>;
