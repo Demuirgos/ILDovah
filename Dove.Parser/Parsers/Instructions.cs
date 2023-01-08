@@ -9,12 +9,8 @@ using static Core;
 using static ExtraTools.Extensions;
 
 namespace InstructionDecl;
-
-/*
-instr :  (memberRef | typeSpec)
-*/
 [NotImplemented]
-public record Instruction(IdentifierDecl.DottedName Opcode, InstructionArgument Arguments) : Member, IDeclaration<Instruction>
+public record Instruction(String Opcode, InstructionArgument Arguments) : Member, IDeclaration<Instruction>
 {
     public static Dictionary<string, string[]> OpcodeValues = new()
     {
