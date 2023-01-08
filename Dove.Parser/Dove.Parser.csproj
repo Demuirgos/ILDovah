@@ -14,4 +14,7 @@
       <ProjectReference Include="..\Dove.Shared\Dove.Shared.csproj"/>
   </ItemGroup>
 
+  <PropertyGroup>
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+  </PropertyGroup>
 </Project>
