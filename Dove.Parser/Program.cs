@@ -1,12 +1,13 @@
 ﻿// Note(Ayman) : Fix whitespace in ToString methods
 // Note(Ayman) : Add Extra checks to Nested Self referential Parsers to avoid 
 //               infinite loops or stack overflows 
-// Note(Ayman) : Fix sourge generator clumping types with same names as same type
+// Note(Ayman) : Fix ToString asap
+// Note(Ayman) : write tests for all parsers
 using ResourceDecl;
 
-var (source, index) = (".file File.dll", 0);
+var (source, index) = ("'test' + 'testst'", 0);
 
-TestConstruct<FileReference>(ref index, source);
+TestConstruct<InstructionDecl.InstructionArgument_INSTR_STRING>(ref index, source);
 void TestConstruct<T>(ref int index, string source)
     where T : IDeclaration<T>
 {

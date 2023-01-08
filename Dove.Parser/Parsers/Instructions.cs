@@ -9,7 +9,6 @@ using static Core;
 using static ExtraTools.Extensions;
 
 namespace InstructionDecl;
-[NotImplemented]
 public record Instruction(String Opcode, InstructionArgument Arguments) : Member, IDeclaration<Instruction>
 {
     public static Dictionary<string, string[]> OpcodeValues = new()
@@ -36,7 +35,11 @@ public record Instruction(String Opcode, InstructionArgument Arguments) : Member
             .Select(value => new KeyValuePair<string, string>(value, kvp.Key)))
         .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
 
-    public override string ToString() => String.Empty;
+    public override string ToString()
+    {
+        return $"{Opcode} {Arguments}";
+    }
+
     public static Parser<Instruction> AsParser => RunAll(
         converter : parts => new Instruction(parts[0].Opcode, parts[0].Arguments),
         TryRun(
