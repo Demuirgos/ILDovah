@@ -1,33 +1,21 @@
+using System.Text;
 using ExtraTools;
 using IdentifierDecl;
+using LabelDecl;
 using MethodDecl;
+using SigArgumentDecl;
 using TypeDecl;
 using static Core;
+using static ExtraTools.Extensions;
 
 namespace InstructionDecl;
 
+/*
+instr :  (memberRef | typeSpec)
+*/
 [NotImplemented]
-public record Instruction(IdentifierDecl.DottedName Id, ARRAY<QSTRING> Arguments) : Member, IDeclaration<Instruction>
+public record Instruction(IdentifierDecl.DottedName Opcode, InstructionArgument Arguments) : Member, IDeclaration<Instruction>
 {
-    public static Dictionary<string, string[]> OpcodeFormats = new()
-    {
-        ["instr_var"] = new[] { "InlineVar", "ShortInlineVar" },
-        ["instr_i"] = new[] { "InlineI", "ShortInlineI" },
-        ["instr_i8"] = new[] { "InlineI8" },
-        ["instr_r"] = new[] { "InlineR", "ShortInlineR" },
-        ["instr_brtarget"] = new[] { "InlineBrTarget", "ShortInlineBrTarget" },
-        ["instr_method"] = new[] { "InlineMethod" },
-        ["instr_field"] = new[] { "InlineField" },
-        ["instr_type"] = new[] { "InlineType" },
-        ["instr_string"] = new[] { "InlineString" },
-        ["instr_sig"] = new[] { "InlineSig" },
-        ["instr_rva"] = new[] { "InlineRVA" },
-        ["instr_tok"] = new[] { "InlineTok" },
-        ["instr_switch"] = new[] { "InlineSwitch" },
-        ["instr_phi"] = new[] { "InlinePhi" },
-        ["instr_none"] = new[] { "InlineNone" },
-    };
-
     public static Dictionary<string, string[]> OpcodeValues = new()
     {
         ["instr_none"] = new[] { "add", "add.ovf", "add.ovf.un", "and", "arglist", "break", "ceq", "cgt", "cgt.un", "ckfinite", "clt", "clt.un", "conv.i", "conv.i1", "conv.i2", "conv.i4", "conv.i8", "conv.ovf.i", "conv.ovf.i.un", "conv.ovf.i1|conv.ovf.i1.un", "conv.ovf.i2", "conv.ovf.i2.un", "conv.ovf.i4|conv.ovf.i4.un", "conv.ovf.i8", "conv.ovf.i8.un", "conv.ovf.u", "conv.ovf.u.un", "conv.ovf.u1", "conv.ovf.u1.un", "conv.ovf.u2|conv.ovf.u2.un", "conv.ovf.u4", "conv.ovf.u4.un", "conv.ovf.u8|conv.ovf.u8.un", "conv.r.un", "conv.r4", "conv.r8", "conv.u", "conv.u1", "conv.u2", "conv.u4", "conv.u8", "cpblk", "div", "div.un", "dup", "endfault", "endfilter", "endfinally", "initblk", "| ldarg.0", "ldarg.1", "ldarg.2", "ldarg.3", "ldc.i4.0", "ldc.i4.1", "ldc.i4.2", "ldc.i4.3", "ldc.i4.4", "ldc.i4.5", "ldc.i4.6", "ldc.i4.7", "ldc.i4.8", "ldc.i4.M1", "ldelem.i", "ldelem.i1", "ldelem.i2", "ldelem.i4", "ldelem.i8", "ldelem.r4", "ldelem.r8", "ldelem.ref", "ldelem.u1", "ldelem.u2", "ldelem.u4", "ldind.i", "ldind.i1", "ldind.i2", "ldind.i4", "ldind.i8", "ldind.r4", "ldind.r8", "ldind.ref", "ldind.u1", "ldind.u2", "ldind.u4", "ldlen", "ldloc.0", "ldloc.1", "ldloc.2", "ldloc.3", "ldnull", "localloc", "mul", "mul.ovf", "mul.ovf.un", "neg", "nop", "not", "or", "pop", "refanytype", "rem", "rem.un", "ret", "rethrow", "shl", "shr", "shr.un", "stelem.i", "stelem.i1", "stelem.i2", "stelem.i4", "stelem.i8", "stelem.r4", "stelem.r8", "stelem.ref", "stind.i", "stind.i1", "stind.i2", "stind.i4", "stind.i8", "stind.r4", "stind.r8", "stind.ref", "stloc.0", "stloc.1", "stloc.2", "stloc.3", "sub", "sub.ovf", "sub.ovf.un", "tail.", "throw", "volatile.", "xor" },
@@ -53,7 +41,19 @@ public record Instruction(IdentifierDecl.DottedName Id, ARRAY<QSTRING> Arguments
         .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
 
     public override string ToString() => String.Empty;
-    public static Parser<Instruction> AsParser => Empty<Instruction>();
+    public static Parser<Instruction> AsParser => RunAll(
+        converter : parts => new Instruction(parts[0].Opcode, parts[0].Arguments),
+        TryRun(
+            converter: opcode => Construct<Instruction>(2, 0, opcode),
+            OpcodeValuesInverse.Keys
+                .Select(opcode => ConsumeWord(Core.Id, opcode))
+                .ToArray()
+        ),
+        Map(
+            converter: args => Construct<Instruction>(2, 1, args),
+            InstructionArgument.AsParser
+        )
+    );
 }
 
 
@@ -64,18 +64,57 @@ public record Instruction(IdentifierDecl.DottedName Id, ARRAY<QSTRING> Arguments
 [WrapParser<TypeSpecification>] public partial record InstructionArgument_INSTR_TYPE : InstructionArgument, IDeclaration<InstructionArgument_INSTR_TYPE>;
 [WrapParser<INT>] public partial record InstructionArgument_INSTR_PHI : InstructionArgument, IDeclaration<InstructionArgument_INSTR_PHI>;
 [WrapParser<MethodReference>] public partial record InstructionArgument_INSTR_METHOD : InstructionArgument, IDeclaration<InstructionArgument_INSTR_METHOD>;
+[WrapParser<FieldTypeReference>] public partial record InstructionArgument_INSTR_FIELD : InstructionArgument, IDeclaration<InstructionArgument_INSTR_FIELD>;
+[WrapParser<JumpLabels>] public partial record InstructionArgument_INSTR_SWITCH : InstructionArgument, IDeclaration<InstructionArgument_INSTR_SWITCH>;
+[WrapParser<SigArgs>] public partial record InstructionArgument_INSTR_SIG : InstructionArgument, IDeclaration<InstructionArgument_INSTR_SIG>;
+[WrapParser<OwnerType>] public partial record InstructionArgument_INSTR_TOK : InstructionArgument, IDeclaration<InstructionArgument_INSTR_TOK>;
 
-[WrapParser<INT, Identifier>][GenerationOrderParser(Order.First)] public partial record InstructionArgument_INSTR_VAR : InstructionArgument, IDeclaration<InstructionArgument_INSTR_METHOD>;
-[WrapParser<INT, Identifier>] public partial record InstructionArgument_INSTR_BRTARGET : InstructionArgument, IDeclaration<InstructionArgument_INSTR_METHOD>;
-[WrapParser<INT, Identifier>] public partial record InstructionArgument_INSTR_RVA : InstructionArgument, IDeclaration<InstructionArgument_INSTR_METHOD>;
+[WrapParser<INT, Identifier>] public partial record InstructionArgument_INSTR_VAR : InstructionArgument, IDeclaration<InstructionArgument_INSTR_VAR>;
+[WrapParser<INT, Identifier>] public partial record InstructionArgument_INSTR_BRTARGET : InstructionArgument, IDeclaration<InstructionArgument_INSTR_BRTARGET>;
+[WrapParser<INT, Identifier>] public partial record InstructionArgument_INSTR_RVA : InstructionArgument, IDeclaration<InstructionArgument_INSTR_RVA>;
 
-/*
-instr : 
-    | INSTR_FIELD type [typeSpec '::'] id
-    | INSTR_SIG callConv type '(' sigArgs0 ')'
-    | INSTR_SWITCH '(' labels ')'
-    | INSTR_R (float64 | int64 | '(' bytes ')')
-    | INSTR_STRING compQstring | 'bytearray' '(' bytes ')'
-    | INSTR_TOK (memberRef | typeSpec)
-;
-*/
+[WrapParser<INT, FLOAT, BytearrayArgument>] public partial record InstructionArgument_INSTR_R : InstructionArgument, IDeclaration<InstructionArgument_INSTR_R>;
+[WrapParser<BytearrayArgument, QSTRING.Collection>] public partial record InstructionArgument_INSTR_STRING : InstructionArgument, IDeclaration<InstructionArgument_INSTR_STRING>;
+
+public record BytearrayArgument(string Prefix, ARRAY<BYTE> Bytes)
+    : IDeclaration<BytearrayArgument> {
+    public override string ToString() => $"{Prefix}({Bytes})";
+    public static Parser<BytearrayArgument> AsParser => RunAll(
+        converter: parts => new BytearrayArgument(parts[0].Prefix, parts[1].Bytes),
+        ConsumeWord(
+            converter: prefix => Construct<BytearrayArgument>(2, 0, prefix),
+            "bytearray"
+        ),
+        Map(
+            converter: labels => Construct<BytearrayArgument>(2, 1, labels),
+            ARRAY<BYTE>.MakeParser('(', '\0', ')')
+        )
+    );
+}
+
+public record SigArgs(SigArgument.Collection SigArguments) 
+    : IDeclaration<SigArgs> {
+    public override string ToString() => $"({SigArguments})";
+    public static Parser<SigArgs> AsParser => RunAll(
+        converter: parts => new SigArgs(parts[1]),
+        Discard<SigArgs, char>(ConsumeChar(Id, '(')),
+        Map(
+            converter: labels => Construct<SigArgs>(1, 0, labels),
+            SigArgument.Collection.AsParser
+        ),
+        Discard<SigArgs, char>(ConsumeChar(Id, ')'))
+    );
+} 
+public record JumpLabels(LabelOrOffset.Collection TargetLabels) 
+    : IDeclaration<JumpLabels> {
+    public override string ToString() => $"({TargetLabels})";
+    public static Parser<JumpLabels> AsParser => RunAll(
+        converter: parts => new JumpLabels(parts[1]),
+        Discard<JumpLabels, char>(ConsumeChar(Id, '(')),
+        Map(
+            converter: labels => Construct<JumpLabels>(1, 0, labels),
+            LabelOrOffset.Collection.AsParser
+        ),
+        Discard<JumpLabels, char>(ConsumeChar(Id, ')'))
+    );
+} 

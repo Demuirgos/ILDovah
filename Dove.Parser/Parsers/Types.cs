@@ -3,6 +3,7 @@ using IdentifierDecl;
 using MethodDecl;
 using ParameterDecl;
 using ResourceDecl;
+using SigArgumentDecl;
 using System.Text;
 using static Core;
 using static ExtraTools.Extensions;
@@ -332,6 +333,137 @@ public record ClassTypeReference(TypeReference Reference) : Prefix, IDeclaration
         Map(
             converter: (vals) => new ClassTypeReference(vals),
             Lazy(() => TypeReference.AsParser)
+        )
+    );
+}
+
+
+/*
+memberRef : 
+  'method' callConv type [typeSpec'::'] methodName '(' sigArgs0 ')'
+| 'field' type [typeSpec '::'] id
+*/
+[GenerateParser] public partial record OwnerType : IDeclaration<OwnerType>;
+[WrapParser<TypeSpecification>] public partial record TypeSpecReference : OwnerType, IDeclaration<OwnerType>;
+[GenerateParser] public partial record MemberReference : OwnerType, IDeclaration<OwnerType>;
+
+public record MethodMemberReference(MethodReference MethodRef) : MemberReference, IDeclaration<MethodMemberReference>
+{
+    public override string ToString() => $"method {MethodRef}";
+    public static Parser<MethodMemberReference> AsParser => RunAll(
+        converter: (vals) => new MethodMemberReference(vals[1].MethodRef),
+        Discard<MethodMemberReference, string>(ConsumeWord(Id, "method")),
+        Map(
+            converter: (vals) => new MethodMemberReference(vals),
+            Lazy(() => MethodReference.AsParser)
+        )
+    );
+}
+
+public record FieldMemberReference(FieldTypeReference FieldRef) : MemberReference, IDeclaration<FieldMemberReference>
+{
+    public override string ToString() => $"field {FieldRef}";
+    public static Parser<FieldMemberReference> AsParser => RunAll(
+        converter: (vals) => new FieldMemberReference(vals[1].FieldRef),
+        Discard<FieldMemberReference, string>(ConsumeWord(Id, "field")),
+        Map(
+            converter: (vals) => new FieldMemberReference(vals),
+            Lazy(() => FieldTypeReference.AsParser)
+        )
+    );
+}
+
+public record FieldTypeReference(TypeDecl.Type Type, TypeDecl.TypeSpecification Spec, Identifier Name) 
+    : IDeclaration<FieldTypeReference> {
+    public override string ToString()
+    {
+        var sb = new StringBuilder();
+        sb.Append($"{Type} ");
+        if (Spec != null)
+        {
+            sb.Append($"{Spec}::");
+        }
+        sb.Append($"{Name} ");
+        return sb.ToString();
+    }
+    public static Parser<FieldTypeReference> AsParser => RunAll(
+        converter: parts => new FieldTypeReference(
+            parts[0].Type,
+            parts[1]?.Spec,
+            parts[2].Name
+        ),
+        Map(
+            converter: type => Construct<FieldTypeReference>(3, 0, type),
+            TypeDecl.Type.AsParser
+        ),
+        TryRun(
+            converter: spec => Construct<FieldTypeReference>(3, 1, spec),
+            RunAll(
+                converter : parts => parts[0],
+                TypeDecl.TypeSpecification.AsParser,
+                Discard<TypeDecl.TypeSpecification, string>(ConsumeWord(Core.Id, "::"))
+            ),
+            Empty<TypeDecl.TypeSpecification>()
+        ),
+        Map(
+            converter: name => Construct<FieldTypeReference>(3, 2, name),
+            Identifier.AsParser
+        )
+    );
+}
+
+public record MethodReference(CallConvention? Convention, TypeDecl.Type Type, TypeSpecification Spec, MethodName Name, SigArgumentDecl.SigArgument.Collection SigArgs) 
+    : IDeclaration<MethodReference> {
+    public override string ToString()
+    {
+        var sb = new StringBuilder();
+        if (Convention != null)
+        {
+            sb.Append($"{Convention} ");
+        }
+        sb.Append($"{Type} ");
+        if (Spec != null)
+        {
+            sb.Append($"{Spec}::");
+        }
+        sb.Append($"{Name} ");
+        sb.Append($"({SigArgs}) ");
+        return sb.ToString();
+    }
+    public static Parser<MethodReference> AsParser => RunAll(
+        converter: parts => new MethodReference(
+            parts[0].Convention,
+            parts[1].Type,
+            parts[2]?.Spec,
+            parts[3].Name,
+            parts[4].SigArgs
+        ),
+        Map(
+            converter: conv => Construct<MethodReference>(5, 0, conv),
+            CallConvention.AsParser
+        ),
+        Map(
+            converter: type => Construct<MethodReference>(5, 1, type),
+            TypeDecl.Type.AsParser
+        ),
+        TryRun(
+            converter: type => Construct<MethodReference>(5, 2, type),
+            RunAll(
+                converter : parts => parts[0],
+                TypeSpecification.AsParser,
+                Discard<TypeSpecification, string>(ConsumeWord(Core.Id, "::"))
+            ),
+            Empty<TypeSpecification>()
+        ),
+        Map(
+            converter: name => Construct<MethodReference>(5, 3, name),
+            MethodName.AsParser
+        ),
+        RunAll(
+            converter: pars => Construct<MethodReference>(5, 4, pars[1]),
+            Discard<SigArgument.Collection, char>(ConsumeChar(Id, '(')),
+            SigArgument.Collection.AsParser,
+            Discard<SigArgument.Collection, char>(ConsumeChar(Id, ')'))
         )
     );
 }

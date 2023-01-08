@@ -78,6 +78,10 @@ public record BOOL(bool Value) : IDeclaration<BOOL> {
 }
 
 public record QSTRING(String Value, bool IsSingleyQuoted) : IDeclaration<QSTRING> {
+    public record Collection(ARRAY<QSTRING> Values) : IDeclaration<Collection> {
+        public override string ToString() => Values.ToString();
+        public static Parser<Collection> AsParser => Map((arr) => new Collection(arr), ARRAY<QSTRING>.MakeParser('\0', '+', '\0'));
+    }
     public override string ToString() {
         char quotationChar = IsSingleyQuoted ? '\'' : '"';
         return $"{quotationChar}{Value}{quotationChar}";

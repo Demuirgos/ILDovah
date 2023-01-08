@@ -63,15 +63,15 @@ public record FaultBlock(HandlerBlock Block) : WireBlock, IDeclaration<FaultBloc
     );
 }
 
-public record FilterBlock(Label Label, HandlerBlock Block) : WireBlock, IDeclaration<FilterBlock>
+public record FilterBlock(LabelOrOffset.Collection Labels, HandlerBlock Block) : WireBlock, IDeclaration<FilterBlock>
 {
-    public override string ToString() => $"filter {Label} {Block}";
+    public override string ToString() => $"filter {Labels} {Block}";
     public static Parser<FilterBlock> AsParser => RunAll(
-        converter: parts => new FilterBlock(parts[1].Label, parts[2].Block),
+        converter: parts => new FilterBlock(parts[1].Labels, parts[2].Block),
         Discard<FilterBlock, string>(ConsumeWord(Core.Id, "filter")),
         Map(
             converter: label => new FilterBlock(label, null),
-            Label.AsParser
+            LabelOrOffset.Collection.AsParser
         ),
         Map(
             converter: block => new FilterBlock(null, block),
@@ -95,7 +95,7 @@ public record FinallyBlock(HandlerBlock Block) : WireBlock, IDeclaration<Finally
 
 [GenerateParser]
 public partial record TryClause : IDeclaration<TryClause>;
-public record TryWithLabel(Label From, Label To) : TryClause, IDeclaration<TryWithLabel>
+public record TryWithLabel(LabelOrOffset.Collection From, LabelOrOffset.Collection To) : TryClause, IDeclaration<TryWithLabel>
 {
     public override string ToString() => $".try {From} to {To}";
     public static Parser<TryWithLabel> AsParser => RunAll(
@@ -103,12 +103,12 @@ public record TryWithLabel(Label From, Label To) : TryClause, IDeclaration<TryWi
         Discard<TryWithLabel, string>(ConsumeWord(Core.Id, ".try")),
         Map(
             converter: from => new TryWithLabel(from, null),
-            Label.AsParser
+            LabelOrOffset.Collection.AsParser
         ),
         Discard<TryWithLabel, string>(ConsumeWord(Core.Id, "to")),
         Map(
             converter: to => new TryWithLabel(null, to),
-            Label.AsParser
+            LabelOrOffset.Collection.AsParser
         )
     );
 }
@@ -128,7 +128,7 @@ public record TryWithScope(ScopeBlock ScopeBlock) : TryClause, IDeclaration<TryW
 
 [GenerateParser]
 public partial record HandlerBlock : IDeclaration<HandlerBlock>;
-public record HandlerWithLabel(Label From, Label To) : HandlerBlock, IDeclaration<HandlerWithLabel>
+public record HandlerWithLabel(LabelOrOffset.Collection From, LabelOrOffset.Collection To) : HandlerBlock, IDeclaration<HandlerWithLabel>
 {
     public override string ToString() => $"handler {From} to {To}";
     public static Parser<HandlerWithLabel> AsParser => RunAll(
@@ -136,12 +136,12 @@ public record HandlerWithLabel(Label From, Label To) : HandlerBlock, IDeclaratio
         Discard<HandlerWithLabel, string>(ConsumeWord(Core.Id, "handler")),
         Map(
             converter: from => new HandlerWithLabel(from, null),
-            Label.AsParser
+            LabelOrOffset.Collection.AsParser
         ),
         Discard<HandlerWithLabel, string>(ConsumeWord(Core.Id, "to")),
         Map(
             converter: to => new HandlerWithLabel(null, to),
-            Label.AsParser
+            LabelOrOffset.Collection.AsParser
         )
     );
 }
