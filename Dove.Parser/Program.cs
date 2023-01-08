@@ -5,9 +5,9 @@
 // Note(Ayman) : write tests for all parsers
 using ResourceDecl;
 
-var (source, index) = ("'test' + 'testst'", 0);
+var (source, index) = ("ldc.i4 23 ldc.i4 3 mul ret", 0);
 
-TestConstruct<InstructionDecl.InstructionArgument_INSTR_STRING>(ref index, source);
+TestConstruct<InstructionDecl.Instruction.Block>(ref index, source);
 void TestConstruct<T>(ref int index, string source)
     where T : IDeclaration<T>
 {
