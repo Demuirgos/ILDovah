@@ -411,10 +411,10 @@ public record MethodReference(CallConvention? Convention, TypeDecl.Type Type, Ty
             MethodName.AsParser
         ),
         RunAll(
-            converter: pars => Construct<Prefix>(5, 4, pars[1]),
-            Discard<Parameter.Collection, char>(ConsumeChar(Id, '(')),
+            converter: pars => Construct<MethodReference>(5, 4, pars[1]),
+            Discard<SigArgument.Collection, char>(ConsumeChar(Id, '(')),
             SigArgument.Collection.AsParser,
-            Discard<Parameter.Collection, char>(ConsumeChar(Id, ')'))
+            Discard<SigArgument.Collection, char>(ConsumeChar(Id, ')'))
         )
     );
 }

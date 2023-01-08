@@ -1,3 +1,3 @@
-﻿public class WrapParserAttribute<T> : System.Attribute
+﻿public class WrapParserAttribute : System.Attribute
 {
 }

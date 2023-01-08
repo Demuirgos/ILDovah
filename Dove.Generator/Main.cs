@@ -2,19 +2,26 @@
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
+using AttributeResult = System.ValueTuple<int, string>;
 
+public enum Order { First = 0, Middle = 1, Last = 2 }
 [Generator]
 public class ParserGenerator : ISourceGenerator
 {
+    private HashSet<int> WrapperCache = new();
     private IEnumerable<RecordDeclarationSyntax> GetAllMarkedClasses(Compilation context, string attributeName)
             => context.SyntaxTrees
                 .SelectMany(st => st.GetRoot()
                 .DescendantNodes()
                 .OfType<RecordDeclarationSyntax>()
-                .Where(r => r.AttributeLists
-                    .SelectMany(al => al.Attributes)
-                    .Any(a => a.Name.GetText().ToString().StartsWith(attributeName.Replace("Attribute", String.Empty)))));
+                .Where(r => GetMark(r, attributeName) is not null));
+    private AttributeSyntax GetMark(RecordDeclarationSyntax classDeclaration, string attributeName)
+        => classDeclaration.AttributeLists
+            .SelectMany(al => al.Attributes)
+            .Where(a => a.Name.GetText().ToString().StartsWith(attributeName.Replace("Attribute", String.Empty)))
+            .FirstOrDefault();
 
     private IEnumerable<RecordDeclarationSyntax> GetAllTargetClasses(Compilation context, RecordDeclarationSyntax baseClass)
         => context.SyntaxTrees
@@ -24,7 +31,7 @@ public class ParserGenerator : ISourceGenerator
             .Where(c => c.BaseList?.Types.Any(t => t.ToString() == baseClass.Identifier.ToString()) ?? false))
             .Where(c => GetNamespace(c) == GetNamespace(baseClass) || baseClass.Identifier.ToString() == "Declaration"); // find a more general way to do this from attribute side
 
-    private String GetAllWrapperClasses(Compilation context, RecordDeclarationSyntax baseName)
+    private (AttributeResult attrRes, string[] result) GetAllWrapperClasses(Compilation context, RecordDeclarationSyntax baseName)
     {
         var typesNames = baseName.AttributeLists
             .SelectMany(al => al.Attributes)
@@ -33,8 +40,21 @@ public class ParserGenerator : ISourceGenerator
             .OfType<GenericNameSyntax>()
             .SelectMany(par => par.TypeArgumentList?.Arguments.Select(arg => arg.GetText()))
             .ToList();
-        if(typesNames.Count == 1) {
-            var typeName = typesNames[0].ToString();
+
+        string attrCode = String.Empty;
+        if (typesNames.Count > 0)
+        {
+            string generics = String.Join(", ", Enumerable.Range(0, typesNames.Count).Select(i => $"T{i}"));
+            attrCode = $"public class WrapParserAttribute<{generics}> : System.Attribute {{}}";
+        }
+        else
+        {
+            throw new Exception("WrapParserAttribute must have at least one type argument");
+        }
+
+        var results = typesNames.Select(typeNameNode =>
+        {
+            var typeName = typeNameNode.ToString();
             var targetSubType = String.Empty;
             bool containsDot = false;
             if (typeName.Contains('.'))
@@ -63,9 +83,8 @@ public class ParserGenerator : ISourceGenerator
             {
                 return targetType is not null ? GetFullPathName(targetType, new List<string>()) : typeName;
             }
-        } else {
-            
-        }
+        }).ToArray();
+        return ((typesNames.Count, attrCode), results);
     }
 
     public static string GetNamespace(SyntaxNode node)
@@ -112,59 +131,109 @@ public class ParserGenerator : ISourceGenerator
         var className = classDef.Identifier.ToString();
         var namespaceName = GetNamespace(classDef);
 
-        // get all classes that inherit from this class
-        var children = GetAllTargetClasses(context, classDef);
+        var children =
+            GetAllTargetClasses(context, classDef).Select(r =>
+            {
+                if (GetMark(r, "GenerationOrderParserAttribute") is AttributeSyntax attrs)
+                {
+                    var arg = attrs?.ArgumentList?.Arguments.FirstOrDefault().Expression.ToString();
+                    arg = arg.Substring(arg.LastIndexOf('.') + 1);
+                    if (Enum.TryParse<Order>(arg, out var o))
+                    {
+                        return (r, (int)o);
+                    }
+                }
+                return (r, 1);
+            }).OrderBy(t => t.Item2);
 
-        string body = String.Join(",\n        ", children.Select(c =>
-        {
-            var cacheName = GetFullPathName(c, new List<string>());
-            return $"Lazy(() => Cast<{className}, {cacheName}>(IDeclaration<{cacheName}>.AsParser))";
-        }));
+        var body = children.Select(c => GetFullPathName(c.r, new List<string>()));
+        string prefix = $$$"""
+        using static Core;
+        using static ExtraTools.Extensions;
+        using RootDecl;
 
-        return (GetFullPathName(classDef, new List<string>()), $$$"""
-            using static Core;
-            using static ExtraTools.Extensions;
-            using RootDecl;
+        {{{(namespaceName != String.Empty ? $"namespace {namespaceName}" : String.Empty)}}};
+        """;
 
-            {{{(namespaceName != String.Empty ? $"namespace {namespaceName}" : String.Empty)}}};
-
-            public partial record {{{className}}} : IDeclaration<{{{className}}}> {
-                public static Parser<{{{className}}}> AsParser => TryRun(
-                    converter: Core.Id,
-                    {{{body}}}
-                );
-            }
-            """);
+        return (GetFullPathName(classDef, new List<string>()), $"{prefix}\n{HandleUnionGeneration(className, body)}");
     }
 
-    public (string, string) HandleWrapping(Compilation context, RecordDeclarationSyntax classDef)
+    public string HandleUnionGeneration(string BaseClassName, IEnumerable<string> childClassNames)
     {
+        string body = String.Join(",\n        ", childClassNames.Select(children =>
+        {
+            return $"Lazy(() => Cast<{BaseClassName}, {children}>(IDeclaration<{children}>.AsParser))";
+        }));
+
+        return $$$"""
+        public partial record {{{BaseClassName}}} : IDeclaration<{{{BaseClassName}}}> {
+            public static Parser<{{{BaseClassName}}}> AsParser => TryRun(
+                converter: Core.Id,
+                {{{body}}}
+            );
+        }
+        """;
+    }
+
+    public (AttributeResult, string, string) HandleWrapping(Compilation context, RecordDeclarationSyntax classDef)
+    {
+
         var className = classDef.Identifier.ToString();
         var namespaceName = GetNamespace(classDef);
 
         var targetName = GetAllWrapperClasses(context, classDef);
+        bool HasSuffix = targetName.result.Length > 1;
 
-        return (GetFullPathName(classDef, new List<string>()), $$$"""
-            using static Core;
-            using static ExtraTools.Extensions;
-            using RootDecl;
-            
-            {{{(namespaceName != String.Empty ? $"namespace {namespaceName}" : String.Empty)}}};
+        string GetSuffix(string str) => str.Substring(str.IndexOf('.') + 1);
+        string targetClassSubname(string targetName) => $"{className}{(HasSuffix ? $"_{GetSuffix(targetName)}" : String.Empty)}";
 
-            public partial record {{{className}}}({{{targetName}}} Value) 
+        string prefix = $$$"""
+        using static Core;
+        using static ExtraTools.Extensions;
+        using RootDecl;
+        
+        {{{(namespaceName != String.Empty ? $"namespace {namespaceName};" : String.Empty)}}}
+        {{{(HasSuffix ? HandleUnionGeneration(className, targetName.result.Select(targetName => targetClassSubname(targetName))) : String.Empty)}}}
+        """;
+
+        // emit types and hook inheritence tree if count > 1
+        string body = String.Join("\n", targetName.result.Select(targetName =>
+        {
+            var targetClass = targetClassSubname(targetName);
+            return $$$"""
+            public partial record {{{targetClass}}}
+                ({{{targetName}}} Value) : {{{(HasSuffix ? $"{className}, " : String.Empty)}}}IDeclaration<{{{targetClass}}}>
             {
                 public override string ToString() => Value.ToString();
-                public static Parser<{{{className}}}> AsParser => Map(
-                    converter: value => new {{{className}}}(value),
+                public static Parser<{{{targetClass}}}> AsParser => Map(
+                    converter: value => new {{{targetClass}}}(value),
                     IDeclaration<{{{targetName}}}>.AsParser
                 );
             }
-            """);
+
+            """;
+        }));
+
+        return (targetName.attrRes, GetFullPathName(classDef, new List<string>()), $"{prefix}\n{body}");
     }
 
     public void Execute(GeneratorExecutionContext context)
     {
+        WrapperCache.Clear();
         var compilation = context.Compilation;
+
+        var markedForWrap = GetAllMarkedClasses(compilation, "WrapParserAttribute");
+        foreach (var classDef in markedForWrap)
+        {
+            (var attrcode, string className, string classCode) = HandleWrapping(compilation, classDef);
+            if (!WrapperCache.Contains(attrcode.Item1))
+            {
+                context.AddSource($"WrapAttribute.{attrcode.Item1}.w.g.cs", attrcode.Item2);
+                WrapperCache.Add(attrcode.Item1);
+            }
+            context.AddSource($"{className}.w.g.cs", classCode);
+        }
+
         var markedClasses = GetAllMarkedClasses(compilation, "GenerateParserAttribute");
         foreach (var classDef in markedClasses)
         {
@@ -172,13 +241,6 @@ public class ParserGenerator : ISourceGenerator
             context.AddSource($"{className}.p.g.cs", classCode);
         }
 
-
-        var markedForWrap = GetAllMarkedClasses(compilation, "WrapParserAttribute");
-        foreach (var classDef in markedForWrap)
-        {
-            (string className, string classCode) = HandleWrapping(compilation, classDef);
-            context.AddSource($"{className}.w.g.cs", classCode);
-        }
     }
     public void Initialize(GeneratorInitializationContext context)
     {

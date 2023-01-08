@@ -34,53 +34,33 @@ public record TypeReference(ResolutionScope Scope, ARRAY<DottedName> Names) : ID
         )
     );
 }
-public record TypeSpecification : IDeclaration<TypeSpecification>
+
+[GenerateParser] public partial record TypeSpecification : IDeclaration<TypeSpecification>;
+public record NamedModuleSpecification(DottedName Name, bool IsModule) : TypeSpecification, IDeclaration<NamedModuleSpecification>
 {
-    private Object _value;
-    public record NamedModuleSpecification(DottedName Name, bool IsModule) : IDeclaration<NamedModuleSpecification>
-    {
-        public override string ToString() => $"{(IsModule ? ".module " : String.Empty)}{Name} ";
-        public static Parser<NamedModuleSpecification> AsParser => RunAll(
-            converter: (vals) => new NamedModuleSpecification(vals[1].Name, vals[0].IsModule),
-            TryRun(
-                converter: (module) => new NamedModuleSpecification(null, module is not null),
-                Discard<NamedModuleSpecification, string>(ConsumeWord(Id, ".module")),
-                Empty<NamedModuleSpecification>()
-            ),
-            Map(
-                converter: (name) => new NamedModuleSpecification(name, false),
-                DottedName.AsParser
-            )
-        );
-    }
-    public override string ToString() => _value switch
-    {
-        Type t => t.ToString(),
-        TypeReference t => t.ToString(),
-        NamedModuleSpecification t => $"[{t}]",
-        _ => throw new System.Diagnostics.UnreachableException()
-    };
-    public static Parser<TypeSpecification> AsParser => TryRun(
-        converter: Id,
-        Map(
-            converter: (type) => new TypeSpecification { _value = type },
-            Type.AsParser
+    public override string ToString() => $"{(IsModule ? ".module " : String.Empty)}{Name} ";
+    public static Parser<NamedModuleSpecification> MainParser => RunAll(
+        converter: (vals) => new NamedModuleSpecification(vals[1].Name, vals[0].IsModule),
+        TryRun(
+            converter: (module) => new NamedModuleSpecification(null, module is not null),
+            Discard<NamedModuleSpecification, string>(ConsumeWord(Id, ".module")),
+            Empty<NamedModuleSpecification>()
         ),
         Map(
-            converter: (type) => new TypeSpecification { _value = type },
-            TypeReference.AsParser
-        ),
-        Map(
-            converter: (type) => new TypeSpecification { _value = type },
-            RunAll(
-                converter: (vals) => vals[1],
-                Discard<NamedModuleSpecification, char>(ConsumeChar(Id, '[')),
-                NamedModuleSpecification.AsParser,
-                Discard<NamedModuleSpecification, char>(ConsumeChar(Id, ']'))
-            )
+            converter: (name) => new NamedModuleSpecification(name, false),
+            DottedName.AsParser
         )
     );
+    public static Parser<NamedModuleSpecification> AsParser => RunAll(
+        converter: (vals) => vals[1],
+        Discard<NamedModuleSpecification, char>(ConsumeChar(Id, '[')),
+        NamedModuleSpecification.MainParser,
+        Discard<NamedModuleSpecification, char>(ConsumeChar(Id, ']'))
+    );
 }
+
+[WrapParser<Type>] public partial record TypeSpecificationInlined : TypeSpecification, IDeclaration<TypeSpecificationInlined>;
+[WrapParser<TypeReference>] public partial record TypeSpecificationReference : TypeSpecification, IDeclaration<TypeSpecificationInlined>;
 
 public record NativeType(NativeType Type, bool IsArray, INT Length, INT Supplied) : IDeclaration<NativeType>
 {
@@ -181,8 +161,8 @@ public record Type(Prefix Basic, Suffix[] Suffixes) : IDeclaration<Type>
 
     public static Parser<Type> AsParser => RunAll(
         converter: parts => new Type(
-            Basic : parts[0].Basic,
-            Suffixes : parts[1].Suffixes
+            Basic: parts[0].Basic,
+            Suffixes: parts[1].Suffixes
         ),
         Map(
             converter: (type) => Construct<TypeDecl.Type>(2, 0, type),
