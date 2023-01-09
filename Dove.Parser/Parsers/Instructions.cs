@@ -40,24 +40,6 @@ public record Instruction(String Opcode, InstructionArgument Arguments) : Member
         ["instr_phi"] = Array.Empty<String>(),
     };
 
-    private static Dictionary<string, string> KindParserMap = new() {
-        ["instr_var"] = typeof(InstructionArgument_INSTR_VAR).Name,
-        ["instr_i"] = typeof(InstructionArgument_INSTR_I).Name,
-        ["instr_i8"] = typeof(InstructionArgument_INSTR_I8).Name,
-        ["instr_r"] = typeof(InstructionArgument_INSTR_R).Name,
-        ["instr_brtarget"] = typeof(InstructionArgument_INSTR_BRTARGET).Name,
-        ["instr_method"] = typeof(InstructionArgument_INSTR_METHOD).Name,
-        ["instr_field"] = typeof(InstructionArgument_INSTR_FIELD).Name,
-        ["instr_type"] = typeof(InstructionArgument_INSTR_TYPE).Name,
-        ["instr_string"] = typeof(InstructionArgument_INSTR_STRING).Name,
-        ["instr_sig"] = typeof(InstructionArgument_INSTR_SIG).Name,
-        ["instr_rva"] = typeof(InstructionArgument_INSTR_RVA).Name,
-        ["instr_tok"] = typeof(InstructionArgument_INSTR_TOK).Name,
-        ["instr_switch"] = typeof(InstructionArgument_INSTR_SWITCH).Name,
-        ["instr_phi"] = typeof(InstructionArgument_INSTR_PHI).Name,
-        ["instr_none"] = typeof(InstructionArgument_None).Name,
-    };
-
     public static Dictionary<string, string> OpcodeValuesInverse = OpcodeValues
         .SelectMany(kvp => kvp.Value
             .Select(value => new KeyValuePair<string, string>(value, kvp.Key)))
@@ -72,86 +54,86 @@ public record Instruction(String Opcode, InstructionArgument Arguments) : Member
         converter : Id,
         OpcodeValuesInverse.Keys
             .Select(opcode => {
-                var parserKind = KindParserMap[OpcodeValuesInverse[opcode]];
-
+                var parserKind = OpcodeValuesInverse[opcode];
                 var opcodeParser = ConsumeWord(Id, opcode);
 
                 return parserKind switch {
-                    "InstructionArgument_INSTR_VAR" => RunAll(
+                    "instr_var" => RunAll(
                         converter: parts => new Instruction(opcode, parts[1]),
                         Discard<InstructionArgument_INSTR_VAR, string>(opcodeParser),
                         InstructionArgument_INSTR_VAR.AsParser
                     ),
-                    "InstructionArgument_INSTR_I" => RunAll(
+                    "instr_i" => RunAll(
                         converter: parts => new Instruction(opcode, parts[1]),
                         Discard<InstructionArgument_INSTR_I, string>(opcodeParser),
                         InstructionArgument_INSTR_I.AsParser
                     ),
-                    "InstructionArgument_INSTR_I8" => RunAll(
+                    "instr_i8" => RunAll(
                         converter: parts => new Instruction(opcode, parts[1]),
                         Discard<InstructionArgument_INSTR_I8, string>(opcodeParser),
                         InstructionArgument_INSTR_I8.AsParser
                     ),
-                    "InstructionArgument_INSTR_R" => RunAll(
+                    "instr_r" => RunAll(
                         converter: parts => new Instruction(opcode, parts[1]),
                         Discard<InstructionArgument_INSTR_R, string>(opcodeParser),
                         InstructionArgument_INSTR_R.AsParser
                     ),
-                    "InstructionArgument_INSTR_BRTARGET" => RunAll(
+                    "instr_brtarget" => RunAll(
                         converter: parts => new Instruction(opcode, parts[1]),
                         Discard<InstructionArgument_INSTR_BRTARGET, string>(opcodeParser),
                         InstructionArgument_INSTR_BRTARGET.AsParser
                     ),
-                    "InstructionArgument_INSTR_METHOD" => RunAll(
+                    "instr_method" => RunAll(
                         converter: parts => new Instruction(opcode, parts[1]),
                         Discard<InstructionArgument_INSTR_METHOD, string>(opcodeParser),
                         InstructionArgument_INSTR_METHOD.AsParser
                     ),
-                    "InstructionArgument_INSTR_FIELD" => RunAll(
+                    "instr_field" => RunAll(
                         converter: parts => new Instruction(opcode, parts[1]),
                         Discard<InstructionArgument_INSTR_FIELD, string>(opcodeParser),
                         InstructionArgument_INSTR_FIELD.AsParser
                     ),
-                    "InstructionArgument_INSTR_TYPE" => RunAll(
+                    "instr_type" => RunAll(
                         converter: parts => new Instruction(opcode, parts[1]),
                         Discard<InstructionArgument_INSTR_TYPE, string>(opcodeParser),
                         InstructionArgument_INSTR_TYPE.AsParser
                     ),
-                    "InstructionArgument_INSTR_STRING" => RunAll(
+                    "instr_string" => RunAll(
                         converter: parts => new Instruction(opcode, parts[1]),
                         Discard<InstructionArgument_INSTR_STRING, string>(opcodeParser),
                         InstructionArgument_INSTR_STRING.AsParser
                     ),
-                    "InstructionArgument_INSTR_SIG" => RunAll(
+                    "instr_sig" => RunAll(
                         converter: parts => new Instruction(opcode, parts[1]),
                         Discard<InstructionArgument_INSTR_SIG, string>(opcodeParser),
                         InstructionArgument_INSTR_SIG.AsParser
                     ),
-                    "InstructionArgument_INSTR_RVA" => RunAll(
+                    "instr_rva" => RunAll(
                         converter: parts => new Instruction(opcode, parts[1]),
                         Discard<InstructionArgument_INSTR_RVA, string>(opcodeParser),
                         InstructionArgument_INSTR_RVA.AsParser
                     ),
-                    "InstructionArgument_INSTR_TOK" => RunAll(
+                    "instr_tok" => RunAll(
                         converter: parts => new Instruction(opcode, parts[1]),
                         Discard<InstructionArgument_INSTR_TOK, string>(opcodeParser),
                         InstructionArgument_INSTR_TOK.AsParser
                     ),
-                    "InstructionArgument_INSTR_SWITCH" => RunAll(
+                    "instr_switch" => RunAll(
                         converter: parts => new Instruction(opcode, parts[1]),
                         Discard<InstructionArgument_INSTR_SWITCH, string>(opcodeParser),
                         InstructionArgument_INSTR_SWITCH.AsParser
                     ),
-                    "InstructionArgument_INSTR_PHI" => RunAll(
+                    "instr_phi" => RunAll(
                         converter: parts => new Instruction(opcode, parts[1]),
                         Discard<InstructionArgument_INSTR_PHI, string>(opcodeParser),
                         InstructionArgument_INSTR_PHI.AsParser
                     ),
-                    _ => RunAll(
+                    "instr_none" => RunAll(
                         converter: parts => new Instruction(opcode, parts[1]),
                         Discard<InstructionArgument_None, string>(opcodeParser),
                         InstructionArgument_None.AsParser
-                    )
+                    ),
+                    _ => throw new Exception($"Unknown parser kind {parserKind} for opcode {opcode}")
                 };
             })
             .ToArray()
