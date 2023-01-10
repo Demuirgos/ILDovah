@@ -192,7 +192,7 @@ public record ExternSource(INT Line, INT? Column, QSTRING? File) : Declaration, 
 }
 public record Culture(QSTRING Value) : IDeclaration<Culture>
 {
-    public override string ToString() => $".culture {Value} ";
+    public override string ToString() => $".culture {Value}";
 
     public static Parser<Culture> AsParser => RunAll(
         converter: parts => new Culture(

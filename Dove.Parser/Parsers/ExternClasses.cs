@@ -9,7 +9,7 @@ namespace ExterClassDecl;
 
 public record ExternClass(Prefix Header, Member.Collection Members) : Declaration, IDeclaration<ExternClass>
 {
-    public override string ToString() => $".class {Header} {{ {Members} }}";
+    public override string ToString() => $".class {Header} \n{{\n{Members}\n}}";
 
     public static Parser<ExternClass> AsParser => RunAll(
         converter: parts => new ExternClass(parts[1].Header, parts[3].Members),
@@ -49,7 +49,7 @@ public partial record Member : IDeclaration<Member>
 {
     public record Collection(ARRAY<Member> Members) : IDeclaration<Collection>
     {
-        public override string ToString() => Members.ToString();
+        public override string ToString() => Members.ToString('\n');
         public static Parser<Collection> AsParser => Map(
             converter: arr => new Collection(arr),
             ARRAY<Member>.MakeParser('\0', '\0', '\0')

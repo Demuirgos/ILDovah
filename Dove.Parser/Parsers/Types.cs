@@ -1,4 +1,5 @@
 using BoundsDecl;
+using CallConventionDecl;
 using IdentifierDecl;
 using MethodDecl;
 using ParameterDecl;
@@ -37,9 +38,9 @@ public record TypeReference(ResolutionScope Scope, ARRAY<DottedName> Names) : ID
 }
 
 [GenerateParser] public partial record TypeSpecification : IDeclaration<TypeSpecification>;
-public record NamedModuleSpecification(DottedName Name, bool IsModule) : TypeSpecification, IDeclaration<NamedModuleSpecification>
+[GenerationOrderParser(Order.Last)] public record NamedModuleSpecification(DottedName Name, bool IsModule) : TypeSpecification, IDeclaration<NamedModuleSpecification>
 {
-    public override string ToString() => $"{(IsModule ? ".module " : String.Empty)}{Name} ";
+    public override string ToString() => $"{(IsModule ? ".module " : String.Empty)}{Name}";
     public static Parser<NamedModuleSpecification> MainParser => RunAll(
         converter: (vals) => new NamedModuleSpecification(vals[1].Name, vals[0].IsModule),
         TryRun(
@@ -82,7 +83,7 @@ public record NativeType(NativeType Type, bool IsArray, INT Length, INT Supplied
             }
             if (Supplied is not null)
             {
-                sb.Append($" + {Supplied}");
+                sb.Append($"+{Supplied}");
             }
             sb.Append("]");
         }
@@ -144,16 +145,17 @@ public record Type(Prefix Basic, Suffix[] Suffixes) : IDeclaration<Type>
     public override string ToString()
     {
         StringBuilder sb = new();
-        sb.Append($"{Basic} ");
+        sb.Append($"{Basic}");
         if (Suffixes is not null)
         {
+            sb.Append(" ");
             sb.Append(String.Join(" ", Suffixes.Select((suffix) => suffix.ToString())));
         }
         return sb.ToString();
     }
     public record Collection(ARRAY<Type> Types) : IDeclaration<Collection>
     {
-        public override string ToString() => Types.ToString();
+        public override string ToString() => Types.ToString(',');
         public static Parser<Collection> AsParser => Map(
             converter: (types) => new Collection(types),
             ARRAY<Type>.MakeParser('\0', ',', '\0')
@@ -217,10 +219,10 @@ public record ModifierSuffix(String Modifier, TypeReference ReferencedType) : Su
     public override string ToString()
     {
         StringBuilder sb = new();
-        sb.Append($"{Modifier} ");
+        sb.Append($"{Modifier}");
         if (ReferencedType is not null)
         {
-            sb.Append($"({ReferencedType})");
+            sb.Append($" ({ReferencedType})");
         }
         return sb.ToString();
     }
@@ -299,9 +301,9 @@ public record MethodDefinition(CallConvention CallConvention, Type TypeTarget, P
     public override string ToString()
     {
         StringBuilder sb = new();
-        sb.Append($"method {CallConvention} {TypeTarget}* (");
-        sb.Append(Parameters.ToString());
-        sb.Append(")");
+        sb.Append($"method {CallConvention} {TypeTarget}* \n(");
+        sb.Append(Parameters);
+        sb.Append("\n)");
         return sb.ToString();
     }
     public static Parser<MethodDefinition> AsParser => RunAll(
@@ -383,7 +385,7 @@ public record FieldTypeReference(TypeDecl.Type Type, TypeDecl.TypeSpecification 
         {
             sb.Append($"{Spec}::");
         }
-        sb.Append($"{Name} ");
+        sb.Append($"{Name}");
         return sb.ToString();
     }
     public static Parser<FieldTypeReference> AsParser => RunAll(
@@ -412,22 +414,26 @@ public record FieldTypeReference(TypeDecl.Type Type, TypeDecl.TypeSpecification 
     );
 }
 
-public record MethodReference(CallConvention? Convention, TypeDecl.Type Type, TypeSpecification Spec, MethodName Name, SigArgumentDecl.SigArgument.Collection SigArgs) 
+public record MethodReference(CallConvention? Convention, TypeDecl.Type Type, TypeSpecification Spec, MethodName Name, GenArgs? TypeParameters, SigArgumentDecl.SigArgument.Collection SigArgs) 
     : IDeclaration<MethodReference> {
     public override string ToString()
     {
         var sb = new StringBuilder();
-        if (Convention != null)
+        if (Convention is not null)
         {
             sb.Append($"{Convention} ");
         }
         sb.Append($"{Type} ");
-        if (Spec != null)
+        if (Spec is not  null)
         {
             sb.Append($"{Spec}::");
         }
         sb.Append($"{Name} ");
-        sb.Append($"({SigArgs}) ");
+        if (TypeParameters is not null)
+        {
+            sb.Append($"<{TypeParameters}> ");
+        }
+        sb.Append($"({SigArgs})");
         return sb.ToString();
     }
     public static Parser<MethodReference> AsParser => RunAll(
@@ -436,18 +442,19 @@ public record MethodReference(CallConvention? Convention, TypeDecl.Type Type, Ty
             parts[1].Type,
             parts[2]?.Spec,
             parts[3].Name,
-            parts[4].SigArgs
+            parts[4]?.TypeParameters,
+            parts[5].SigArgs
         ),
         Map(
-            converter: conv => Construct<MethodReference>(5, 0, conv),
+            converter: conv => Construct<MethodReference>(6, 0, conv),
             CallConvention.AsParser
         ),
         Map(
-            converter: type => Construct<MethodReference>(5, 1, type),
+            converter: type => Construct<MethodReference>(6, 1, type),
             TypeDecl.Type.AsParser
         ),
         TryRun(
-            converter: type => Construct<MethodReference>(5, 2, type),
+            converter: type => Construct<MethodReference>(6, 2, type),
             RunAll(
                 converter : parts => parts[0],
                 TypeSpecification.AsParser,
@@ -456,11 +463,21 @@ public record MethodReference(CallConvention? Convention, TypeDecl.Type Type, Ty
             Empty<TypeSpecification>()
         ),
         Map(
-            converter: name => Construct<MethodReference>(5, 3, name),
+            converter: name => Construct<MethodReference>(6, 3, name),
             MethodName.AsParser
         ),
+        TryRun(
+            converter: typeParams => Construct<MethodReference>(6, 4, typeParams),
+            RunAll(
+                converter : parts => parts[1],
+                Discard<GenArgs, char>(ConsumeChar(Id, '<')),
+                GenArgs.AsParser,
+                Discard<GenArgs, char>(ConsumeChar(Id, '>'))
+            ),
+            Empty<GenArgs>()
+        ),
         RunAll(
-            converter: pars => Construct<MethodReference>(5, 4, pars[1]),
+            converter: pars => Construct<MethodReference>(6, 5, pars[1]),
             Discard<SigArgument.Collection, char>(ConsumeChar(Id, '(')),
             SigArgument.Collection.AsParser,
             Discard<SigArgument.Collection, char>(ConsumeChar(Id, ')'))

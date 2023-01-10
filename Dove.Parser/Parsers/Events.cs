@@ -1,4 +1,5 @@
 using AttributeDecl;
+using CallConventionDecl;
 using IdentifierDecl;
 using MethodDecl;
 using ParameterDecl;
@@ -55,7 +56,7 @@ public partial record Member : IDeclaration<Member>
 {
     public record Collection(ARRAY<Member> Members) : IDeclaration<Collection>
     {
-        public override string ToString() => Members.ToString(' ');
+        public override string ToString() => Members.ToString('\n');
         public static Parser<Collection> AsParser => Map(
             converter: members => new Collection(members),
             ARRAY<Member>.MakeParser('\0', '\0', '\0')
@@ -84,7 +85,7 @@ public record ExternalSourceItem(ExternSource Attribute) : Member, IDeclaration<
 
 public record SpecialMethodReference(String SpecialName, CallConvention Convention, TypeDecl.Type Type, TypeSpecification? Specification, MethodName Name, Parameter.Collection Parameters) : Member, IDeclaration<SpecialMethodReference>
 {
-    public override string ToString() => $"{SpecialName} {Convention} {(Specification is null ? "" : $"{Specification}::")}{Name}({Parameters})";
+    public override string ToString() => $"{SpecialName} {Convention} {(Specification is null ? String.Empty : $"{Specification}::")}{Name}({Parameters})";
     public static string[] SpecialNames = new string[] { ".fire", ".other", ".addon", ".removeon" };
     public static Parser<SpecialMethodReference> AsParser => RunAll(
         converter: parts => new SpecialMethodReference(

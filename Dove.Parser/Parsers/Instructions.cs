@@ -23,21 +23,21 @@ public record Instruction(String Opcode, InstructionArgument Arguments) : Member
 
     public static Dictionary<string, string[]> OpcodeValues = new()
     {
-        ["instr_none"] = new[] { "add", "add.ovf", "add.ovf.un", "and", "arglist", "break", "ceq", "cgt", "cgt.un", "ckfinite", "clt", "clt.un", "conv.i", "conv.i1", "conv.i2", "conv.i4", "conv.i8", "conv.ovf.i", "conv.ovf.i.un", "conv.ovf.i1", "conv.ovf.i1.un", "conv.ovf.i2", "conv.ovf.i2.un", "conv.ovf.i4", "conv.ovf.i4.un", "conv.ovf.i8", "conv.ovf.i8.un", "conv.ovf.u", "conv.ovf.u.un", "conv.ovf.u1", "conv.ovf.u1.un", "conv.ovf.u2", "conv.ovf.u2.un", "conv.ovf.u4", "conv.ovf.u4.un", "conv.ovf.u8", "conv.ovf.u8.un", "conv.r.un", "conv.r4", "conv.r8", "conv.u", "conv.u1", "conv.u2", "conv.u4", "conv.u8", "cpblk", "div", "div.un", "dup", "endfault", "endfilter", "endfinally", "initblk", "ldarg.0", "ldarg.1", "ldarg.2", "ldarg.3", "ldc.i4.0", "ldc.i4.1", "ldc.i4.2", "ldc.i4.3", "ldc.i4.4", "ldc.i4.5", "ldc.i4.6", "ldc.i4.7", "ldc.i4.8", "ldc.i4.M1", "ldelem.i", "ldelem.i1", "ldelem.i2", "ldelem.i4", "ldelem.i8", "ldelem.r4", "ldelem.r8", "ldelem.ref", "ldelem.u1", "ldelem.u2", "ldelem.u4", "ldind.i", "ldind.i1", "ldind.i2", "ldind.i4", "ldind.i8", "ldind.r4", "ldind.r8", "ldind.ref", "ldind.u1", "ldind.u2", "ldind.u4", "ldlen", "ldloc.0", "ldloc.1", "ldloc.2", "ldloc.3", "ldnull", "localloc", "mul", "mul.ovf", "mul.ovf.un", "neg", "nop", "not", "or", "pop", "refanytype", "rem", "rem.un", "ret", "rethrow", "shl", "shr", "shr.un", "stelem.i", "stelem.i1", "stelem.i2", "stelem.i4", "stelem.i8", "stelem.r4", "stelem.r8", "stelem.ref", "stind.i", "stind.i1", "stind.i2", "stind.i4", "stind.i8", "stind.r4", "stind.r8", "stind.ref", "stloc.0", "stloc.1", "stloc.2", "stloc.3", "sub", "sub.ovf", "sub.ovf.un", "tail.", "throw", "volatile.", "xor" },
-        ["instr_var"] = new[] { "ldarg", "ldarg.s", "ldarga", "ldarga.s", "ldloc", "ldloc.s", "ldloca", "ldloca.s", "starg", "starg.s", "stloc", "stloc.s" },
-        ["instr_i"] = new[] { "ldc.i4", "ldc.i4.s", "unaligned." },
-        ["instr_i8"] = new[] { "ldc.i8" },
-        ["instr_r"] = new[] { "ldc.r4", "ldc.r8" },
-        ["instr_brtarget"] = new[] { "beq", "beq.s", "bge", "bge.s", "bge.un", "bge.un.s", "bgt", "bgt.s", "bgt.un", "bgt.un.s", "ble", "ble.s", "ble.un", "ble.un.s", "blt", "blt.s", "blt.un", "blt.un.s", "bne.un", "bne.un.s", "br", "br.s", "brfalse", "brfalse.s", "brtrue", "brtrue.s", "leave", "leave.s" },
-        ["instr_method"] = new[] { "call", "callvirt", "jmp", "ldftn", "ldvirtftn", "newobj" },
-        ["instr_field"] = new[] { "ldfld", "ldflda", "ldsfld", "ldsflda", "stfld", "stsfld" },
-        ["instr_type"] = new[] { "box", "castclass", "cpobj", "initobj", "isinst", "ldelema", "ldobj", "mkrefany", "newarr", "refanyval", "sizeof", "stobj", "unbox" },
-        ["instr_string"] = new[] { "ldstr" },
-        ["instr_sig"] = new[] { "calli" },
-        ["instr_rva"] = Array.Empty<String>(),
-        ["instr_tok"] = new[] { "ldtoken" },
-        ["instr_switch"] = new[] { "switch" },
-        ["instr_phi"] = Array.Empty<String>(),
+        ["instr_none"] = new[] {"conv.ovf.i1.un","conv.ovf.i2.un","conv.ovf.i4.un","conv.ovf.i8.un","conv.ovf.u1.un","conv.ovf.u2.un","conv.ovf.u4.un","conv.ovf.u8.un","conv.ovf.i.un","conv.ovf.u.un","conv.ovf.i1","conv.ovf.i2","conv.ovf.i4","conv.ovf.i8","conv.ovf.u1","conv.ovf.u2","conv.ovf.u4","conv.ovf.u8","add.ovf.un","conv.ovf.i","conv.ovf.u","endfinally","ldelem.ref","mul.ovf.un","refanytype","stelem.ref","sub.ovf.un","conv.r.un","endfilter","ldc.i4.M1","ldelem.i1","ldelem.i2","ldelem.i4","ldelem.i8","ldelem.r4","ldelem.r8","ldelem.u1","ldelem.u2","ldelem.u4","ldind.ref","stelem.i1","stelem.i2","stelem.i4","stelem.i8","stelem.r4","stelem.r8","stind.ref","volatile.","ckfinite","endfault","ldc.i4.0","ldc.i4.1","ldc.i4.2","ldc.i4.3","ldc.i4.4","ldc.i4.5","ldc.i4.6","ldc.i4.7","ldc.i4.8","ldelem.i","ldind.i1","ldind.i2","ldind.i4","ldind.i8","ldind.r4","ldind.r8","ldind.u1","ldind.u2","ldind.u4","localloc","stelem.i","stind.i1","stind.i2","stind.i4","stind.i8","stind.r4","stind.r8","add.ovf","arglist","conv.i1","conv.i2","conv.i4","conv.i8","conv.r4","conv.r8","conv.u1","conv.u2","conv.u4","conv.u8","initblk","ldarg.0","ldarg.1","ldarg.2","ldarg.3","ldind.i","ldloc.0","ldloc.1","ldloc.2","ldloc.3","mul.ovf","rethrow","stind.i","stloc.0","stloc.1","stloc.2","stloc.3","sub.ovf","cgt.un","clt.un","conv.i","conv.u","div.un","ldnull","rem.un","shr.un","break","cpblk","ldlen","tail.","throw","add","and","ceq","cgt","clt","div","dup","mul","neg","nop","not","pop","rem","ret","shl","shr","sub","xor","or"},
+        ["instr_var"] = new[] {"ldarga.s","ldloca.s","ldarg.s","ldloc.s","starg.s","stloc.s","ldarga","ldloca","ldarg","ldloc","starg","stloc"},
+        ["instr_i"] = new[] {"unaligned.","ldc.i4.s","ldc.i4"},
+        ["instr_i8"] = new[] {"ldc.i8"},
+        ["instr_r"] = new[] {"ldc.r4","ldc.r8"},
+        ["instr_brtarget"] = new[] {"brfalse.s","bge.un.s","bgt.un.s","ble.un.s","blt.un.s","bne.un.s","brtrue.s","brfalse","leave.s","bge.un","bgt.un","ble.un","blt.un","bne.un","brtrue","beq.s","bge.s","bgt.s","ble.s","blt.s","leave","br.s","beq","bge","bgt","ble","blt","br"},
+        ["instr_method"] = new[] {"ldvirtftn","callvirt","newobj","ldftn","call","jmp"},
+        ["instr_field"] = new[] {"ldsflda","ldflda","ldsfld","stsfld","ldfld","stfld"},
+        ["instr_type"] = new[] {"castclass","refanyval","mkrefany","initobj","ldelema","isinst","newarr","sizeof","cpobj","ldobj","stobj","unbox","box"},
+        ["instr_string"] = new[] {"ldstr"},
+        ["instr_sig"] = new[] {"calli"},
+        ["instr_rva"] = Array.Empty<string>(),
+        ["instr_tok"] = new[] {"ldtoken"},
+        ["instr_switch"] = new[] {"switch"},
+        ["instr_phi"] = Array.Empty<string>()
     };
 
     public static Dictionary<string, string> OpcodeValuesInverse = OpcodeValues
@@ -46,9 +46,7 @@ public record Instruction(String Opcode, InstructionArgument Arguments) : Member
         .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
 
     public override string ToString()
-    {
-        return $"{Opcode} {Arguments}";
-    }
+        => $"{Opcode} {Arguments}";
 
     public static Parser<Instruction> AsParser => TryRun(
         converter : Id,

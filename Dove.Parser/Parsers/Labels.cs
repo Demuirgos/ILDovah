@@ -5,7 +5,7 @@ namespace LabelDecl;
 [WrapParser<Identifier>] public partial record LabelOrOffset : IDeclaration<LabelOrOffset> {
     public record Collection(ARRAY<LabelOrOffset> Values) : IDeclaration<Collection>
     {
-        public override string ToString() => Values.ToString();
+        public override string ToString() => Values.ToString(' ');
         public static Parser<Collection> AsParser => Map(
             converter: (ARRAY<LabelOrOffset> vals) => new Collection(vals),
             ARRAY<LabelOrOffset>.MakeParser('\0', ',', '\0')

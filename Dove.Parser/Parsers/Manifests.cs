@@ -8,7 +8,7 @@ namespace ManifestDecl;
 public record ManifestResource(Prefix Header, Member.Collection Declarations) : Declaration, IDeclaration<ManifestResource>
 {
 
-    public override string ToString() => $".mresource {Header} {{ {Declarations} }}";
+    public override string ToString() => $".mresource {Header} \n{{\n{Declarations}\n}}";
 
     public static Parser<ManifestResource> AsParser => RunAll(
         converter: parts => new ManifestResource(
@@ -54,7 +54,7 @@ public partial record Member : IDeclaration<Member>
 {
     public record Collection(ARRAY<Member> Members) : IDeclaration<Collection>
     {
-        public override string ToString() => Members.ToString();
+        public override string ToString() => Members.ToString('\n');
         public static Parser<Collection> AsParser => Map(
             converter: members => new Collection(members),
             ARRAY<Member>.MakeParser('\0', '\0', '\0')

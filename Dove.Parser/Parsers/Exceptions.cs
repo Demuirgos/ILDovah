@@ -2,6 +2,7 @@ using LabelDecl;
 using MethodDecl;
 using TypeDecl;
 using static Core;
+using static ExtraTools.Extensions;
 
 namespace ExceptionDecl;
 public record StructuralExceptionBlock(TryClause TryBlock, WireBlock.Collection Clauses) : IDeclaration<StructuralExceptionBlock>
@@ -25,7 +26,7 @@ public partial record WireBlock : IDeclaration<WireBlock>
 {
     public record Collection(ARRAY<WireBlock> Blocks) : IDeclaration<WireBlock>
     {
-        public override string ToString() => Blocks.ToString(' ');
+        public override string ToString() => Blocks.ToString('\n');
         public static Parser<Collection> AsParser => Map(
             converter: blocks => new Collection(blocks),
             ARRAY<WireBlock>.MakeParser('\0', '\0', '\0')

@@ -9,14 +9,6 @@ using static ExtraTools.Extensions;
 
 namespace SigArgumentDecl;
 
-/*
-sigArg : '...'
-| paramAttr type
-| paramAttr type id
-| paramAttr type 'marshal' '(' nativeType ')'
-| paramAttr type 'marshal' '(' nativeType ')'
-*/
-
 public record SigArgument(AttributeDecl.ParamAttribute.Collection Attributes,TypeDecl.Type Type, Identifier? Id, NativeType? NativeType) : IDeclaration<SigArgument>
 {
     public record Collection(ARRAY<SigArgument> Arguments) : IDeclaration<Collection>

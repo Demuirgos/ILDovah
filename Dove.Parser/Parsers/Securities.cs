@@ -6,7 +6,7 @@ using static ExtraTools.Extensions;
 namespace SecurityDecl;
 public record HashClause(INT AlgorithmId) : IDeclaration<HashClause>
 {
-    public override string ToString() => $".hash algorithm {AlgorithmId} ";
+    public override string ToString() => $".hash algorithm {AlgorithmId}";
     public static Parser<HashClause> AsParser => RunAll(
         converter: parts => new HashClause(parts[2].AlgorithmId),
         Discard<HashClause, string>(ConsumeWord(Core.Id, ".hash")),

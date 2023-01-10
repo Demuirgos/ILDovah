@@ -3,6 +3,7 @@ using RootDecl;
 using System.Text;
 using TypeDecl;
 using static Core;
+using static ExtraTools.Extensions;
 
 namespace AttributeDecl;
 public record PropertyAttribute(string Value) : Declaration, IDeclaration<PropertyAttribute>
@@ -17,7 +18,6 @@ public record PropertyAttribute(string Value) : Declaration, IDeclaration<Proper
     }
     public static String[] ValidNames = { "specialname", "rtspecialname" };
     public override string ToString() => Value;
-
     public static Parser<PropertyAttribute> AsParser => TryRun(
         converter: (name) => new PropertyAttribute(name),
         ValidNames.Select((name) => ConsumeWord(Id, name)).ToArray()
@@ -96,7 +96,6 @@ public record CustomAttribute(MethodName AttributeCtor, ARRAY<BYTE>? Arguments) 
 
 public record ImplAttribute(String Name, ImplAttribute.ModifierBehaviour Type) : IDeclaration<ImplAttribute>
 {
-
     public enum ModifierBehaviour { Implementation, MemoryManagement, Information }
     public record Collection(ARRAY<ImplAttribute> Attributes) : IDeclaration<Collection>
     {
@@ -121,64 +120,8 @@ public record ImplAttribute(String Name, ImplAttribute.ModifierBehaviour Type) :
     };
 }
 
-public record MethodAttribute(MethodAttribute.ModifierBehaviour Type) : IDeclaration<MethodAttribute>
+[GenerateParser] public partial record MethodAttribute : IDeclaration<MethodAttribute>
 {
-    internal Object Value { get; init; }
-
-    public override string ToString() => Value switch
-    {
-        MethodSimpleAttribute simple => simple.ToString(),
-        MethodPInvokeAttribute pinvoke => pinvoke.ToString(),
-        _ => throw new Exception()
-    };
-
-    private static String[] AttributeWords = { "abstract", "assembly", "compilercontrolled", "famandassem", "family", "famorassem", "final", "hidebysig", "newslot", "private", "public", "rtspecialname", "specialname", "static", "virtual", "strict" };
-    public record MethodSimpleAttribute(String Name) : IDeclaration<MethodSimpleAttribute>
-    {
-        public override string ToString() => Name;
-        public static Parser<MethodSimpleAttribute> AsParser => TryRun(
-            converter: (vals) => new MethodSimpleAttribute(vals),
-            AttributeWords.Select((word) => ConsumeWord(Id, word)).ToArray()
-        );
-    }
-    public record MethodPInvokeAttribute(QSTRING Name, QSTRING Alias, PinvAttribute.Collection Attributes) : MethodAttribute(MethodAttribute.ModifierBehaviour.Interop), IDeclaration<MethodPInvokeAttribute>
-    {
-        public override string ToString()
-        {
-            StringBuilder sb = new();
-            sb.Append($"pinvokeimpl({Name} ");
-            if (Alias is not null)
-            {
-                sb.Append($"as {Alias} ");
-            }
-            sb.Append(Attributes);
-            sb.Append(") ");
-            return sb.ToString();
-        }
-
-        public static Parser<MethodPInvokeAttribute> AsParser => RunAll(
-            converter: (vals) =>
-            {
-                vals = vals.Where((val) => val is not null).ToArray();
-                return new MethodPInvokeAttribute(vals[0].Name, vals[1].Alias, vals[2].Attributes);
-            },
-
-            Discard<MethodPInvokeAttribute, string>(ConsumeWord(Id, "pinvokeimpl")),
-            Discard<MethodPInvokeAttribute, char>(ConsumeChar(Id, '(')),
-            Map((name) => new MethodPInvokeAttribute(name, null, null), QSTRING.AsParser),
-            TryRun(
-                converter: (vals) => new MethodPInvokeAttribute(null, vals, null),
-                RunAll(
-                    converter: (vals) => vals[1],
-                    Discard<QSTRING, string>(ConsumeWord(Id, "as")),
-                    Map(Id, QSTRING.AsParser)
-                ),
-                Empty<QSTRING>()
-            ),
-            Map((attrs) => new MethodPInvokeAttribute(null, null, attrs), PinvAttribute.Collection.AsParser),
-            Discard<MethodPInvokeAttribute, char>(ConsumeChar(Id, ')'))
-        );
-    }
     public record Collection(ARRAY<MethodAttribute> Attributes) : IDeclaration<Collection>
     {
         public override string ToString() => Attributes.ToString(' ');
@@ -193,20 +136,64 @@ public record MethodAttribute(MethodAttribute.ModifierBehaviour Type) : IDeclara
         Access, Contract, Interop, Override, Handling,
     }
 
-    private static ModifierBehaviour BehaviourOf(String word) => word switch
-    {
-        "assembly" or "compilercontrolled" or "famandassem" or "famorassem" or "private" or "family" or "public" => ModifierBehaviour.Access,
-        "final" or "hidebysig" or "static" or "virtual" or "strict" => ModifierBehaviour.Contract,
-        "newslot" or "abstract" => ModifierBehaviour.Override,
-        "rtspecialname" or "specialname" => ModifierBehaviour.Handling,
-        "pinvokeimpl" => ModifierBehaviour.Interop,
-        _ => throw new System.Diagnostics.UnreachableException()
-    };
+    public ModifierBehaviour BehaviourOf => this is MethodSimpleAttribute attr ? 
+        attr.Name switch
+        {
+            "assembly" or "compilercontrolled" or "famandassem" or "famorassem" or "private" or "family" or "public" => ModifierBehaviour.Access,
+            "final" or "hidebysig" or "static" or "virtual" or "strict" => ModifierBehaviour.Contract,
+            "newslot" or "abstract" => ModifierBehaviour.Override,
+            "rtspecialname" or "specialname" => ModifierBehaviour.Handling,
+            "pinvokeimpl" => ModifierBehaviour.Interop,
+            _ => throw new System.Diagnostics.UnreachableException()
+        }
+        : ModifierBehaviour.Interop;
+}
 
-    public static Parser<MethodAttribute> AsParser => TryRun(
-        converter: (vals) => new MethodAttribute(vals),
-        Map((smplAttr) => new MethodAttribute(BehaviourOf(smplAttr.Name)) { Value = smplAttr }, MethodSimpleAttribute.AsParser),
-        Map((pinvAttr) => new MethodAttribute(ModifierBehaviour.Interop) { Value = pinvAttr }, MethodPInvokeAttribute.AsParser)
+public record MethodSimpleAttribute(String Name) : MethodAttribute, IDeclaration<MethodSimpleAttribute>
+{
+    private static String[] AttributeWords = { "abstract", "assembly", "compilercontrolled", "famandassem", "family", "famorassem", "final", "hidebysig", "newslot", "private", "public", "rtspecialname", "specialname", "static", "virtual", "strict" };
+    public override string ToString() => Name;
+    public static Parser<MethodSimpleAttribute> AsParser => TryRun(
+        converter: (vals) => new MethodSimpleAttribute(vals),
+        AttributeWords.Select((word) => ConsumeWord(Id, word)).ToArray()
+    );
+}
+public record MethodPInvokeAttribute(QSTRING Name, QSTRING Alias, PinvAttribute.Collection Attributes) : MethodAttribute, IDeclaration<MethodPInvokeAttribute>
+{
+    public override string ToString()
+    {
+        StringBuilder sb = new();
+        sb.Append($"pinvokeimpl({Name} ");
+        if (Alias is not null)
+        {
+            sb.Append($"as {Alias} ");
+        }
+        sb.Append(Attributes);
+        sb.Append(") ");
+        return sb.ToString();
+    }
+
+    public static Parser<MethodPInvokeAttribute> AsParser => RunAll(
+        converter: (vals) =>
+        {
+            vals = vals.Where((val) => val is not null).ToArray();
+            return new MethodPInvokeAttribute(vals[0].Name, vals[1].Alias, vals[2].Attributes);
+        },
+
+        Discard<MethodPInvokeAttribute, string>(ConsumeWord(Id, "pinvokeimpl")),
+        Discard<MethodPInvokeAttribute, char>(ConsumeChar(Id, '(')),
+        Map((name) => new MethodPInvokeAttribute(name, null, null), QSTRING.AsParser),
+        TryRun(
+            converter: (vals) => new MethodPInvokeAttribute(null, vals, null),
+            RunAll(
+                converter: (vals) => vals[1],
+                Discard<QSTRING, string>(ConsumeWord(Id, "as")),
+                Map(Id, QSTRING.AsParser)
+            ),
+            Empty<QSTRING>()
+        ),
+        Map((attrs) => new MethodPInvokeAttribute(null, null, attrs), PinvAttribute.Collection.AsParser),
+        Discard<MethodPInvokeAttribute, char>(ConsumeChar(Id, ')'))
     );
 }
 

@@ -4,6 +4,8 @@ namespace ExtraTools;
 public class NotImplementedAttribute : System.Attribute { }
 public static class Extensions
 {
+    public static string PadRSpaces<T>(this T word, int spaceCount = 1)
+        => $"{word}{new string(' ', spaceCount)}";
     public static T Construct<T>(int argsCount, int argIndex, Object? argument)
     {
         var constructor = typeof(T).GetConstructors()

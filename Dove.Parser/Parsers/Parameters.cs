@@ -12,18 +12,20 @@ public partial record Parameter : IDeclaration<Parameter>
 {
     public record Collection(ARRAY<Parameter> Parameters) : IDeclaration<Collection>
     {
-        public override string ToString() => Parameters.ToString();
+        public override string ToString() => Parameters.ToString(',');
         public static Parser<Collection> AsParser => Map(
             converter: (parameters) => new Collection(parameters),
             ARRAY<Parameter>.MakeParser('\0', ',', '\0')
         );
     }
 }
+[GenerationOrderParser(Order.First)]
 public record VarargParameter() : Parameter, IDeclaration<VarargParameter>
 {
     public override string ToString() => "...";
     public static Parser<VarargParameter> AsParser => ConsumeWord(_ => new VarargParameter(), "...");
 }
+[GenerationOrderParser(Order.Last)]
 public record DefaultParameter(ParamAttribute.Collection Attributes, TypeDecl.Type TypeDeclaration, NativeType MarshalledType, Identifier Id) : Parameter, IDeclaration<DefaultParameter>
 {
     // Note : Test this after implementing Type.AsParser
@@ -36,15 +38,15 @@ public record DefaultParameter(ParamAttribute.Collection Attributes, TypeDecl.Ty
         }
         if (TypeDeclaration is not null)
         {
-            sb.Append($"{TypeDeclaration}");
+            sb.Append($" {TypeDeclaration}");
         }
         if (MarshalledType is not null)
         {
-            sb.Append($"marshal({MarshalledType}) ");
+            sb.Append($" marshal({MarshalledType})");
         }
         if (Id is not null)
         {
-            sb.Append($" {Id} ");
+            sb.Append($" {Id}");
         }
         return sb.ToString();
     }
@@ -76,11 +78,12 @@ public record DefaultParameter(ParamAttribute.Collection Attributes, TypeDecl.Ty
     );
 }
 
+[GenerationOrderParser(Order.Middle)]
 public record GenericParameter(GenParamAttribute.Collection Attributes, TypeDecl.Type.Collection Constraints, Identifier Id) : IDeclaration<GenericParameter>
 {
     public record Collection(ARRAY<GenericParameter> Parameters) : IDeclaration<Collection>
     {
-        public override string ToString() => Parameters.ToString();
+        public override string ToString() => Parameters.ToString(',');
         public static Parser<Collection> AsParser => Map(
             converter: (parameters) => new Collection(parameters),
             ARRAY<GenericParameter>.MakeParser('\0', ',', '\0')
@@ -92,15 +95,15 @@ public record GenericParameter(GenParamAttribute.Collection Attributes, TypeDecl
         StringBuilder sb = new();
         if (Attributes is not null)
         {
-            sb.Append($"{Attributes} ");
+            sb.Append($"{Attributes}");
         }
         if (Constraints is not null)
         {
-            sb.Append($"( {Constraints}) ");
+            sb.Append($" ( {Constraints})");
         }
         if (Id is not null)
         {
-            sb.Append(Id);
+            sb.Append($" {Id}");
         }
         return sb.ToString();
     }

@@ -1,11 +1,12 @@
 using static Core;
+using static ExtraTools.Extensions;
 
 namespace BoundsDecl;
 public record Bound(INT Lower, INT Upper, Bound.BoundType Type) : IDeclaration<Bound>
 {
     public record Collection(ARRAY<Bound> Bounds) : IDeclaration<Collection>
     {
-        public override string ToString() => Bounds.ToString();
+        public override string ToString() => Bounds.ToString(',');
         public static Parser<Collection> AsParser => Map(
             converter: (bounds) => new Collection(bounds),
             ARRAY<Bound>.MakeParser('\0', ',', '\0')

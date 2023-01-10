@@ -8,7 +8,7 @@ using static ExtraTools.Extensions;
 namespace AssemblyDecl;
 public record Assembly(Prefix Header, Member.Collection Declarations) : Declaration, IDeclaration<Assembly>
 {
-    public override string ToString() => $".assembly {Header} {{ {Declarations} }}";
+    public override string ToString() => $".assembly {Header} {{\n{Declarations}\n}}";
     public static Parser<Assembly> AsParser => RunAll(
         converter: parts => new Assembly(
             parts[1].Header,
@@ -30,7 +30,7 @@ public record Assembly(Prefix Header, Member.Collection Declarations) : Declarat
 
 public record Prefix(DottedName Name) : IDeclaration<Prefix>
 {
-    public override string ToString() => $"{Name} ";
+    public override string ToString() => Name.ToString();
     public static Parser<Prefix> AsParser => RunAll(
         converter: parts => new Prefix(
             parts[1]
@@ -46,7 +46,7 @@ public partial record Member : IDeclaration<Member>
 {
     public record Collection(ARRAY<Member> Members) : IDeclaration<Collection>
     {
-        public override string ToString() => Members.ToString();
+        public override string ToString() => Members.ToString('\n');
         public static Parser<Collection> AsParser => Map(
             converter: members => new Collection(members),
             ARRAY<Member>.MakeParser('\0', '\0', '\0')

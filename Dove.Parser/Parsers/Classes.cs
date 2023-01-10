@@ -15,7 +15,7 @@ namespace ClassDecl;
 
 public record Class(Prefix Header, Member.Collection Members) : Declaration, IDeclaration<Class>
 {
-    public override string ToString() => $".class {Header} {{ {Members} }}";
+    public override string ToString() => $".class {Header} \n{{\n{Members}\n}}";
     public static Parser<Class> AsParser => RunAll(
         converter: class_ => new Class(class_[1].Header, class_[3].Members),
         Discard<Class, string>(ConsumeWord(Core.Id, ".class")),
@@ -53,7 +53,7 @@ public record Prefix(ClassAttribute.Collection Attributes, Identifier Id, Generi
             ARRAY<TypeSpecification>.MakeParser('\0', ',', '\0')
         );
     }
-    public override string ToString() => $"{Attributes} {Id}{TypeParameters} {Extends} {Implements}";
+    public override string ToString() => $"{Attributes} {Id}{TypeParameters} \n\t{Extends} \n\t{Implements}";
     public static Parser<Prefix> AsParser => RunAll(
         converter: header => new Prefix(
             header[0].Attributes,
@@ -99,7 +99,7 @@ public partial record Member : IDeclaration<Member>
 {
     public record Collection(ARRAY<Member> Members) : IDeclaration<Collection>
     {
-        public override string ToString() => Members.ToString(' ');
+        public override string ToString() => Members.ToString('\n');
         public static Parser<Collection> AsParser => Map(
             converter: members => new Collection(members),
             ARRAY<Member>.MakeParser('\0', '\0', '\0')
@@ -119,7 +119,7 @@ public partial record Member : IDeclaration<Member>
 
 public record SizeClause(INT Sizeof) : Member, IDeclaration<SizeClause>
 {
-    public override string ToString() => $".size {Sizeof} ";
+    public override string ToString() => $".size {Sizeof}";
     public static Parser<SizeClause> AsParser => Map(
         converter: size => new SizeClause(size),
         RunAll(
@@ -132,7 +132,7 @@ public record SizeClause(INT Sizeof) : Member, IDeclaration<SizeClause>
 
 public record PackingClause(INT Sizeof) : Member, IDeclaration<PackingClause>
 {
-    public override string ToString() => $".pack {Sizeof} ";
+    public override string ToString() => $".pack {Sizeof}";
     public static Parser<PackingClause> AsParser => Map(
         converter: size => new PackingClause(size),
         RunAll(

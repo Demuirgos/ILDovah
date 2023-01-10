@@ -4,7 +4,7 @@ using static ExtraTools.Extensions;
 namespace VersionDecl;
 public record Version(ARRAY<INT> SubVersions) : IDeclaration<Version>
 {
-    public override string ToString() => $".ver {SubVersions.ToString(':')} ";
+    public override string ToString() => $".ver {SubVersions.ToString(':')}";
 
     public static Parser<Version> AsParser => RunAll(
         converter: parts => new Version(

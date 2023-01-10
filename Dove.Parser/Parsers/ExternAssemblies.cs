@@ -9,7 +9,7 @@ using static ExtraTools.Extensions;
 namespace ExternAssemblyDecl;
 public record ExternAssembly(Prefix Header, Member.Collection Declarations) : Declaration, IDeclaration<ExternAssembly>
 {
-    public override string ToString() => $".assembly extern {Header} {{ {Declarations} }}";
+    public override string ToString() => $".assembly extern {Header} \n{{\n{Declarations}\n}}";
     public static Parser<ExternAssembly> AsParser => RunAll(
         converter: parts => new ExternAssembly(
             parts[1].Header,
@@ -32,7 +32,7 @@ public record ExternAssembly(Prefix Header, Member.Collection Declarations) : De
 
 public record Prefix(DottedName Name, DottedName Alias) : IDeclaration<Prefix>
 {
-    public override string ToString() => $"{Name} {(Alias is not null ? $"as {Alias} " : String.Empty)}";
+    public override string ToString() => $"{Name} {(Alias is not null ? $"as {Alias}" : String.Empty)}";
     public static Parser<Prefix> AsParser => RunAll(
         converter: parts => new Prefix(
             parts[1], parts[2]
@@ -56,7 +56,7 @@ public partial record Member : IDeclaration<Member>
 {
     public record Collection(ARRAY<Member> Members) : IDeclaration<Collection>
     {
-        public override string ToString() => Members.ToString();
+        public override string ToString() => Members.ToString('\n');
         public static Parser<Collection> AsParser => Map(
             converter: members => new Collection(members),
             ARRAY<Member>.MakeParser('\0', '\0', '\0')

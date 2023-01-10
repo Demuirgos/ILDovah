@@ -3,11 +3,11 @@ using static Core;
 using static ExtraTools.Extensions;
 
 namespace LocalDecl;
-public record Local(Type Type, Identifier Id) : IDeclaration<Local>
+public record Local(TypeDecl.Type Type, Identifier Id) : IDeclaration<Local>
 {
     public record Collection(ARRAY<Local> Values) : IDeclaration<Collection>
     {
-        public override string ToString() => Values.ToString();
+        public override string ToString() => Values.ToString(',');
         public static Parser<Collection> AsParser => Map(
             converter: arr => new Collection(arr),
             ARRAY<Local>.MakeParser('\0', ',', '\0')

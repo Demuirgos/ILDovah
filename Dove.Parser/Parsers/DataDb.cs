@@ -9,6 +9,7 @@ using DataBody = DbItem.Collection;
 
 public record Data(DataLabel? Label, DataBody Body) : Declaration, IDeclaration<Data>
 {
+    public override string ToString() => $".data {Label} = {Body}";
     public static Parser<Data> AsParser => RunAll(
         converter: parts => new Data(parts?[1]?.Label, parts[2].Body),
         Discard<Data, string>(ConsumeWord(Id, ".data")),

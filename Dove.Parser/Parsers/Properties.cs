@@ -1,4 +1,5 @@
 using AttributeDecl;
+using CallConventionDecl;
 using IdentifierDecl;
 using MethodDecl;
 using ParameterDecl;
@@ -10,7 +11,7 @@ using static ExtraTools.Extensions;
 namespace PropertyDecl;
 public record Property(Prefix Header, Member.Collection Members) : IDeclaration<Property>
 {
-    public override string ToString() => $".property {Header} {{ {Members} }}";
+    public override string ToString() => $".property {Header} \n{{\n{Members}\n}}";
     public static Parser<Property> AsParser => RunAll(
         converter: parts => new Property(parts[0].Header, parts[1].Members),
         RunAll(
@@ -71,7 +72,7 @@ public partial record Member : IDeclaration<Member>
 {
     public record Collection(ARRAY<Member> Members) : IDeclaration<Collection>
     {
-        public override string ToString() => Members.ToString(' ');
+        public override string ToString() => Members.ToString('\n');
         public static Parser<Collection> AsParser => Map(
             converter: members => new Collection(members),
             ARRAY<Member>.MakeParser('\0', '\0', '\0')

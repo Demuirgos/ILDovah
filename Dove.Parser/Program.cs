@@ -5,9 +5,19 @@
 // Note(Ayman) : write tests for all parsers
 using ResourceDecl;
 
-var (source, index) = ("ldc.i4 23 ldc.i4 3 mul ret", 0);
+var (source, index) = ("""
+.method public hidebysig specialname rtspecialname 
+    instance void .ctor () cil managed 
+{
+    .maxstack 8
 
-TestConstruct<InstructionDecl.Instruction.Block>(ref index, source);
+    IL_0000: ldarg.0
+    IL_0001: call instance void [System.Runtime]System.Object::.ctor()
+    IL_0006: ret
+}
+""", 0);
+
+TestConstruct<MethodDecl.Method>(ref index, source);
 void TestConstruct<T>(ref int index, string source)
     where T : IDeclaration<T>
 {

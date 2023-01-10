@@ -1,4 +1,5 @@
 using AttributeDecl;
+using CallConventionDecl;
 using DataDecl;
 using ExceptionDecl;
 using FieldDecl;
@@ -22,7 +23,7 @@ public record Method(Prefix Header, Member.Collection Body) : Declaration, IDecl
     public bool IsConstructor => Header.Name.IsConstructor;
     public bool IsEntrypoint => Body?.Items.Values.Any(item => item is EntrypointClause) ?? false;
 
-    public override string ToString() => $".method {Header} {{ {Body} }}";
+    public override string ToString() => $".method {Header} \n{{\n{Body}\n}}";
     public static Parser<Method> AsParser => RunAll(
         converter: parts => new Method(parts[1].Header, parts[3]?.Body),
         Discard<Method, string>(ConsumeWord(Id, ".method")),
@@ -31,21 +32,11 @@ public record Method(Prefix Header, Member.Collection Body) : Declaration, IDecl
             Prefix.AsParser
         ),
         Discard<Method, char>(ConsumeChar(Id, '{')),
-        Map(
-            converter: blocks => blocks.Item2,
-            If(
-                condP: Discard<Method, char>(ConsumeChar(Id, '}')),
-                thenP: Empty<Method>(),
-                elseP: RunAll(
-                    converter: blocks => blocks[0],
-                    Map(
-                        converter: blocks => Construct<Method>(2, 1, blocks),
-                        Member.Collection.AsParser
-                    ),
-                    Discard<Method, char>(ConsumeChar(Id, '}'))
-                )
-            )
-        )
+        Map( 
+            converter: blocks => Construct<Method>(2, 1, blocks),
+            Member.Collection.AsParser
+        ),
+        Discard<Method, char>(ConsumeChar(Id, '}'))
     );
 }
 public record MethodName(String Name) : IDeclaration<MethodName>
@@ -70,7 +61,7 @@ public record Prefix(MethodAttribute.Collection MethodAttributes, CallConvention
         {
             sb.Append($" {Convention}");
         }
-        sb.Append($" {Type}");
+        sb.Append($"\n\t{Type}");
         if (MarshalledType != null)
         {
             sb.Append($" marshal ({MarshalledType})");
@@ -153,7 +144,7 @@ public partial record Member : IDeclaration<Member>
 {
     public record Collection(ARRAY<Member> Items) : IDeclaration<Collection>
     {
-        public override string ToString() => Items.ToString(' ');
+        public override string ToString() => Items.ToString('\n');
         public static Parser<Collection> AsParser => Map(
             converter: items => new Collection(items),
             ARRAY<Member>.MakeParser('\0', '\0', '\0')
@@ -169,7 +160,7 @@ public partial record Member : IDeclaration<Member>
 
 public record EmitByteItem(INT Value) : Member, IDeclaration<EmitByteItem>
 {
-    public override string ToString() => $".emitbyte {Value} ";
+    public override string ToString() => $".emitbyte {Value}";
     public static Parser<EmitByteItem> AsParser => RunAll(
         converter: parts => new EmitByteItem(parts[1]),
         Discard<INT, string>(ConsumeWord(Id, ".emitbyte")),
@@ -179,17 +170,17 @@ public record EmitByteItem(INT Value) : Member, IDeclaration<EmitByteItem>
 
 public record MaxStackItem(INT Value) : Member, IDeclaration<MaxStackItem>
 {
-    public override string ToString() => $".maxstack {Value} ";
+    public override string ToString() => $".maxstack {Value}";
     public static Parser<MaxStackItem> AsParser => RunAll(
         converter: parts => new MaxStackItem(parts[1]),
-        Discard<INT, string>(ConsumeWord(Id, ".emitbyte")),
+        Discard<INT, string>(ConsumeWord(Id, ".maxstack")),
         INT.AsParser
     );
 }
 
 public record CustomAttributeItem(CustomAttribute Attribute) : Member, IDeclaration<CustomAttributeItem>
 {
-    public override string ToString() => $".custom {Attribute} ";
+    public override string ToString() => $".custom {Attribute}";
     public static Parser<CustomAttributeItem> AsParser => RunAll(
         converter: parts => new CustomAttributeItem(parts[1]),
         Discard<CustomAttribute, string>(ConsumeWord(Id, ".custom")),
@@ -249,7 +240,7 @@ public record LocalsItem(bool IsInit, Local.Collection Signatures) : Member, IDe
 {
     public override string ToString() => $".locals {(IsInit ? "init" : String.Empty)} ({Signatures})";
     public static Parser<LocalsItem> AsParser => RunAll(
-        converter: parts => new LocalsItem(parts[0].IsInit, parts[1].Signatures),
+        converter: parts => new LocalsItem(parts[1].IsInit, parts[2].Signatures),
         Discard<LocalsItem, string>(ConsumeWord(Id, ".locals")),
         TryRun(
             converter: result => new LocalsItem(result is null, null),
@@ -345,7 +336,7 @@ public record OverrideMethodItem(OverrideMethodSignature Target) : Member, IDecl
 
 public record ScopeBlock(Member.Collection Blocks) : Member, IDeclaration<ScopeBlock>
 {
-    public override string ToString() => $"{{ {Blocks} }}";
+    public override string ToString() => $"{{\n{Blocks}\n}}";
     public static Parser<ScopeBlock> AsParser => RunAll(
         converter: parts => new ScopeBlock(parts[1]),
         Discard<Member.Collection, char>(ConsumeChar(Id, '{')),

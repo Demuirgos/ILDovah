@@ -5,7 +5,7 @@ using static ExtraTools.Extensions;
 namespace TypeForwarderDecl;
 public record TypeForwarder(Prefix Header, Member Members) : IDeclaration<TypeForwarder>
 {
-    public override string ToString() => $".class {Header} {{ {Members} }}";
+    public override string ToString() => $".class {Header} \n{{\n{Members}\n}}";
 
     public static Parser<TypeForwarder> AsParser => RunAll(
         converter: parts => new TypeForwarder(parts[1].Header, parts[3].Members),
