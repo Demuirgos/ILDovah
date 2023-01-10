@@ -62,7 +62,7 @@ public record FieldAttribute : IDeclaration<FieldAttribute>
     );
 }
 
-public record CustomAttribute(MethodName AttributeCtor, ARRAY<BYTE>? Arguments) : IDeclaration<CustomAttribute>
+public record CustomAttribute(TypeDecl.MethodReference AttributeCtor, ARRAY<BYTE>? Arguments) : IDeclaration<CustomAttribute>
 {
     public override string ToString()
     {
@@ -75,21 +75,22 @@ public record CustomAttribute(MethodName AttributeCtor, ARRAY<BYTE>? Arguments) 
         return sb.ToString();
     }
     public static Parser<CustomAttribute> AsParser => RunAll(
-        converter: (vals) =>
-        {
-            if (vals[0].AttributeCtor.IsConstructor == false)
-                throw new Exception("Custom attribute must be a constructor");
-            return new CustomAttribute(vals[0].AttributeCtor, vals[1].Arguments);
-        },
-        Map((methname) => new CustomAttribute(methname, null), MethodName.AsParser),
-        TryRun(
-            converter: (vals) => new CustomAttribute(null, vals),
-            RunAll(
-                converter: (vals) => vals[1],
-                ConsumeChar((_) => default(ARRAY<BYTE>), '='),
-                Map((bytes) => bytes, ARRAY<BYTE>.MakeParser('(', '\0', ')'))
-            ),
-            Empty<ARRAY<BYTE>>()
+        converter: parts => parts[1],
+        Discard<CustomAttribute, string>(ConsumeWord(Id, ".custom")),
+        Map(
+            converter: result => new CustomAttribute(result.Item1, result.Item2),
+            If(
+                condP :  ConsumeIf(TypeDecl.MethodReference.AsParser, methRef => methRef.Name.IsConstructor),
+                thenP : TryRun(Id,
+                    RunAll(
+                        converter: (vals) => vals[1],
+                        ConsumeChar((_) => default(ARRAY<BYTE>), '='),
+                        Map((ARRAY<BYTE> bytes) => bytes, ARRAY<BYTE>.MakeParser('(', '\0', ')'))
+                    ),
+                    Empty<ARRAY<BYTE>>()
+                ),
+                elseP : Fail<ARRAY<BYTE>>()
+            )
         )
     );
 }

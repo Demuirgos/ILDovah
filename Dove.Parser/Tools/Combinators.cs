@@ -62,6 +62,18 @@ public static class Core {
         };
     }
 
+    public static Parser<T> ConsumeIf<T>(Parser<T> parser, Func<T, bool> predicate) {
+        return (string code, ref int index, out T result) => {
+            result = default;
+            bool isParsed = parser(code, ref index, out T value);
+            if(isParsed && predicate(value)) {
+                return true;
+            }
+            result = default(T);
+            return false;
+        };
+    }
+
     public static Parser<T> ConsumeIf<T>(Func<char, T> converter, Func<char, bool> predicate) {
         return (string code, ref int index, out T result) => {
             result = default;

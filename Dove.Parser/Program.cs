@@ -6,22 +6,45 @@
 using ResourceDecl;
 
 var (source, index) = ("""
-.method public hidebysig specialname rtspecialname 
-    instance void .ctor () cil managed 
+.class private auto ansi beforefieldinit Program
+    extends [System.Runtime]System.Object
 {
-    .maxstack 8
+    .custom instance void [System.Runtime]System.Runtime.CompilerServices.CompilerGeneratedAttribute::.ctor() = (
+        01 00 00 00
+    )
+    .method private hidebysig static 
+        void '<Main>$' (
+            string[] args
+        ) cil managed 
+    {
+        .maxstack 8
+        .entrypoint
 
-    IL_0000: ldarg.0
-    IL_0001: call instance void [System.Runtime]System.Object::.ctor()
-    IL_0006: ret
-}
+        IL_0000: newobj instance void test::.ctor()
+        IL_0005: ldfld int32 test::'field'
+        IL_000a: call void [System.Console]System.Console::Write(int32)
+        IL_000f: ret
+    } 
+
+    .method public hidebysig specialname rtspecialname 
+        instance void .ctor () cil managed 
+    {
+        .maxstack 8
+
+        IL_0000: ldarg.0
+        IL_0001: call instance void [System.Runtime]System.Object::.ctor()
+        IL_0006: ret
+    } 
+
+} 
 """, 0);
 
-TestConstruct<MethodDecl.Method>(ref index, source);
-void TestConstruct<T>(ref int index, string source)
+TestConstruct<ClassDecl.Class>(ref index, source, out _);
+
+void TestConstruct<T>(ref int index, string source, out T resultVal)
     where T : IDeclaration<T>
 {
-    if (IDeclaration<T>.Parse(ref index, source, out T resultVal))
+    if (IDeclaration<T>.Parse(ref index, source, out resultVal))
     {
         Console.WriteLine(resultVal);
     }
