@@ -1,8 +1,3 @@
-﻿
-
-
-
-
 using ResourceDecl;
 
 var (source, index) = ("""
