@@ -1,5 +1,13 @@
 using ResourceDecl;
 
+/*
+using System;
+public class C {
+    public void M() {
+    }
+}
+*/
+
 var (source, index) = ("""
 .assembly _
 {
@@ -26,12 +34,39 @@ var (source, index) = ("""
         61 37 37 39 38 65 15 01 54 02 10 53 6b 69 70 56
         65 72 69 66 69 63 61 74 69 6f 6e 01
     )
-    .hash algorithm 0x00008004 
+    .hash algorithm 0x00008004
     .ver 0:0:0:0
 }
+
+.class private auto ansi '<Module>'
+{
+} 
+
+.class public auto ansi beforefieldinit C
+    extends [System.Private.CoreLib]System.Object
+{
+    .method public hidebysig 
+        instance void M () cil managed 
+    {
+        .maxstack 8
+
+        IL_0000: ret
+    } 
+
+    .method public hidebysig specialname rtspecialname 
+        instance void .ctor () cil managed 
+    {
+        .maxstack 8
+
+        IL_0000: ldarg.0
+        IL_0001: call instance void [System.Private.CoreLib]System.Object::.ctor()
+        IL_0006: ret
+    } 
+
+} 
 """, 0);
 
-TestConstruct<AssemblyDecl.Assembly>(ref index, source, out _);
+TestConstruct<RootDecl.Declaration.Collection>(ref index, source, out _);
 
 void TestConstruct<T>(ref int index, string source, out T resultVal)
     where T : IDeclaration<T>

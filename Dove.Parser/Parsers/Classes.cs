@@ -1,3 +1,4 @@
+using System.Text;
 using AttributeDecl;
 using DataDecl;
 using FieldDecl;
@@ -54,7 +55,16 @@ public record Prefix(ClassAttribute.Collection Attributes, Identifier Id, Generi
             ARRAY<TypeSpecification>.MakeParser('\0', ',', '\0')
         );
     }
-    public override string ToString() => $"{Attributes} {Id}{TypeParameters} \n\t{Extends} \n\t{Implements}";
+    public override string ToString() {
+        var sb = new StringBuilder();
+        sb.Append($"{Attributes} {Id}{TypeParameters}");
+        if(Extends is not null) 
+            sb.Append($"\n\t{Extends}"); 
+        if(Implements is not null) 
+            sb.Append($"\n\t{Implements}");
+        return sb.ToString();
+    } 
+        
     public static Parser<Prefix> AsParser => RunAll(
         converter: header => new Prefix(
             header[0].Attributes,
