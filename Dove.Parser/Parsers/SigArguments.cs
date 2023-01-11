@@ -4,12 +4,13 @@ using ExtraTools;
 using IdentifierDecl;
 using MethodDecl;
 using TypeDecl;
+
 using static Core;
 using static ExtraTools.Extensions;
 
 namespace SigArgumentDecl;
 
-public record SigArgument(AttributeDecl.ParamAttribute.Collection Attributes,TypeDecl.Type Type, Identifier? Id, NativeType? NativeType) : IDeclaration<SigArgument>
+public record SigArgument(AttributeDecl.ParamAttribute.Collection Attributes, TypeDecl.Type Type, Identifier? Id, NativeType? NativeType) : IDeclaration<SigArgument>
 {
     public record Collection(ARRAY<SigArgument> Arguments) : IDeclaration<Collection>
     {
@@ -22,13 +23,14 @@ public record SigArgument(AttributeDecl.ParamAttribute.Collection Attributes,Typ
             )
         );
     }
-    
-    public override string ToString() {
+
+    public override string ToString()
+    {
         StringBuilder sb = new();
         sb.Append($"{Attributes} ");
         sb.Append($"{Type} ");
-        if (Id != null) sb.Append($"{Id} ");
         if (NativeType != null) sb.Append($"marshal ({NativeType})");
+        if (Id != null) sb.Append($"{Id} ");
         return sb.ToString();
     }
 
@@ -43,14 +45,18 @@ public record SigArgument(AttributeDecl.ParamAttribute.Collection Attributes,Typ
             TypeDecl.Type.AsParser
         ),
         TryRun(
+            converter: nativeType => Construct<SigArgument>(4, 3, nativeType),
+            RunAll(
+                converter: parts => parts[1],
+                Discard<NativeType, string>(ConsumeWord(Core.Id, "marshal")),
+                NativeType.AsParser
+            ),
+            Empty<NativeType>()
+        ),
+        TryRun(
             converter: id => Construct<SigArgument>(4, 2, id),
             Identifier.AsParser,
             Empty<Identifier>()
-        ),
-        TryRun(
-            converter: nativeType => Construct<SigArgument>(4, 3, nativeType),
-            NativeType.AsParser,
-            Empty<NativeType>()
         )
     );
 }

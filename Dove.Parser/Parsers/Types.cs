@@ -6,6 +6,7 @@ using ParameterDecl;
 using ResourceDecl;
 using SigArgumentDecl;
 using System.Text;
+
 using static Core;
 using static ExtraTools.Extensions;
 namespace TypeDecl;
@@ -38,7 +39,8 @@ public record TypeReference(ResolutionScope Scope, ARRAY<DottedName> Names) : ID
 }
 
 [GenerateParser] public partial record TypeSpecification : IDeclaration<TypeSpecification>;
-[GenerationOrderParser(Order.Last)] public record NamedModuleSpecification(DottedName Name, bool IsModule) : TypeSpecification, IDeclaration<NamedModuleSpecification>
+[GenerationOrderParser(Order.Last)]
+public record NamedModuleSpecification(DottedName Name, bool IsModule) : TypeSpecification, IDeclaration<NamedModuleSpecification>
 {
     public override string ToString() => $"{(IsModule ? ".module " : String.Empty)}{Name}";
     public static Parser<NamedModuleSpecification> MainParser => RunAll(
@@ -240,7 +242,7 @@ public record ModifierSuffix(String Modifier, TypeReference ReferencedType) : Su
 [GenerateParser] public partial record Prefix : IDeclaration<Prefix>;
 public record TypePrimitive(String TypeName) : Prefix, IDeclaration<TypePrimitive>
 {
-    private static String[] _primitives = new String[] { "bool", "char", "float32", "float64", "int8", "int16", "int32", "int64", "object", "string", "typedref", "valuetype", "void", "unsigned", "native" };
+    private static String[] _primitives = new String[] { "bool", "char", "float32", "float64", "int8", "int16", "int32", "int64", "object", "string", "typedref", "void", "unsigned", "native" };
 
     public override string ToString() => TypeName;
     public static Parser<TypePrimitive> AsParser => TryRun(
@@ -339,18 +341,23 @@ public record MethodDefinition(CallConvention CallConvention, Type TypeTarget, P
     );
 }
 
-public record ClassTypeReference(TypeReference Reference) : Prefix, IDeclaration<ClassTypeReference>
+public record CustomTypeReference(string TypeBehaviorIndice, TypeReference Reference) : Prefix, IDeclaration<CustomTypeReference>
 {
-    public override string ToString() => $"class {Reference}";
-    public static Parser<ClassTypeReference> AsParser => RunAll(
-        converter: (vals) => new ClassTypeReference(vals[1].Reference),
-        Discard<ClassTypeReference, string>(ConsumeWord(Id, "class")),
+    public override string ToString() => $"{TypeBehaviorIndice} {Reference}";
+    public static Parser<CustomTypeReference> AsParser => RunAll(
+        converter: (vals) => new CustomTypeReference(vals[0].TypeBehaviorIndice, vals[1].Reference),
+        TryRun(
+            converter: word => new CustomTypeReference(word, null),
+            ConsumeWord(Id, "class"),
+            ConsumeWord(Id, "valuetype")
+        ),
         Map(
-            converter: (vals) => new ClassTypeReference(vals),
+            converter: (vals) => new CustomTypeReference(null, vals),
             Lazy(() => TypeReference.AsParser)
         )
     );
 }
+
 
 [GenerateParser] public partial record OwnerType : IDeclaration<OwnerType>;
 [WrapParser<TypeSpecification>] public partial record TypeSpecReference : OwnerType, IDeclaration<OwnerType>;
@@ -382,8 +389,9 @@ public record FieldMemberReference(FieldTypeReference FieldRef) : MemberReferenc
     );
 }
 
-public record FieldTypeReference(TypeDecl.Type Type, TypeDecl.TypeSpecification Spec, Identifier Name) 
-    : IDeclaration<FieldTypeReference> {
+public record FieldTypeReference(TypeDecl.Type Type, TypeDecl.TypeSpecification Spec, Identifier Name)
+    : IDeclaration<FieldTypeReference>
+{
     public override string ToString()
     {
         var sb = new StringBuilder();
@@ -408,7 +416,7 @@ public record FieldTypeReference(TypeDecl.Type Type, TypeDecl.TypeSpecification 
         TryRun(
             converter: spec => Construct<FieldTypeReference>(3, 1, spec),
             RunAll(
-                converter : parts => parts[0],
+                converter: parts => parts[0],
                 TypeDecl.TypeSpecification.AsParser,
                 Discard<TypeDecl.TypeSpecification, string>(ConsumeWord(Core.Id, "::"))
             ),
@@ -421,17 +429,18 @@ public record FieldTypeReference(TypeDecl.Type Type, TypeDecl.TypeSpecification 
     );
 }
 
-public record MethodReference(CallConvention? Convention, TypeDecl.Type Type, TypeSpecification Spec, MethodName Name, GenArgs? TypeParameters, SigArgumentDecl.SigArgument.Collection SigArgs) 
-    : IDeclaration<MethodReference> {
+public record MethodReference(CallConvention? Convention, TypeDecl.Type Type, TypeSpecification Spec, MethodName Name, GenArgs? TypeParameters, SigArgumentDecl.SigArgument.Collection SigArgs)
+    : IDeclaration<MethodReference>
+{
     public override string ToString()
     {
         var sb = new StringBuilder();
         if (Convention is not null)
         {
-            sb.Append($"{Convention} ");
+            sb.Append($"{Convention}");
         }
         sb.Append($"{Type} ");
-        if (Spec is not  null)
+        if (Spec is not null)
         {
             sb.Append($"{Spec}::");
         }
@@ -463,7 +472,7 @@ public record MethodReference(CallConvention? Convention, TypeDecl.Type Type, Ty
         TryRun(
             converter: type => Construct<MethodReference>(6, 2, type),
             RunAll(
-                converter : parts => parts[0],
+                converter: parts => parts[0],
                 TypeSpecification.AsParser,
                 Discard<TypeSpecification, string>(ConsumeWord(Core.Id, "::"))
             ),
@@ -476,7 +485,7 @@ public record MethodReference(CallConvention? Convention, TypeDecl.Type Type, Ty
         TryRun(
             converter: typeParams => Construct<MethodReference>(6, 4, typeParams),
             RunAll(
-                converter : parts => parts[1],
+                converter: parts => parts[1],
                 Discard<GenArgs, char>(ConsumeChar(Id, '<')),
                 GenArgs.AsParser,
                 Discard<GenArgs, char>(ConsumeChar(Id, '>'))

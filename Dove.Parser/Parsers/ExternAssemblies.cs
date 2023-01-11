@@ -4,6 +4,7 @@ using ResourceDecl;
 using RootDecl;
 using SecurityDecl;
 using static Core;
+
 using static ExtraTools.Extensions;
 
 namespace ExternAssemblyDecl;

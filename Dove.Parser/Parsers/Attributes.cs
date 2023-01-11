@@ -1,4 +1,5 @@
 using MethodDecl;
+
 using RootDecl;
 using System.Text;
 using TypeDecl;
@@ -67,11 +68,11 @@ public record CustomAttribute(TypeDecl.MethodReference AttributeCtor, ARRAY<BYTE
     public override string ToString()
     {
         StringBuilder sb = new();
-        sb.Append(".custom");
+        sb.Append(".custom ");
         sb.Append(AttributeCtor);
         if (Arguments is not null)
         {
-            sb.Append($" = ({Arguments})");
+            sb.Append($"={Arguments}");
         }
         return sb.ToString();
     }
@@ -81,8 +82,8 @@ public record CustomAttribute(TypeDecl.MethodReference AttributeCtor, ARRAY<BYTE
         Map(
             converter: result => new CustomAttribute(result.Item1, result.Item2),
             If(
-                condP :  ConsumeIf(TypeDecl.MethodReference.AsParser, methRef => methRef.Name.IsConstructor),
-                thenP : TryRun(Id,
+                condP: ConsumeIf(TypeDecl.MethodReference.AsParser, methRef => methRef.Name.IsConstructor),
+                thenP: TryRun(Id,
                     RunAll(
                         converter: (vals) => vals[1],
                         ConsumeChar((_) => default(ARRAY<BYTE>), '='),
@@ -90,7 +91,7 @@ public record CustomAttribute(TypeDecl.MethodReference AttributeCtor, ARRAY<BYTE
                     ),
                     Empty<ARRAY<BYTE>>()
                 ),
-                elseP : Fail<ARRAY<BYTE>>()
+                elseP: Fail<ARRAY<BYTE>>()
             )
         )
     );
@@ -122,7 +123,8 @@ public record ImplAttribute(String Name, ImplAttribute.ModifierBehaviour Type) :
     };
 }
 
-[GenerateParser] public partial record MethodAttribute : IDeclaration<MethodAttribute>
+[GenerateParser]
+public partial record MethodAttribute : IDeclaration<MethodAttribute>
 {
     public record Collection(ARRAY<MethodAttribute> Attributes) : IDeclaration<Collection>
     {
@@ -138,7 +140,7 @@ public record ImplAttribute(String Name, ImplAttribute.ModifierBehaviour Type) :
         Access, Contract, Interop, Override, Handling,
     }
 
-    public ModifierBehaviour BehaviourOf => this is MethodSimpleAttribute attr ? 
+    public ModifierBehaviour BehaviourOf => this is MethodSimpleAttribute attr ?
         attr.Name switch
         {
             "assembly" or "compilercontrolled" or "famandassem" or "famorassem" or "private" or "family" or "public" => ModifierBehaviour.Access,

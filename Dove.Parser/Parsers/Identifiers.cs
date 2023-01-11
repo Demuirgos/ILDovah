@@ -1,5 +1,6 @@
 using static Core;
 
+
 namespace IdentifierDecl;
 public record DottedName(ARRAY<Identifier> Values) : IDeclaration<DottedName>
 {

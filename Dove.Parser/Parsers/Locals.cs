@@ -2,6 +2,7 @@ using IdentifierDecl;
 using static Core;
 using static ExtraTools.Extensions;
 
+
 namespace LocalDecl;
 public record Local(TypeDecl.Type Type, Identifier Id) : IDeclaration<Local>
 {

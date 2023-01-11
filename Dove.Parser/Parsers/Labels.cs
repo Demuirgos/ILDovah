@@ -1,8 +1,11 @@
 using IdentifierDecl;
 using static Core;
 
+
 namespace LabelDecl;
-[WrapParser<Identifier>] public partial record LabelOrOffset : IDeclaration<LabelOrOffset> {
+[WrapParser<Identifier>]
+public partial record LabelOrOffset : IDeclaration<LabelOrOffset>
+{
     public record Collection(ARRAY<LabelOrOffset> Values) : IDeclaration<Collection>
     {
         public override string ToString() => Values.ToString(' ');

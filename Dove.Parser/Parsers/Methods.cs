@@ -7,6 +7,7 @@ using IdentifierDecl;
 using InstructionDecl;
 using LabelDecl;
 using LocalDecl;
+
 using ParameterDecl;
 using ResourceDecl;
 using RootDecl;
@@ -32,7 +33,7 @@ public record Method(Prefix Header, Member.Collection Body) : Declaration, IDecl
             Prefix.AsParser
         ),
         Discard<Method, char>(ConsumeChar(Id, '{')),
-        Map( 
+        Map(
             converter: blocks => Construct<Method>(2, 1, blocks),
             Member.Collection.AsParser
         ),
@@ -157,7 +158,7 @@ public partial record Member : IDeclaration<Member>
 [WrapParser<SecurityBlock>] public partial record SecurityDeclarationItem : Member, IDeclaration<SecurityDeclarationItem>;
 [WrapParser<ExternSource>] public partial record ExternSourceItem : Member, IDeclaration<ExternSourceItem>;
 [WrapParser<StructuralExceptionBlock>] public partial record ExceptionHandlingItem : Member, IDeclaration<ExceptionHandlingItem>;
-[WrapParser<CustomAttribute>] public partial record CustomAttributeItem: Member, IDeclaration<CustomAttributeItem>;
+[WrapParser<CustomAttribute>] public partial record CustomAttributeItem : Member, IDeclaration<CustomAttributeItem>;
 
 public record EmitByteItem(INT Value) : Member, IDeclaration<EmitByteItem>
 {
@@ -180,7 +181,7 @@ public record MaxStackItem(INT Value) : Member, IDeclaration<MaxStackItem>
 }
 
 [GenerateParser]
-public partial record ParamAttribute: Member, IDeclaration<ParamAttribute>;
+public partial record ParamAttribute : Member, IDeclaration<ParamAttribute>;
 [WrapParser<GenericParameterSelector>] public partial record ParamAttributeClause : ParamAttribute, IDeclaration<ParamAttributeClause>;
 
 public record InitializeParamAttribute(INT Index, FieldInit Value) : ParamAttribute

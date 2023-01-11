@@ -3,12 +3,12 @@ using System.Text;
 using ExtraTools;
 using IdentifierDecl;
 using LabelDecl;
+
 using MethodDecl;
 using SigArgumentDecl;
 using TypeDecl;
 using static Core;
 using static ExtraTools.Extensions;
-
 namespace InstructionDecl;
 public record Instruction(String Opcode, InstructionArgument Arguments) : Member, IDeclaration<Instruction>
 {
@@ -23,20 +23,20 @@ public record Instruction(String Opcode, InstructionArgument Arguments) : Member
 
     public static Dictionary<string, string[]> OpcodeValues = new()
     {
-        ["instr_none"] = new[] {"conv.ovf.i1.un","conv.ovf.i2.un","conv.ovf.i4.un","conv.ovf.i8.un","conv.ovf.u1.un","conv.ovf.u2.un","conv.ovf.u4.un","conv.ovf.u8.un","conv.ovf.i.un","conv.ovf.u.un","conv.ovf.i1","conv.ovf.i2","conv.ovf.i4","conv.ovf.i8","conv.ovf.u1","conv.ovf.u2","conv.ovf.u4","conv.ovf.u8","add.ovf.un","conv.ovf.i","conv.ovf.u","endfinally","ldelem.ref","mul.ovf.un","refanytype","stelem.ref","sub.ovf.un","conv.r.un","endfilter","ldc.i4.M1","ldelem.i1","ldelem.i2","ldelem.i4","ldelem.i8","ldelem.r4","ldelem.r8","ldelem.u1","ldelem.u2","ldelem.u4","ldind.ref","stelem.i1","stelem.i2","stelem.i4","stelem.i8","stelem.r4","stelem.r8","stind.ref","volatile.","ckfinite","endfault","ldc.i4.0","ldc.i4.1","ldc.i4.2","ldc.i4.3","ldc.i4.4","ldc.i4.5","ldc.i4.6","ldc.i4.7","ldc.i4.8","ldelem.i","ldind.i1","ldind.i2","ldind.i4","ldind.i8","ldind.r4","ldind.r8","ldind.u1","ldind.u2","ldind.u4","localloc","stelem.i","stind.i1","stind.i2","stind.i4","stind.i8","stind.r4","stind.r8","add.ovf","arglist","conv.i1","conv.i2","conv.i4","conv.i8","conv.r4","conv.r8","conv.u1","conv.u2","conv.u4","conv.u8","initblk","ldarg.0","ldarg.1","ldarg.2","ldarg.3","ldind.i","ldloc.0","ldloc.1","ldloc.2","ldloc.3","mul.ovf","rethrow","stind.i","stloc.0","stloc.1","stloc.2","stloc.3","sub.ovf","cgt.un","clt.un","conv.i","conv.u","div.un","ldnull","rem.un","shr.un","break","cpblk","ldlen","tail.","throw","add","and","ceq","cgt","clt","div","dup","mul","neg","nop","not","pop","rem","ret","shl","shr","sub","xor","or"},
-        ["instr_var"] = new[] {"ldarga.s","ldloca.s","ldarg.s","ldloc.s","starg.s","stloc.s","ldarga","ldloca","ldarg","ldloc","starg","stloc"},
-        ["instr_i"] = new[] {"unaligned.","ldc.i4.s","ldc.i4"},
-        ["instr_i8"] = new[] {"ldc.i8"},
-        ["instr_r"] = new[] {"ldc.r4","ldc.r8"},
-        ["instr_brtarget"] = new[] {"brfalse.s","bge.un.s","bgt.un.s","ble.un.s","blt.un.s","bne.un.s","brtrue.s","brfalse","leave.s","bge.un","bgt.un","ble.un","blt.un","bne.un","brtrue","beq.s","bge.s","bgt.s","ble.s","blt.s","leave","br.s","beq","bge","bgt","ble","blt","br"},
-        ["instr_method"] = new[] {"ldvirtftn","callvirt","newobj","ldftn","call","jmp"},
-        ["instr_field"] = new[] {"ldsflda","ldflda","ldsfld","stsfld","ldfld","stfld"},
-        ["instr_type"] = new[] {"castclass","refanyval","mkrefany","initobj","ldelema","isinst","newarr","sizeof","cpobj","ldobj","stobj","unbox","box"},
-        ["instr_string"] = new[] {"ldstr"},
-        ["instr_sig"] = new[] {"calli"},
+        ["instr_none"] = new[] { "conv.ovf.i1.un", "conv.ovf.i2.un", "conv.ovf.i4.un", "conv.ovf.i8.un", "conv.ovf.u1.un", "conv.ovf.u2.un", "conv.ovf.u4.un", "conv.ovf.u8.un", "conv.ovf.i.un", "conv.ovf.u.un", "conv.ovf.i1", "conv.ovf.i2", "conv.ovf.i4", "conv.ovf.i8", "conv.ovf.u1", "conv.ovf.u2", "conv.ovf.u4", "conv.ovf.u8", "add.ovf.un", "conv.ovf.i", "conv.ovf.u", "endfinally", "ldelem.ref", "mul.ovf.un", "refanytype", "stelem.ref", "sub.ovf.un", "conv.r.un", "endfilter", "ldc.i4.M1", "ldelem.i1", "ldelem.i2", "ldelem.i4", "ldelem.i8", "ldelem.r4", "ldelem.r8", "ldelem.u1", "ldelem.u2", "ldelem.u4", "ldind.ref", "stelem.i1", "stelem.i2", "stelem.i4", "stelem.i8", "stelem.r4", "stelem.r8", "stind.ref", "volatile.", "ckfinite", "endfault", "ldc.i4.0", "ldc.i4.1", "ldc.i4.2", "ldc.i4.3", "ldc.i4.4", "ldc.i4.5", "ldc.i4.6", "ldc.i4.7", "ldc.i4.8", "ldelem.i", "ldind.i1", "ldind.i2", "ldind.i4", "ldind.i8", "ldind.r4", "ldind.r8", "ldind.u1", "ldind.u2", "ldind.u4", "localloc", "stelem.i", "stind.i1", "stind.i2", "stind.i4", "stind.i8", "stind.r4", "stind.r8", "add.ovf", "arglist", "conv.i1", "conv.i2", "conv.i4", "conv.i8", "conv.r4", "conv.r8", "conv.u1", "conv.u2", "conv.u4", "conv.u8", "initblk", "ldarg.0", "ldarg.1", "ldarg.2", "ldarg.3", "ldind.i", "ldloc.0", "ldloc.1", "ldloc.2", "ldloc.3", "mul.ovf", "rethrow", "stind.i", "stloc.0", "stloc.1", "stloc.2", "stloc.3", "sub.ovf", "cgt.un", "clt.un", "conv.i", "conv.u", "div.un", "ldnull", "rem.un", "shr.un", "break", "cpblk", "ldlen", "tail.", "throw", "add", "and", "ceq", "cgt", "clt", "div", "dup", "mul", "neg", "nop", "not", "pop", "rem", "ret", "shl", "shr", "sub", "xor", "or" },
+        ["instr_var"] = new[] { "ldarga.s", "ldloca.s", "ldarg.s", "ldloc.s", "starg.s", "stloc.s", "ldarga", "ldloca", "ldarg", "ldloc", "starg", "stloc" },
+        ["instr_i"] = new[] { "unaligned.", "ldc.i4.s", "ldc.i4" },
+        ["instr_i8"] = new[] { "ldc.i8" },
+        ["instr_r"] = new[] { "ldc.r4", "ldc.r8" },
+        ["instr_brtarget"] = new[] { "brfalse.s", "bge.un.s", "bgt.un.s", "ble.un.s", "blt.un.s", "bne.un.s", "brtrue.s", "brfalse", "leave.s", "bge.un", "bgt.un", "ble.un", "blt.un", "bne.un", "brtrue", "beq.s", "bge.s", "bgt.s", "ble.s", "blt.s", "leave", "br.s", "beq", "bge", "bgt", "ble", "blt", "br" },
+        ["instr_method"] = new[] { "ldvirtftn", "callvirt", "newobj", "ldftn", "call", "jmp" },
+        ["instr_field"] = new[] { "ldsflda", "ldflda", "ldsfld", "stsfld", "ldfld", "stfld" },
+        ["instr_type"] = new[] { "castclass", "refanyval", "mkrefany", "initobj", "ldelema", "isinst", "newarr", "sizeof", "cpobj", "ldobj", "stobj", "unbox", "box" },
+        ["instr_string"] = new[] { "ldstr" },
+        ["instr_sig"] = new[] { "calli" },
         ["instr_rva"] = Array.Empty<string>(),
-        ["instr_tok"] = new[] {"ldtoken"},
-        ["instr_switch"] = new[] {"switch"},
+        ["instr_tok"] = new[] { "ldtoken" },
+        ["instr_switch"] = new[] { "switch" },
         ["instr_phi"] = Array.Empty<string>()
     };
 
@@ -49,13 +49,15 @@ public record Instruction(String Opcode, InstructionArgument Arguments) : Member
         => $"{Opcode} {Arguments}";
 
     public static Parser<Instruction> AsParser => TryRun(
-        converter : Id,
+        converter: Id,
         OpcodeValuesInverse.Keys
-            .Select(opcode => {
+            .Select(opcode =>
+            {
                 var parserKind = OpcodeValuesInverse[opcode];
                 var opcodeParser = ConsumeWord(Id, opcode);
 
-                return parserKind switch {
+                return parserKind switch
+                {
                     "instr_var" => RunAll(
                         converter: parts => new Instruction(opcode, parts[1]),
                         Discard<InstructionArgument_INSTR_VAR, string>(opcodeParser),
@@ -158,13 +160,16 @@ public record Instruction(String Opcode, InstructionArgument Arguments) : Member
 [WrapParser<BytearrayArgument, QSTRING.Collection>] public partial record InstructionArgument_INSTR_STRING : InstructionArgument, IDeclaration<InstructionArgument_INSTR_STRING>;
 
 
-[GenerationOrderParser(Order.Last)] public record InstructionArgument_None : InstructionArgument {
+[GenerationOrderParser(Order.Last)]
+public record InstructionArgument_None : InstructionArgument
+{
     public override string ToString() => String.Empty;
     public static Parser<InstructionArgument_None> AsParser => Empty<InstructionArgument_None>();
 }
 
 public record BytearrayArgument(string Prefix, ARRAY<BYTE> Bytes)
-    : IDeclaration<BytearrayArgument> {
+    : IDeclaration<BytearrayArgument>
+{
     public override string ToString() => $"{Prefix}{Bytes}";
     public static Parser<BytearrayArgument> AsParser => RunAll(
         converter: parts => new BytearrayArgument(parts[0].Prefix, parts[1].Bytes),
@@ -179,8 +184,9 @@ public record BytearrayArgument(string Prefix, ARRAY<BYTE> Bytes)
     );
 }
 
-public record SigArgs(SigArgument.Collection SigArguments) 
-    : IDeclaration<SigArgs> {
+public record SigArgs(SigArgument.Collection SigArguments)
+    : IDeclaration<SigArgs>
+{
     public override string ToString() => $"({SigArguments})";
     public static Parser<SigArgs> AsParser => RunAll(
         converter: parts => new SigArgs(parts[1]),
@@ -191,9 +197,10 @@ public record SigArgs(SigArgument.Collection SigArguments)
         ),
         Discard<SigArgs, char>(ConsumeChar(Id, ')'))
     );
-} 
-public record JumpLabels(LabelOrOffset.Collection TargetLabels) 
-    : IDeclaration<JumpLabels> {
+}
+public record JumpLabels(LabelOrOffset.Collection TargetLabels)
+    : IDeclaration<JumpLabels>
+{
     public override string ToString() => $"({TargetLabels})";
     public static Parser<JumpLabels> AsParser => RunAll(
         converter: parts => new JumpLabels(parts[1]),
@@ -204,4 +211,4 @@ public record JumpLabels(LabelOrOffset.Collection TargetLabels)
         ),
         Discard<JumpLabels, char>(ConsumeChar(Id, ')'))
     );
-} 
+}

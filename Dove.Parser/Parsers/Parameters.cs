@@ -1,5 +1,6 @@
 using AttributeDecl;
 using IdentifierDecl;
+
 using System.Text;
 using TypeDecl;
 using static Core;
@@ -36,10 +37,7 @@ public record DefaultParameter(ParamAttribute.Collection Attributes, TypeDecl.Ty
         {
             sb.Append($"{Attributes}");
         }
-        if (TypeDeclaration is not null)
-        {
-            sb.Append($" {TypeDeclaration}");
-        }
+        sb.Append($"{TypeDeclaration}");
         if (MarshalledType is not null)
         {
             sb.Append($" marshal({MarshalledType})");
@@ -52,7 +50,7 @@ public record DefaultParameter(ParamAttribute.Collection Attributes, TypeDecl.Ty
     }
     public static Parser<DefaultParameter> AsParser => RunAll(
         converter: parts => new DefaultParameter(parts[0].Attributes, parts[1].TypeDeclaration, parts[2].MarshalledType, parts[3].Id),
-        TryRun(
+        Map(
             converter: attrs => new DefaultParameter(attrs, null, null, null),
             ParamAttribute.Collection.AsParser
         ),
@@ -73,7 +71,8 @@ public record DefaultParameter(ParamAttribute.Collection Attributes, TypeDecl.Ty
         ),
         TryRun(
             converter: (id) => new DefaultParameter(null, null, null, id),
-            Identifier.AsParser, Empty<Identifier>()
+            Identifier.AsParser,
+            Empty<Identifier>()
         )
     );
 }
@@ -99,7 +98,7 @@ public record GenericParameter(GenParamAttribute.Collection Attributes, TypeDecl
         }
         if (Constraints is not null)
         {
-            sb.Append($" ( {Constraints})");
+            sb.Append($" ({Constraints})");
         }
         if (Id is not null)
         {
@@ -148,24 +147,22 @@ public record GenericTypeArity(INT? Value) : IDeclaration<GenericTypeArity>
 }
 
 
-public record GenericParameterSelector(GenericParameterReference Index) :IDeclaration<GenericParameterSelector>
+public record GenericParameterSelector(GenericParameterReference Index) : IDeclaration<GenericParameterSelector>
 {
     public override string ToString() => $$$"""
-    .param type {{{
-    Index switch
+    .param type {{{Index switch
     {
         GenericParameterReferenceByIndex index => $"[{index}]",
         GenericParameterReferenceByIdentifier id => id,
         _ => throw new Exception()
-    }
-    }}}
+    }}}}
     """;
     public static Parser<GenericParameterSelector> AsParser => RunAll(
         converter: parts => new GenericParameterSelector(parts[2]),
         Discard<GenericParameterReference, string>(ConsumeWord(Id, ".param")),
         Discard<GenericParameterReference, string>(ConsumeWord(Id, "type")),
         TryRun(
-            Id, 
+            Id,
             RunAll(
                 converter: selectors => selectors[1] as GenericParameterReference,
                 Discard<GenericParameterReferenceByIndex, char>(ConsumeChar(Id, '[')),
@@ -181,5 +178,5 @@ public record GenericParameterSelector(GenericParameterReference Index) :IDeclar
 }
 
 [GenerateParser] public partial record GenericParameterReference : IDeclaration<GenericParameterReference>;
-[WrapParser<INT>] public partial record GenericParameterReferenceByIndex :GenericParameterReference, IDeclaration<GenericParameterReferenceByIndex>;
+[WrapParser<INT>] public partial record GenericParameterReferenceByIndex : GenericParameterReference, IDeclaration<GenericParameterReferenceByIndex>;
 [WrapParser<Identifier>] public partial record GenericParameterReferenceByIdentifier : GenericParameterReference, IDeclaration<GenericParameterReferenceByIdentifier>;

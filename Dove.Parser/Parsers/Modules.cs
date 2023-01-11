@@ -2,6 +2,7 @@ using ResourceDecl;
 using static Core;
 using static ExtraTools.Extensions;
 
+
 namespace ModuleDecl;
 public record Module(FileName File, bool IsExtern) : IDeclaration<Module>
 {

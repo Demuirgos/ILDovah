@@ -5,6 +5,7 @@ using MethodDecl;
 using ParameterDecl;
 using ResourceDecl;
 using TypeDecl;
+
 using static Core;
 using static ExtraTools.Extensions;
 

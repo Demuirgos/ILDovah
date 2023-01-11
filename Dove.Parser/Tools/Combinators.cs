@@ -3,14 +3,18 @@ using System.Diagnostics.CodeAnalysis;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 
-public static class Core {
+public static class Core
+{
     public static T Id<T>(T value) => value;
     public delegate bool Parser<T>(string source, ref int index, [NotNullWhen(true)] out T result);
 
-    public static Parser<T> Trim<T>(Parser<T> parser) {
-        Parser<T> Whitespace<T>() => (string code, ref int index, out T result) => {
+    public static Parser<T> Trim<T>(Parser<T> parser)
+    {
+        Parser<T> Whitespace<T>() => (string code, ref int index, out T result) =>
+        {
             result = default;
-            while(index < code.Length && Char.IsWhiteSpace(code[index])) {
+            while (index < code.Length && Char.IsWhiteSpace(code[index]))
+            {
                 index++;
             }
             return true;
@@ -22,51 +26,64 @@ public static class Core {
             parser,
             Whitespace<T>()
         );
-    } 
+    }
 
-    public static Parser<T> Empty<T>() => (string code, ref int index, out T result) => {
+    public static Parser<T> Empty<T>() => (string code, ref int index, out T result) =>
+    {
         result = default;
         return true;
     };
 
-    public static Parser<T> Discard<T, U>(Parser<U> parser) {
-        return (string code, ref int index, out T result) => {
+    public static Parser<T> Discard<T, U>(Parser<U> parser)
+    {
+        return (string code, ref int index, out T result) =>
+        {
             bool isParsed = parser(code, ref index, out U value);
             result = default(T);
             return isParsed;
         };
     }
 
-    public static Parser<T> Lazy<T>(Func<Parser<T>> parser) {
-        return (string code, ref int index, out T result) => {
+    public static Parser<T> Lazy<T>(Func<Parser<T>> parser)
+    {
+        return (string code, ref int index, out T result) =>
+        {
             return parser()(code, ref index, out result);
         };
     }
 
-    public static Parser<T> Fail<T>(string? message = null) {
-        return (string code, ref int index, out T result) => {
+    public static Parser<T> Fail<T>(string? message = null)
+    {
+        return (string code, ref int index, out T result) =>
+        {
             result = default;
             throw new UnreachableException(message ?? "This parser should never be reached");
         };
     }
 
-    public static Parser<T> Cast<T, U>(Parser<U> parser) {
+    public static Parser<T> Cast<T, U>(Parser<U> parser)
+    {
         return Map(item => (T)((object)item), parser);
     }
 
-    public static Parser<T> Map<T, U>(Func<U, T> converter, Parser<U> parser) {
-        return (string code, ref int index, out T result) => {
+    public static Parser<T> Map<T, U>(Func<U, T> converter, Parser<U> parser)
+    {
+        return (string code, ref int index, out T result) =>
+        {
             bool isParsed = parser(code, ref index, out U value);
             result = isParsed ? converter(value) : default;
             return isParsed;
         };
     }
 
-    public static Parser<T> ConsumeIf<T>(Parser<T> parser, Func<T, bool> predicate) {
-        return (string code, ref int index, out T result) => {
+    public static Parser<T> ConsumeIf<T>(Parser<T> parser, Func<T, bool> predicate)
+    {
+        return (string code, ref int index, out T result) =>
+        {
             result = default;
             bool isParsed = parser(code, ref index, out T value);
-            if(isParsed && predicate(value)) {
+            if (isParsed && predicate(value))
+            {
                 result = value;
                 return true;
             }
@@ -75,10 +92,13 @@ public static class Core {
         };
     }
 
-    public static Parser<T> ConsumeIf<T>(Func<char, T> converter, Func<char, bool> predicate) {
-        return (string code, ref int index, out T result) => {
+    public static Parser<T> ConsumeIf<T>(Func<char, T> converter, Func<char, bool> predicate)
+    {
+        return (string code, ref int index, out T result) =>
+        {
             result = default;
-            if(index < code.Length && predicate(code[index])) {
+            if (index < code.Length && predicate(code[index]))
+            {
                 index++;
                 result = converter(code[index - 1]);
                 return true;
@@ -87,14 +107,18 @@ public static class Core {
         };
     }
 
-    public static Parser<T> ConsumeChar<T>(Func<char, T> converter, char c) {
-        return (string code, ref int index, out T result) => {
+    public static Parser<T> ConsumeChar<T>(Func<char, T> converter, char c)
+    {
+        return (string code, ref int index, out T result) =>
+        {
             bool isParsed = ConsumeIf(Id, x => x == c)
-                                     (code,  ref index,  out char charC);
-            if(isParsed) {
+                                     (code, ref index, out char charC);
+            if (isParsed)
+            {
                 result = converter(charC);
             }
-            else {
+            else
+            {
                 result = default;
             }
 
@@ -102,12 +126,15 @@ public static class Core {
         };
     }
 
-    public static Parser<T> ConsumeWord<T>(Func<string, T> converter, string word) {
-        return (string code, ref int index, out T result) => {
+    public static Parser<T> ConsumeWord<T>(Func<string, T> converter, string word)
+    {
+        return (string code, ref int index, out T result) =>
+        {
             StringBuilder resultAcc = new();
             foreach (char c in word)
             {
-                if(!ConsumeChar(Id, c)(code, ref index, out char character)) {
+                if (!ConsumeChar(Id, c)(code, ref index, out char character))
+                {
                     result = default;
                     return false;
                 }
@@ -118,13 +145,16 @@ public static class Core {
         };
     }
 
-    public static Parser<U> TryRun<T,U>(Func<T, U> converter, params Parser<T>[] parsers) {
-        return (string code, ref int index, out U result) => {
+    public static Parser<U> TryRun<T, U>(Func<T, U> converter, params Parser<T>[] parsers)
+    {
+        return (string code, ref int index, out U result) =>
+        {
             int oldIndex = index;
             result = default;
             foreach (Parser<T> parser in parsers)
             {
-                if(parser(code, ref index, out T subResult)) {
+                if (parser(code, ref index, out T subResult))
+                {
                     result = converter(subResult);
                     return true;
                 }
@@ -134,15 +164,19 @@ public static class Core {
         };
     }
 
-    public static Parser<U> RunMany<T, U>(Func<T[], U> converter, int min, int max, bool skipWs, Parser<T> parser) {
-        return (string code, ref int index, out U result) => {
+    public static Parser<U> RunMany<T, U>(Func<T[], U> converter, int min, int max, bool skipWs, Parser<T> parser)
+    {
+        return (string code, ref int index, out U result) =>
+        {
             int oldIndex = index;
             var resultAcc = new List<T>();
             for (int i = 0; i < max; i++)
             {
                 var parserToUse = skipWs ? Trim(parser) : parser;
-                if(!parserToUse(code, ref index, out T single) || index > code.Length) {
-                    if(i < min) {
+                if (!parserToUse(code, ref index, out T single) || index > code.Length)
+                {
+                    if (i < min)
+                    {
                         index = oldIndex;
                         result = default;
                         return false;
@@ -157,15 +191,18 @@ public static class Core {
     }
     public static Parser<U> RunAll<T, U>(Func<T[], U> converter, params Parser<T>[] parsers)
         => RunAll(converter, true, parsers);
-    public static Parser<U> RunAll<T, U>(Func<T[], U> converter, bool skipWhitespace, params Parser<T>[] parsers) {
-        return (string code, ref int index, out U result) => {
+    public static Parser<U> RunAll<T, U>(Func<T[], U> converter, bool skipWhitespace, params Parser<T>[] parsers)
+    {
+        return (string code, ref int index, out U result) =>
+        {
             int oldIndex = index;
             var resultAcc = new List<T>();
             foreach (Parser<T> parser in parsers)
             {
                 var parserToUse = skipWhitespace ? Trim(parser) : parser;
-                if(!parserToUse(code, ref index, out T single) || 
-                    index > code.Length) {
+                if (!parserToUse(code, ref index, out T single) ||
+                    index > code.Length)
+                {
                     index = oldIndex;
                     result = default;
                     return false;
@@ -177,17 +214,22 @@ public static class Core {
         };
     }
 
-    public static Parser<(T, U)> If<T, U>(Parser<T> condP, Parser<U> thenP, Parser<U> elseP) {
-        return (string code, ref int index, out (T, U) result) => {
+    public static Parser<(T, U)> If<T, U>(Parser<T> condP, Parser<U> thenP, Parser<U> elseP)
+    {
+        return (string code, ref int index, out (T, U) result) =>
+        {
             int oldIndex = index;
-            if(Trim(condP)(code, ref index, out T cond)) {
-                if(thenP(code, ref index, out U then)) {
+            if (Trim(condP)(code, ref index, out T cond))
+            {
+                if (thenP(code, ref index, out U then))
+                {
                     result = (cond, then);
                     return true;
                 }
             }
             index = oldIndex;
-            if(elseP(code, ref index, out U elseResult)) {
+            if (elseP(code, ref index, out U elseResult))
+            {
                 result = (default, elseResult);
                 return true;
             }

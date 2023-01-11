@@ -1,21 +1,25 @@
 using System.Text;
+
 using static Core;
 using static ExtraTools.Extensions;
 namespace CallConventionDecl;
 public record CallConvention(CallAttribute Attribute, CallKind Kind) : IDeclaration<CallConvention>
 {
-    public override string ToString() {
+    public override string ToString()
+    {
         StringBuilder sb = new();
-        if(Attribute is not null) {
+        if (Attribute is not null)
+        {
             sb.Append($"{Attribute} ");
         }
 
-        if(Kind is not null) {
+        if (Kind is not null)
+        {
             sb.Append(Kind);
         }
         return sb.ToString();
     }
-    
+
     public static Parser<CallConvention> AsParser => RunAll(
         converter: vals => new CallConvention(vals[0].Attribute, vals[1].Kind),
         TryRun(
@@ -28,7 +32,7 @@ public record CallConvention(CallAttribute Attribute, CallKind Kind) : IDeclarat
             CallKind.AsParser,
             Empty<CallKind>()
         )
-    );    
+    );
 }
 public record CallAttribute(string[] values) : IDeclaration<CallAttribute>
 {

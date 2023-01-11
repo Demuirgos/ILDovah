@@ -1,4 +1,5 @@
 using static Core;
+
 using static ExtraTools.Extensions;
 
 namespace VersionDecl;

@@ -1,5 +1,6 @@
 using RootDecl;
 using TypeDecl;
+
 using static Core;
 using static ExtraTools.Extensions;
 
@@ -12,7 +13,7 @@ public record HashClause(INT AlgorithmId) : IDeclaration<HashClause>
         Discard<HashClause, string>(ConsumeWord(Core.Id, ".hash")),
         Discard<HashClause, string>(ConsumeWord(Core.Id, "algorithm")),
         Map(
-            converter: id => Construct<HashClause>(2, 0, id),
+            converter: id => Construct<HashClause>(1, 0, id),
             INT.AsParser
         )
     );
@@ -110,7 +111,7 @@ public record NameValPair(QSTRING Name, QSTRING Value) : IDeclaration<NameValPai
 }
 public record SecurityAction(String Action)
 {
-    public static String[] ActionsWords = { "assert", "demand", "deny", "inheritcheck", "linkcheck", "permitonly", "reqopt", "reqrefuse" };
+    public static String[] ActionsWords = { "prejitgrant", "prejitdeny", "noncasdemand", "noncaslinkdemand", "noncasinheritance", "reqmin", "request", "assert", "demand", "deny", "inheritcheck", "linkcheck", "permitonly", "reqopt", "reqrefuse" };
     public override string ToString() => Action;
     public static Parser<SecurityAction> AsParser => TryRun(
         converter: action => new SecurityAction(action),

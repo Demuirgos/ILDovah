@@ -1,4 +1,5 @@
 using AttributeDecl;
+
 using IdentifierDecl;
 using ResourceDecl;
 using RootDecl;
@@ -28,19 +29,7 @@ public record Assembly(Prefix Header, Member.Collection Declarations) : Declarat
     );
 }
 
-public record Prefix(DottedName Name) : IDeclaration<Prefix>
-{
-    public override string ToString() => Name.ToString();
-    public static Parser<Prefix> AsParser => RunAll(
-        converter: parts => new Prefix(
-            parts[1]
-        ),
-        Discard<DottedName, string>(ConsumeWord(Core.Id, ".assembly")),
-        DottedName.AsParser
-    );
-
-}
-
+[WrapParser<DottedName>] public partial record Prefix : IDeclaration<Prefix>;
 [GenerateParser]
 public partial record Member : IDeclaration<Member>
 {
