@@ -67,6 +67,7 @@ public static class Core {
             result = default;
             bool isParsed = parser(code, ref index, out T value);
             if(isParsed && predicate(value)) {
+                result = value;
                 return true;
             }
             result = default(T);

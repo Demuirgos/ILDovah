@@ -157,6 +157,7 @@ public partial record Member : IDeclaration<Member>
 [WrapParser<SecurityBlock>] public partial record SecurityDeclarationItem : Member, IDeclaration<SecurityDeclarationItem>;
 [WrapParser<ExternSource>] public partial record ExternSourceItem : Member, IDeclaration<ExternSourceItem>;
 [WrapParser<StructuralExceptionBlock>] public partial record ExceptionHandlingItem : Member, IDeclaration<ExceptionHandlingItem>;
+[WrapParser<CustomAttribute>] public partial record CustomAttributeItem: Member, IDeclaration<CustomAttributeItem>;
 
 public record EmitByteItem(INT Value) : Member, IDeclaration<EmitByteItem>
 {
@@ -178,63 +179,36 @@ public record MaxStackItem(INT Value) : Member, IDeclaration<MaxStackItem>
     );
 }
 
-public record CustomAttributeItem(CustomAttribute Attribute) : Member, IDeclaration<CustomAttributeItem>
-{
-    public override string ToString() => $".custom {Attribute}";
-    public static Parser<CustomAttributeItem> AsParser => RunAll(
-        converter: parts => new CustomAttributeItem(parts[1]),
-        Discard<CustomAttribute, string>(ConsumeWord(Id, ".custom")),
-        CustomAttribute.AsParser
-    );
-}
+[GenerateParser]
+public partial record ParamAttribute: Member, IDeclaration<ParamAttribute>;
+[WrapParser<GenericParameterSelector>] public partial record ParamAttributeClause : ParamAttribute, IDeclaration<ParamAttributeClause>;
 
-public record ParamAttribute(INT Index) : Member, IDeclaration<ParamAttribute>
+public record InitializeParamAttribute(INT Index, FieldInit Value) : ParamAttribute
 {
-    public record GenericParamAttribute(INT Index) : ParamAttribute(Index), IDeclaration<GenericParamAttribute>
-    {
-        public override string ToString() => $".param type [{Index}]";
-        public static Parser<GenericParamAttribute> AsParser => RunAll(
-            converter: parts => new GenericParamAttribute(parts[3]),
+    public override string ToString() => $".param [{Index}] {(Value is null ? String.Empty : $"= {Value}")}";
+    public static Parser<InitializeParamAttribute> AsParser => RunAll(
+        converter: parts => new InitializeParamAttribute(
+            parts[0].Index,
+            parts[1]?.Value
+        ),
+        RunAll(
+            converter: parts => new InitializeParamAttribute(parts[2], null),
             Discard<INT, string>(ConsumeWord(Id, ".param")),
-            Discard<INT, string>(ConsumeWord(Id, "type")),
             Discard<INT, char>(ConsumeChar(Id, '[')),
             INT.AsParser,
             Discard<INT, char>(ConsumeChar(Id, ']'))
-        );
-    }
-
-    public record InitializeParamAttribute(INT Index, FieldInit Value) : ParamAttribute(Index)
-    {
-        public override string ToString() => $".param [{Index}] {(Value is null ? String.Empty : $"= {Value}")}";
-        public static Parser<InitializeParamAttribute> AsParser => RunAll(
-            converter: parts => new InitializeParamAttribute(
-                parts[0].Index,
-                parts[1]?.Value
-            ),
+        ),
+        TryRun(
+            converter: finit => new InitializeParamAttribute(null, finit),
             RunAll(
-                converter: parts => new InitializeParamAttribute(parts[2], null),
-                Discard<INT, string>(ConsumeWord(Id, ".param")),
-                Discard<INT, char>(ConsumeChar(Id, '[')),
-                INT.AsParser,
-                Discard<INT, char>(ConsumeChar(Id, ']'))
-            ),
-            TryRun(
-                converter: finit => new InitializeParamAttribute(null, finit),
-                RunAll(
-                    converter: parts => parts[1],
-                    Discard<FieldInit, char>(ConsumeChar(Id, '=')),
-                    FieldInit.AsParser
-                )
+                converter: parts => parts[1],
+                Discard<FieldInit, char>(ConsumeChar(Id, '=')),
+                FieldInit.AsParser
             )
-        );
-    }
-
-    public static Parser<ParamAttribute> AsParser => TryRun(
-        converter: Id,
-        Cast<ParamAttribute, GenericParamAttribute>(GenericParamAttribute.AsParser),
-        Cast<ParamAttribute, InitializeParamAttribute>(InitializeParamAttribute.AsParser)
+        )
     );
 }
+
 
 public record LocalsItem(bool IsInit, Local.Collection Signatures) : Member, IDeclaration<LocalsItem>
 {

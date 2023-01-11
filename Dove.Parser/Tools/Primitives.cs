@@ -56,6 +56,11 @@ public record BYTE(byte Value) : IDeclaration<BYTE> {
 
 }
 
+/*
+a contiguous string of characters which starts with either an alphabetic character (A–Z, a–z) or
+one of “_”, “$”, “@”, “`” (grave accent), or “?”, and is followed by any number of alphanumeric
+characters (A–Z, a–z, 0–9) or the characters “_”, “$”, “@”, “`” (grave accent), and “?”. 
+*/
 public record ID(String Value) : IDeclaration<ID> {
     public override string ToString() => Value;
     public static Parser<ID> AsParser => RunAll(
@@ -63,7 +68,7 @@ public record ID(String Value) : IDeclaration<ID> {
         RunMany(
             converter:chars => new string(chars.ToArray()),
             1, Int32.MaxValue, false,
-            ConsumeIf(Id, c => Char.IsLetterOrDigit(c) || c == '_')
+            ConsumeIf(Id, c => Char.IsLetterOrDigit(c) || c == '_' || c == '$' || c == '@' || c == '`' || c == '?' )
         )
     );
 }

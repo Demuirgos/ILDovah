@@ -100,8 +100,12 @@ public record NativeType(NativeType Type, bool IsArray, INT Length, INT Supplied
                 if (primitive == "unsigned")
                 {
                     return RunAll(
-                        converter: (vals) => $"{vals[0]} {vals[1]}",
-                        ConsumeWord(Id, primitive),
+                        converter: (vals) => $"{primitive} {vals[1]}",
+                        TryRun(
+                            converter: Id,
+                            ConsumeWord(Id, primitive),
+                            ConsumeWord(Id, "u")
+                        ),
                         TryRun(
                             converter: (vals) => vals,
                             _primitives.Take(4..9).Select((primitive2) => ConsumeWord(Id, primitive2)).ToArray()
@@ -246,11 +250,15 @@ public record TypePrimitive(String TypeName) : Prefix, IDeclaration<TypePrimitiv
             if (primitive == "unsigned")
             {
                 return RunAll(
-                    converter: (vals) => $"{vals[0]} {vals[1]}",
-                    ConsumeWord(Id, primitive),
+                    converter: (vals) => $"{primitive} {vals[1]}",
+                    TryRun(
+                        converter: Id,
+                        ConsumeWord(Id, primitive),
+                        ConsumeWord(Id, "u")
+                    ),
                     TryRun(
                         converter: (vals) => vals,
-                        _primitives.Take(5..8).Select((primitive2) => ConsumeWord(Id, primitive2)).ToArray()
+                        _primitives.Take(4..8).Select((primitive2) => ConsumeWord(Id, primitive2)).ToArray()
                     )
                 );
             }
@@ -269,7 +277,12 @@ public record TypePrimitive(String TypeName) : Prefix, IDeclaration<TypePrimitiv
                         return sb.ToString();
                     },
                     ConsumeWord(Id, primitive),
-                    TryRun(Id, ConsumeWord(Id, "unsigned"), Empty<String>()),
+                    TryRun(
+                        converter: Id,
+                        ConsumeWord(Id, "unsigned"),
+                        ConsumeWord(Id, "u"),
+                        Empty<String>()
+                    ),
                     ConsumeWord(Id, "int")
                 );
             }
@@ -281,9 +294,9 @@ public record TypePrimitive(String TypeName) : Prefix, IDeclaration<TypePrimitiv
     );
 }
 
-public record GenericTypeParameter(INT Index, GenericTypeParameter.Type TypeParameterType) : Prefix, IDeclaration<GenericTypeParameter>
+public record GenericTypeParameter(GenericParameterReference Index, GenericTypeParameter.Type TypeParameterType) : Prefix, IDeclaration<GenericTypeParameter>
 {
-    public enum Type { Method, Class }
+    public enum Type { Method, Class, None }
     public override string ToString() => $"{(TypeParameterType is Type.Method ? "!!" : "!")}{Index}";
     public static Parser<GenericTypeParameter> AsParser => RunAll(
         converter: (vals) => new GenericTypeParameter(vals[1].Index, vals[0].TypeParameterType),
@@ -292,7 +305,7 @@ public record GenericTypeParameter(INT Index, GenericTypeParameter.Type TypePara
             ConsumeWord(Id, "!!"),
             ConsumeWord(Id, "!")
         ),
-        Map(val => new GenericTypeParameter(val, Type.Class), INT.AsParser)
+        Map(val => new GenericTypeParameter(val, Type.None), GenericParameterReference.AsParser)
     );
 }
 
@@ -339,12 +352,6 @@ public record ClassTypeReference(TypeReference Reference) : Prefix, IDeclaration
     );
 }
 
-
-/*
-memberRef : 
-  'method' callConv type [typeSpec'::'] methodName '(' sigArgs0 ')'
-| 'field' type [typeSpec '::'] id
-*/
 [GenerateParser] public partial record OwnerType : IDeclaration<OwnerType>;
 [WrapParser<TypeSpecification>] public partial record TypeSpecReference : OwnerType, IDeclaration<OwnerType>;
 [GenerateParser] public partial record MemberReference : OwnerType, IDeclaration<OwnerType>;

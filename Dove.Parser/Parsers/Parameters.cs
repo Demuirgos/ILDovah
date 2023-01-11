@@ -146,3 +146,40 @@ public record GenericTypeArity(INT? Value) : IDeclaration<GenericTypeArity>
         Empty<INT>()
     );
 }
+
+
+public record GenericParameterSelector(GenericParameterReference Index) :IDeclaration<GenericParameterSelector>
+{
+    public override string ToString() => $$$"""
+    .param type {{{
+    Index switch
+    {
+        GenericParameterReferenceByIndex index => $"[{index}]",
+        GenericParameterReferenceByIdentifier id => id,
+        _ => throw new Exception()
+    }
+    }}}
+    """;
+    public static Parser<GenericParameterSelector> AsParser => RunAll(
+        converter: parts => new GenericParameterSelector(parts[2]),
+        Discard<GenericParameterReference, string>(ConsumeWord(Id, ".param")),
+        Discard<GenericParameterReference, string>(ConsumeWord(Id, "type")),
+        TryRun(
+            Id, 
+            RunAll(
+                converter: selectors => selectors[1] as GenericParameterReference,
+                Discard<GenericParameterReferenceByIndex, char>(ConsumeChar(Id, '[')),
+                GenericParameterReferenceByIndex.AsParser,
+                Discard<GenericParameterReferenceByIndex, char>(ConsumeChar(Id, ']'))
+            ),
+            Map(
+                converter: id => id as GenericParameterReference,
+                GenericParameterReferenceByIdentifier.AsParser
+            )
+        )
+    );
+}
+
+[GenerateParser] public partial record GenericParameterReference : IDeclaration<GenericParameterReference>;
+[WrapParser<INT>] public partial record GenericParameterReferenceByIndex :GenericParameterReference, IDeclaration<GenericParameterReferenceByIndex>;
+[WrapParser<Identifier>] public partial record GenericParameterReferenceByIdentifier : GenericParameterReference, IDeclaration<GenericParameterReferenceByIdentifier>;

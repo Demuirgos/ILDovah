@@ -67,6 +67,7 @@ public record CustomAttribute(TypeDecl.MethodReference AttributeCtor, ARRAY<BYTE
     public override string ToString()
     {
         StringBuilder sb = new();
+        sb.Append(".custom");
         sb.Append(AttributeCtor);
         if (Arguments is not null)
         {
@@ -85,7 +86,7 @@ public record CustomAttribute(TypeDecl.MethodReference AttributeCtor, ARRAY<BYTE
                     RunAll(
                         converter: (vals) => vals[1],
                         ConsumeChar((_) => default(ARRAY<BYTE>), '='),
-                        Map((ARRAY<BYTE> bytes) => bytes, ARRAY<BYTE>.MakeParser('(', '\0', ')'))
+                        Map(Id, ARRAY<BYTE>.MakeParser('(', '\0', ')'))
                     ),
                     Empty<ARRAY<BYTE>>()
                 ),

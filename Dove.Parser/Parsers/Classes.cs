@@ -143,20 +143,7 @@ public record PackingClause(INT Sizeof) : Member, IDeclaration<PackingClause>
     );
 }
 
-public record ParamAttributeClause(INT Index) : Member, IDeclaration<ParamAttributeClause>
-{
-    public override string ToString() => $".param type [{Index}]";
-    public static Parser<ParamAttributeClause> AsParser => RunAll(
-        converter: parts => new ParamAttributeClause(parts[3]),
-        Discard<INT, string>(ConsumeWord(Id, ".param")),
-        Discard<INT, string>(ConsumeWord(Id, "type")),
-        Discard<INT, char>(ConsumeChar(Id, '[')),
-        INT.AsParser,
-        Discard<INT, char>(ConsumeChar(Id, ']'))
-    );
-}
-
-
+[WrapParser<GenericParameterSelector>] public partial record ParamAttributeClause : Member, IDeclaration<ParamAttributeClause>;
 
 public record SubstitutionClause(OverrideMethodSignature Target, OverrideMethodSignature Substitution) : Member, IDeclaration<SubstitutionClause>
 {
