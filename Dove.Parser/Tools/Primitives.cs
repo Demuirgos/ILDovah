@@ -112,11 +112,11 @@ public record QSTRING(String Value, bool IsSingleyQuoted) : IDeclaration<QSTRING
                 ConsumeChar((_) => String.Empty, quotationChar),
                 RunMany(
                     converter: chars => new string(chars.ToArray()),
-                    1, Int32.MaxValue, false,
+                    0, Int32.MaxValue, false,
                     ConsumeIf(Id, c => c != quotationChar)
                 ),
                 ConsumeChar((_) => String.Empty, quotationChar)
-                )
+            )
         ).ToArray()
     );
 }

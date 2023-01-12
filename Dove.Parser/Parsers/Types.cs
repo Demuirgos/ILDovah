@@ -340,13 +340,13 @@ public record FieldMemberReference(FieldTypeReference FieldRef) : MemberReferenc
     );
 }
 
-public record FieldTypeReference(TypeDecl.TypeComponent TypeComponent, TypeDecl.TypeSpecification Spec, Identifier Name)
+public record FieldTypeReference(TypeDecl.Type Type, TypeDecl.TypeSpecification Spec, Identifier Name)
     : IDeclaration<FieldTypeReference>
 {
     public override string ToString()
     {
         var sb = new StringBuilder();
-        sb.Append($"{TypeComponent} ");
+        sb.Append($"{Type} ");
         if (Spec != null)
         {
             sb.Append($"{Spec}::");
@@ -356,13 +356,13 @@ public record FieldTypeReference(TypeDecl.TypeComponent TypeComponent, TypeDecl.
     }
     public static Parser<FieldTypeReference> AsParser => RunAll(
         converter: parts => new FieldTypeReference(
-            parts[0].TypeComponent,
+            parts[0].Type,
             parts[1]?.Spec,
             parts[2].Name
         ),
         Map(
             converter: TypeComponent => Construct<FieldTypeReference>(3, 0, TypeComponent),
-            TypeDecl.TypeComponent.AsParser
+            TypeDecl.Type.AsParser
         ),
         TryRun(
             converter: spec => Construct<FieldTypeReference>(3, 1, spec),
