@@ -59,7 +59,7 @@ var (source, index) = (""".class private auto ansi beforefieldinit Program
 
 }""", 0);
 
-TestConstruct<FileReference>(ref index, source);
+TestConstruct<RootDecl.Declaration.Collection>(ref index, source);
 void TestConstruct<T>(ref int index, string source)
     where T : IDeclaration<T>
 {
