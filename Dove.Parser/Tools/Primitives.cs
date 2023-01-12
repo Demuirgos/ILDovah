@@ -96,7 +96,7 @@ public record QSTRING(String Value, bool IsSingleyQuoted) : IDeclaration<QSTRING
 {
     public record Collection(ARRAY<QSTRING> Values) : IDeclaration<Collection>
     {
-        public override string ToString() => Values.ToString();
+        public override string ToString() => Values.ToString("+");
         public static Parser<Collection> AsParser => Map((arr) => new Collection(arr), ARRAY<QSTRING>.MakeParser('\0', '+', '\0'));
     }
     public override string ToString()
@@ -125,7 +125,8 @@ public record ARRAY<T>(T[] Values) : IDeclaration<ARRAY<T>> where T : IDeclarati
 {
     public virtual (char start, char separator, char end) Delimiters { get; set; } = ('[', ',', ']');
     public override string ToString() => ToString(Delimiters.separator);
-    public new string ToString(char? overrideDelim = null) => $"{Delimiters.start}{string.Join(overrideDelim ?? Delimiters.separator, Values.Select(v => v.ToString()))}{Delimiters.end}";
+    public new string ToString(char? overrideDelim = null) => ToString($"{overrideDelim ?? Delimiters.separator}");
+    public new string ToString(string? overrideDelim = null) => $"{Delimiters.start}{string.Join(overrideDelim, Values.Select(v => v.ToString()))}{Delimiters.end}";
 
     [Obsolete("Use MakeParser instead", true)]
     public static Parser<ARRAY<T>> AsParser => throw new TypeLoadException("Use MakeParser instead");

@@ -213,7 +213,7 @@ public record InitializeParamAttribute(INT Index, FieldInit Value) : ParamAttrib
 
 public record LocalsItem(bool IsInit, Local.Collection Signatures) : Member, IDeclaration<LocalsItem>
 {
-    public override string ToString() => $".locals {(IsInit ? "init" : String.Empty)} ({Signatures})";
+    public override string ToString() => $".locals {(IsInit ? "init" : String.Empty)} (\n{Signatures}\n)";
     public static Parser<LocalsItem> AsParser => RunAll(
         converter: parts => new LocalsItem(parts[1].IsInit, parts[2].Signatures),
         Discard<LocalsItem, string>(ConsumeWord(Id, ".locals")),
@@ -309,7 +309,7 @@ public record OverrideMethodItem(OverrideMethodSignature Target) : Member, IDecl
 
 };
 
-public record ScopeBlock(Member.Collection Blocks) : Member, IDeclaration<ScopeBlock>
+[GenerationOrderParser(Order.Last)] public record ScopeBlock(Member.Collection Blocks) : Member, IDeclaration<ScopeBlock>
 {
     public override string ToString() => $"{{\n{Blocks}\n}}";
     public static Parser<ScopeBlock> AsParser => RunAll(

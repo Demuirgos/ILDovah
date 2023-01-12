@@ -40,7 +40,7 @@ public record FileReference(FileReference.Prefix Header, FileReference.Body Memb
             StringBuilder sb = new();
             if (Hash is not null)
             {
-                sb.Append($".hash = ({Hash.ToString()})");
+                sb.Append($".hash = ({Hash.ToString(String.Empty)})");
             }
             if (IsEntryPoint)
             {

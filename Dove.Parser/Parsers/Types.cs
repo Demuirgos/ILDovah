@@ -12,32 +12,6 @@ using static ExtraTools.Extensions;
 namespace TypeDecl;
 using GenArgs = Type.Collection;
 
-public record TypeReference(ResolutionScope Scope, ARRAY<DottedName> Names) : IDeclaration<TypeReference>
-{
-    public override string ToString()
-    {
-        StringBuilder sb = new();
-        if (Scope is not null)
-        {
-            sb.Append($"{Scope.ToString(true)} ");
-        }
-        sb.Append(Names.ToString());
-        return sb.ToString();
-    }
-    public static Parser<TypeReference> AsParser => RunAll(
-        converter: (vals) => new TypeReference(vals[0]?.Scope, vals[1].Names),
-        TryRun(
-            converter: (scope) => new TypeReference(scope, null),
-            ResolutionScope.AsParser,
-            Empty<ResolutionScope>()
-        ),
-        Map(
-            converter: (name) => new TypeReference(null, name),
-            ARRAY<DottedName>.MakeParser('\0', '/', '\0')
-        )
-    );
-}
-
 [GenerateParser] public partial record TypeSpecification : IDeclaration<TypeSpecification>;
 [GenerationOrderParser(Order.Last)]
 public record NamedModuleSpecification(DottedName Name, bool IsModule) : TypeSpecification, IDeclaration<NamedModuleSpecification>
@@ -63,17 +37,17 @@ public record NamedModuleSpecification(DottedName Name, bool IsModule) : TypeSpe
     );
 }
 
-[WrapParser<Type>] public partial record TypeSpecificationInlined : TypeSpecification, IDeclaration<TypeSpecificationInlined>;
+[WrapParser<TypeComponent>] public partial record TypeSpecificationInlined : TypeSpecification, IDeclaration<TypeSpecificationInlined>;
 [WrapParser<TypeReference>] public partial record TypeSpecificationReference : TypeSpecification, IDeclaration<TypeSpecificationInlined>;
 
-public record NativeType(NativeType Type, bool IsArray, INT Length, INT Supplied) : IDeclaration<NativeType>
+public record NativeType(NativeType TypeComponent, bool IsArray, INT Length, INT Supplied) : IDeclaration<NativeType>
 {
     public override string ToString()
     {
         StringBuilder sb = new();
-        if (Type is not null)
+        if (TypeComponent is not null)
         {
-            sb.Append(Type.ToString());
+            sb.Append(TypeComponent.ToString());
         }
 
         if (IsArray)
@@ -146,19 +120,7 @@ public record NativeType(NativeType Type, bool IsArray, INT Length, INT Supplied
     );
 }
 
-public record Type(Prefix Basic, Suffix[] Suffixes) : IDeclaration<Type>
-{
-    public override string ToString()
-    {
-        StringBuilder sb = new();
-        sb.Append($"{Basic}");
-        if (Suffixes is not null)
-        {
-            sb.Append(" ");
-            sb.Append(String.Join(" ", Suffixes.Select((suffix) => suffix.ToString())));
-        }
-        return sb.ToString();
-    }
+[WrapParser<TypeComponent.Collection>] public partial record Type : IDeclaration<Type> {
     public record Collection(ARRAY<Type> Types) : IDeclaration<Collection>
     {
         public override string ToString() => Types.ToString(',');
@@ -167,29 +129,18 @@ public record Type(Prefix Basic, Suffix[] Suffixes) : IDeclaration<Type>
             ARRAY<Type>.MakeParser('\0', ',', '\0')
         );
     }
-
-    public static Parser<Type> AsParser => RunAll(
-        converter: parts => new Type(
-            Basic: parts[0].Basic,
-            Suffixes: parts[1].Suffixes
-        ),
-        Map(
-            converter: (type) => Construct<TypeDecl.Type>(2, 0, type),
-            Prefix.AsParser
-        ),
-        TryRun(
-            converter: (suffixes) => Construct<TypeDecl.Type>(2, 1, suffixes),
-            RunMany(
-                converter: Id,
-                0, Int32.MaxValue, true,
-                Suffix.AsParser
-            )
-        )
-    );
 }
-
-[GenerateParser] public partial record Suffix : IDeclaration<Suffix>;
-public record ReferenceSuffix(bool IsRawPointer) : Suffix, IDeclaration<ReferenceSuffix>
+[GenerateParser] public partial record TypeComponent : IDeclaration<TypeComponent> {
+    public record Collection(ARRAY<TypeComponent> Types) : IDeclaration<Collection>
+    {
+        public override string ToString() => Types.ToString(' ');
+        public static Parser<Collection> AsParser => Map(
+            converter: (types) => new Collection(types),
+            ARRAY<TypeComponent>.MakeParser('\0', '\0', '\0')
+        );
+    }
+}
+public record ReferenceSuffix(bool IsRawPointer) : TypeComponent, IDeclaration<ReferenceSuffix>
 {
     public override string ToString() => IsRawPointer ? "*" : "&";
     public static Parser<ReferenceSuffix> AsParser => TryRun(
@@ -198,7 +149,7 @@ public record ReferenceSuffix(bool IsRawPointer) : Suffix, IDeclaration<Referenc
     );
 }
 
-public record BoundedSuffix(Bound.Collection Bounds) : Suffix, IDeclaration<BoundedSuffix>
+public record BoundedSuffix(Bound.Collection Bounds) : TypeComponent, IDeclaration<BoundedSuffix>
 {
     public override string ToString() => $"[{Bounds}]";
     public static Parser<BoundedSuffix> AsParser => RunAll(
@@ -209,7 +160,7 @@ public record BoundedSuffix(Bound.Collection Bounds) : Suffix, IDeclaration<Boun
     );
 }
 
-public record GenericSuffix(GenArgs GenericArguments) : Suffix, IDeclaration<GenericSuffix>
+public record GenericSuffix(GenArgs GenericArguments) : TypeComponent, IDeclaration<GenericSuffix>
 {
     public override string ToString() => $"<{GenericArguments}>";
     public static Parser<GenericSuffix> AsParser => RunAll(
@@ -220,7 +171,7 @@ public record GenericSuffix(GenArgs GenericArguments) : Suffix, IDeclaration<Gen
     );
 }
 
-public record ModifierSuffix(String Modifier, TypeReference ReferencedType) : Suffix, IDeclaration<ModifierSuffix>
+public record ModifierSuffix(String Modifier, TypeReference ReferencedType) : TypeComponent, IDeclaration<ModifierSuffix>
 {
     public override string ToString()
     {
@@ -239,8 +190,8 @@ public record ModifierSuffix(String Modifier, TypeReference ReferencedType) : Su
     );
 }
 
-[GenerateParser] public partial record Prefix : IDeclaration<Prefix>;
-public record TypePrimitive(String TypeName) : Prefix, IDeclaration<TypePrimitive>
+[GenerateParser] public partial record Predefined : TypeComponent, IDeclaration<Predefined>;
+public record TypePrimitive(String TypeName) : Predefined, IDeclaration<TypePrimitive>
 {
     private static String[] _primitives = new String[] { "bool", "char", "float32", "float64", "int8", "int16", "int32", "int64", "object", "string", "typedref", "void", "unsigned", "native" };
 
@@ -296,22 +247,22 @@ public record TypePrimitive(String TypeName) : Prefix, IDeclaration<TypePrimitiv
     );
 }
 
-public record GenericTypeParameter(GenericParameterReference Index, GenericTypeParameter.Type TypeParameterType) : Prefix, IDeclaration<GenericTypeParameter>
+public record GenericTypeParameter(GenericParameterReference Index, GenericTypeParameter.TypeComponent TypeParameterType) : Predefined, IDeclaration<GenericTypeParameter>
 {
-    public enum Type { Method, Class, None }
-    public override string ToString() => $"{(TypeParameterType is Type.Method ? "!!" : "!")}{Index}";
+    public enum TypeComponent { Method, Class, None }
+    public override string ToString() => $"{(TypeParameterType is TypeComponent.Method ? "!!" : "!")}{Index}";
     public static Parser<GenericTypeParameter> AsParser => RunAll(
         converter: (vals) => new GenericTypeParameter(vals[1].Index, vals[0].TypeParameterType),
         TryRun(
-            converter: (indicator) => new GenericTypeParameter(null, indicator == "!!" ? Type.Method : Type.Class),
+            converter: (indicator) => new GenericTypeParameter(null, indicator == "!!" ? TypeComponent.Method : TypeComponent.Class),
             ConsumeWord(Id, "!!"),
             ConsumeWord(Id, "!")
         ),
-        Map(val => new GenericTypeParameter(val, Type.None), GenericParameterReference.AsParser)
+        Map(val => new GenericTypeParameter(val, TypeComponent.None), GenericParameterReference.AsParser)
     );
 }
 
-public record MethodDefinition(CallConvention CallConvention, Type TypeTarget, Parameter.Collection Parameters) : Prefix, IDeclaration<MethodDefinition>
+public record MethodDefinition(CallConvention CallConvention, TypeComponent TypeTarget, Parameter.Collection Parameters) : Predefined, IDeclaration<MethodDefinition>
 {
     public override string ToString()
     {
@@ -330,7 +281,7 @@ public record MethodDefinition(CallConvention CallConvention, Type TypeTarget, P
         ),
         Map(
             converter: part2 => new MethodDefinition(null, part2, null),
-            Lazy(() => Type.AsParser)
+            Lazy(() => TypeComponent.AsParser)
         ),
         Discard<MethodDefinition, char>(ConsumeChar(Id, '*')),
         Discard<MethodDefinition, char>(ConsumeChar(Id, '(')),
@@ -341,7 +292,7 @@ public record MethodDefinition(CallConvention CallConvention, Type TypeTarget, P
     );
 }
 
-public record CustomTypeReference(string TypeBehaviorIndice, TypeReference Reference) : Prefix, IDeclaration<CustomTypeReference>
+public record CustomTypeReference(string TypeBehaviorIndice, TypeReference Reference) : Predefined, IDeclaration<CustomTypeReference>
 {
     public override string ToString() => $"{TypeBehaviorIndice} {Reference}";
     public static Parser<CustomTypeReference> AsParser => RunAll(
@@ -389,13 +340,13 @@ public record FieldMemberReference(FieldTypeReference FieldRef) : MemberReferenc
     );
 }
 
-public record FieldTypeReference(TypeDecl.Type Type, TypeDecl.TypeSpecification Spec, Identifier Name)
+public record FieldTypeReference(TypeDecl.TypeComponent TypeComponent, TypeDecl.TypeSpecification Spec, Identifier Name)
     : IDeclaration<FieldTypeReference>
 {
     public override string ToString()
     {
         var sb = new StringBuilder();
-        sb.Append($"{Type} ");
+        sb.Append($"{TypeComponent} ");
         if (Spec != null)
         {
             sb.Append($"{Spec}::");
@@ -405,13 +356,13 @@ public record FieldTypeReference(TypeDecl.Type Type, TypeDecl.TypeSpecification 
     }
     public static Parser<FieldTypeReference> AsParser => RunAll(
         converter: parts => new FieldTypeReference(
-            parts[0].Type,
+            parts[0].TypeComponent,
             parts[1]?.Spec,
             parts[2].Name
         ),
         Map(
-            converter: type => Construct<FieldTypeReference>(3, 0, type),
-            TypeDecl.Type.AsParser
+            converter: TypeComponent => Construct<FieldTypeReference>(3, 0, TypeComponent),
+            TypeDecl.TypeComponent.AsParser
         ),
         TryRun(
             converter: spec => Construct<FieldTypeReference>(3, 1, spec),
@@ -429,7 +380,7 @@ public record FieldTypeReference(TypeDecl.Type Type, TypeDecl.TypeSpecification 
     );
 }
 
-public record MethodReference(CallConvention? Convention, TypeDecl.Type Type, TypeSpecification Spec, MethodName Name, GenArgs? TypeParameters, SigArgumentDecl.SigArgument.Collection SigArgs)
+public record MethodReference(CallConvention? Convention, TypeDecl.TypeComponent TypeComponent, TypeSpecification Spec, MethodName Name, GenArgs? TypeParameters, SigArgumentDecl.SigArgument.Collection SigArgs)
     : IDeclaration<MethodReference>
 {
     public override string ToString()
@@ -439,7 +390,7 @@ public record MethodReference(CallConvention? Convention, TypeDecl.Type Type, Ty
         {
             sb.Append($"{Convention}");
         }
-        sb.Append($"{Type} ");
+        sb.Append($"{TypeComponent} ");
         if (Spec is not null)
         {
             sb.Append($"{Spec}::");
@@ -455,7 +406,7 @@ public record MethodReference(CallConvention? Convention, TypeDecl.Type Type, Ty
     public static Parser<MethodReference> AsParser => RunAll(
         converter: parts => new MethodReference(
             parts[0].Convention,
-            parts[1].Type,
+            parts[1].TypeComponent,
             parts[2]?.Spec,
             parts[3].Name,
             parts[4]?.TypeParameters,
@@ -466,11 +417,11 @@ public record MethodReference(CallConvention? Convention, TypeDecl.Type Type, Ty
             CallConvention.AsParser
         ),
         Map(
-            converter: type => Construct<MethodReference>(6, 1, type),
-            TypeDecl.Type.AsParser
+            converter: TypeComponent => Construct<MethodReference>(6, 1, TypeComponent),
+            TypeDecl.TypeComponent.AsParser
         ),
         TryRun(
-            converter: type => Construct<MethodReference>(6, 2, type),
+            converter: TypeComponent => Construct<MethodReference>(6, 2, TypeComponent),
             RunAll(
                 converter: parts => parts[0],
                 TypeSpecification.AsParser,
@@ -497,6 +448,47 @@ public record MethodReference(CallConvention? Convention, TypeDecl.Type Type, Ty
             Discard<SigArgument.Collection, char>(ConsumeChar(Id, '(')),
             SigArgument.Collection.AsParser,
             Discard<SigArgument.Collection, char>(ConsumeChar(Id, ')'))
+        )
+    );
+}
+
+
+public record TypeReference(ResolutionScope Scope, ARRAY<DottedName> Names, GenArgs GenericTypes) : IDeclaration<TypeReference>
+{
+    public override string ToString()
+    {
+        StringBuilder sb = new();
+        if (Scope is not null)
+        {
+            sb.Append($"{Scope.ToString(true)} ");
+        }
+        sb.Append(Names.ToString("/"));
+        if (GenericTypes is not null)
+        {
+            sb.Append($"<{GenericTypes}>");
+        }
+        return sb.ToString();
+    }
+    public static Parser<TypeReference> AsParser => RunAll(
+        converter: (vals) => new TypeReference(vals[0]?.Scope, vals[1].Names, vals[2]?.GenericTypes),
+        TryRun(
+            converter: (scope) => Construct<TypeReference>(3, 0, scope),
+            ResolutionScope.AsParser,
+            Empty<ResolutionScope>()
+        ),
+        Map(
+            converter: (name) => Construct<TypeReference>(3, 1, name),
+            ARRAY<DottedName>.MakeParser('\0', '/', '\0')
+        ),
+        TryRun(
+            converter: (typeParams) => Construct<TypeReference>(3, 2, typeParams),
+            RunAll(
+                converter: parts => parts[1],
+                Discard<GenArgs, char>(ConsumeChar(Id, '<')),
+                GenArgs.AsParser,
+                Discard<GenArgs, char>(ConsumeChar(Id, '>'))
+            ),
+            Empty<GenArgs>()
         )
     );
 }

@@ -95,36 +95,13 @@ public record FinallyBlock(HandlerBlock Block) : WireBlock, IDeclaration<Finally
     );
 }
 
-[GenerateParser]
-public partial record TryClause : IDeclaration<TryClause>;
-public record TryWithLabel(LabelOrOffset.Collection From, LabelOrOffset.Collection To) : TryClause, IDeclaration<TryWithLabel>
+public partial record TryClause(HandlerBlock Block) : IDeclaration<TryClause>
 {
-    public override string ToString() => $".try {From} to {To}";
-    public static Parser<TryWithLabel> AsParser => RunAll(
-        converter: parts => new TryWithLabel(parts[1].From, parts[3].To),
-        Discard<TryWithLabel, string>(ConsumeWord(Core.Id, ".try")),
-        Map(
-            converter: from => new TryWithLabel(from, null),
-            LabelOrOffset.Collection.AsParser
-        ),
-        Discard<TryWithLabel, string>(ConsumeWord(Core.Id, "to")),
-        Map(
-            converter: to => new TryWithLabel(null, to),
-            LabelOrOffset.Collection.AsParser
-        )
-    );
-}
-
-public record TryWithScope(ScopeBlock ScopeBlock) : TryClause, IDeclaration<TryWithScope>
-{
-    public override string ToString() => $".try {ScopeBlock}";
-    public static Parser<TryWithScope> AsParser => RunAll(
-        converter: parts => new TryWithScope(parts[1].ScopeBlock),
-        Discard<TryWithScope, string>(ConsumeWord(Core.Id, ".try")),
-        Map(
-            converter: scopeBlock => new TryWithScope(scopeBlock),
-            ScopeBlock.AsParser
-        )
+    public override string ToString() => $".try {Block}";
+    public static Parser<TryClause> AsParser => RunAll(
+        converter: parts => new TryClause(parts[1]),
+        Discard<HandlerBlock, string>(ConsumeWord(Core.Id, ".try")),
+        HandlerBlock.AsParser
     );
 }
 
@@ -148,15 +125,4 @@ public record HandlerWithLabel(LabelOrOffset.Collection From, LabelOrOffset.Coll
     );
 }
 
-public record HandlerWithScope(ScopeBlock ScopeBlock) : HandlerBlock, IDeclaration<HandlerWithScope>
-{
-    public override string ToString() => $"handler {ScopeBlock}";
-    public static Parser<HandlerWithScope> AsParser => RunAll(
-        converter: parts => new HandlerWithScope(parts[1]),
-        Discard<HandlerWithScope, string>(ConsumeWord(Core.Id, "handler")),
-        Map(
-            converter: scopeBlock => new HandlerWithScope(scopeBlock),
-            ScopeBlock.AsParser
-        )
-    );
-}
+[WrapParser<ScopeBlock>] public partial record HandlerWithScope : HandlerBlock, IDeclaration<HandlerWithScope>;
