@@ -39,7 +39,7 @@ public record Field(INT? Index, FieldAttribute.Collection Attributes, TypeDecl.T
         ),
         Map(
             converter: id => Construct<Field>(5, 3, id),
-            Identifier.AsParser
+            SimpleName.AsParser
         ),
         TryRun(
             converter: val => Construct<Field>(5, 4, val),

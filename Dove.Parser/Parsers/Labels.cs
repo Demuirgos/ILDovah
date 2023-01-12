@@ -15,7 +15,7 @@ public partial record LabelOrOffset : IDeclaration<LabelOrOffset>
         );
     }
 }
-[WrapParser<Identifier>] public partial record DataLabel : IDeclaration<DataLabel>;
+[WrapParser<SimpleName>] public partial record DataLabel : IDeclaration<DataLabel>;
 
 
 public record CodeLabel(Identifier Value) : IDeclaration<CodeLabel>
