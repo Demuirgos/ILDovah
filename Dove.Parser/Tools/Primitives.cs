@@ -125,8 +125,11 @@ public record ARRAY<T>(T[] Values) : IDeclaration<ARRAY<T>> where T : IDeclarati
 {
     public virtual (char start, char separator, char end) Delimiters { get; set; } = ('[', ',', ']');
     public override string ToString() => ToString(Delimiters.separator);
-    public new string ToString(char? overrideDelim = null) => ToString($"{overrideDelim ?? Delimiters.separator}");
-    public new string ToString(string? overrideDelim = null) => $"{Delimiters.start}{string.Join(overrideDelim, Values.Select(v => v.ToString()))}{Delimiters.end}";
+    public new string ToString(char? overrideDelim = null) {
+        char delim = overrideDelim ?? Delimiters.separator;
+        return ToString($"{(delim == '\0' ? String.Empty : $"{delim}")}");
+    } 
+    public new string ToString(string? overrideDelim = null) => $"{(Delimiters.start == '\0' ? String.Empty : $"{Delimiters.start}")}{string.Join(overrideDelim, Values.Select(v => v.ToString()))}{(Delimiters.end == '\0' ? String.Empty : $"{Delimiters.end}")}";
 
     [Obsolete("Use MakeParser instead", true)]
     public static Parser<ARRAY<T>> AsParser => throw new TypeLoadException("Use MakeParser instead");
