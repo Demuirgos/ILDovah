@@ -1,5 +1,8 @@
 using System.Diagnostics.CodeAnalysis;
 using ResourceDecl;
+
+namespace Dove.Core;
+
 public static class Parser {
     public static bool TryParse<T>(string source,[NotNullWhen(true)] out T result) where T : IDeclaration<T> {
         var parser = IDeclaration<T>.AsParser;

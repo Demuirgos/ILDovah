@@ -22,7 +22,7 @@ public record PKClause(ARRAY<BYTE> Bytes) : IDeclaration<PKClause>
 {
     public override string ToString() => $".publickey = ({Bytes.ToString(' ')})";
     public static Parser<PKClause> AsParser => RunAll(
-        converter: parts => new PKClause(parts[3].Bytes),
+        converter: parts => new PKClause(parts[2].Bytes),
         Discard<PKClause, string>(ConsumeWord(Core.Id, ".publickey")),
         Discard<PKClause, char>(ConsumeChar(Core.Id, '=')),
         Map(
@@ -36,7 +36,7 @@ public record PKTokenClause(ARRAY<BYTE> Bytes) : IDeclaration<PKTokenClause>
 {
     public override string ToString() => $".publickeytoken = ({Bytes.ToString(' ')})";
     public static Parser<PKTokenClause> AsParser => RunAll(
-        converter: parts => new PKTokenClause(parts[3].Bytes),
+        converter: parts => new PKTokenClause(parts[2].Bytes),
         Discard<PKTokenClause, string>(ConsumeWord(Core.Id, ".publickeytoken")),
         Discard<PKTokenClause, char>(ConsumeChar(Core.Id, '=')),
         Map(

@@ -13,8 +13,8 @@ public record ExternAssembly(Prefix Header, Member.Collection Declarations) : De
     public override string ToString() => $".assembly extern {Header} \n{{\n{Declarations}\n}}";
     public static Parser<ExternAssembly> AsParser => RunAll(
         converter: parts => new ExternAssembly(
-            parts[1].Header,
-            parts[3].Declarations
+            parts[2].Header,
+            parts[4].Declarations
         ),
         Discard<ExternAssembly, string>(ConsumeWord(Core.Id, ".assembly")),
         Discard<ExternAssembly, string>(ConsumeWord(Core.Id, "extern")),
@@ -36,9 +36,8 @@ public record Prefix(DottedName Name, DottedName Alias) : IDeclaration<Prefix>
     public override string ToString() => $"{Name} {(Alias is not null ? $"as {Alias}" : String.Empty)}";
     public static Parser<Prefix> AsParser => RunAll(
         converter: parts => new Prefix(
-            parts[1], parts[2]
+            parts[0], parts[1]
         ),
-        Discard<DottedName, string>(ConsumeWord(Core.Id, ".assembly")),
         DottedName.AsParser,
         TryRun(
             converter: Id,

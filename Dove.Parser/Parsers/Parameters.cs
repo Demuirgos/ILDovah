@@ -1,4 +1,5 @@
 using AttributeDecl;
+using FieldDecl;
 using IdentifierDecl;
 
 using System.Text;
@@ -146,23 +147,18 @@ public record GenericTypeArity(INT? Value) : IDeclaration<GenericTypeArity>
     );
 }
 
-
-public record GenericParameterSelector(GenericParameterReference Index) : IDeclaration<GenericParameterSelector>
+[GenerateParser] public partial record ParamClause : IDeclaration<ParamClause>;
+public record GenericParameterSelector(GenericParameterReference Index) : ParamClause, IDeclaration<GenericParameterSelector>
 {
-    public override string ToString() => $$$"""
-    .param type {{{Index switch
-    {
-        GenericParameterReferenceByIndex index => $"[{index}]",
-        GenericParameterReferenceByIdentifier id => id,
-        _ => throw new Exception()
-    }}}}
-    """;
+    private bool IsIndexed = false;
+    public override string ToString() => $".param type {Index}";
+
     public static Parser<GenericParameterSelector> AsParser => RunAll(
         converter: parts => new GenericParameterSelector(parts[2]),
-        Discard<GenericParameterReference, string>(ConsumeWord(Id, ".param")),
-        Discard<GenericParameterReference, string>(ConsumeWord(Id, "type")),
+        Discard<GenericParameterSelector, string>(ConsumeWord(Id, ".param")),
+        Discard<GenericParameterSelector, string>(ConsumeWord(Id, "type")),
         TryRun(
-            Id,
+            converter : res => new GenericParameterSelector(res) { IsIndexed = res is GenericParameterReferenceByIndex },
             RunAll(
                 converter: selectors => selectors[1] as GenericParameterReference,
                 Discard<GenericParameterReferenceByIndex, char>(ConsumeChar(Id, '[')),
@@ -177,6 +173,40 @@ public record GenericParameterSelector(GenericParameterReference Index) : IDecla
     );
 }
 
-[GenerateParser] public partial record GenericParameterReference : IDeclaration<GenericParameterReference>;
+public record InitializeParamAttribute(INT Index, FieldInit Value) : ParamClause, IDeclaration<InitializeParamAttribute>
+{
+    public override string ToString() => $".param [{Index}] {(Value is null ? String.Empty : $"= {Value}")}";
+    public static Parser<InitializeParamAttribute> AsParser => RunAll(
+        converter: parts => new InitializeParamAttribute(
+            parts[0].Index,
+            parts[1]?.Value
+        ),
+        RunAll(
+            converter: parts => new InitializeParamAttribute(parts[2], null),
+            Discard<INT, string>(ConsumeWord(Id, ".param")),
+            Discard<INT, char>(ConsumeChar(Id, '[')),
+            INT.AsParser,
+            Discard<INT, char>(ConsumeChar(Id, ']'))
+        ),
+        TryRun(
+            converter: finit => new InitializeParamAttribute(null, finit),
+            RunAll(
+                converter: parts => parts[1],
+                Discard<FieldInit, char>(ConsumeChar(Id, '=')),
+                FieldInit.AsParser
+            ),
+            Empty<FieldInit>()
+        )
+    );
+}
+
+[GenerateParser] public partial record GenericParameterReference : IDeclaration<GenericParameterReference> {
+    public override string ToString() => this switch
+    {
+        GenericParameterReferenceByIndex index => index.ToString(),
+        GenericParameterReferenceByIdentifier id => id.ToString(),
+        _ => throw new Exception()
+    };
+}
 [WrapParser<INT>] public partial record GenericParameterReferenceByIndex : GenericParameterReference, IDeclaration<GenericParameterReferenceByIndex>;
-[WrapParser<Identifier>] public partial record GenericParameterReferenceByIdentifier : GenericParameterReference, IDeclaration<GenericParameterReferenceByIdentifier>;
+[WrapParser<SimpleName>] public partial record GenericParameterReferenceByIdentifier : GenericParameterReference, IDeclaration<GenericParameterReferenceByIdentifier>;

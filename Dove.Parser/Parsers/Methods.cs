@@ -180,36 +180,7 @@ public record MaxStackItem(INT Value) : Member, IDeclaration<MaxStackItem>
     );
 }
 
-[GenerateParser]
-public partial record ParamAttribute : Member, IDeclaration<ParamAttribute>;
-[WrapParser<GenericParameterSelector>] public partial record ParamAttributeClause : ParamAttribute, IDeclaration<ParamAttributeClause>;
-
-public record InitializeParamAttribute(INT Index, FieldInit Value) : ParamAttribute
-{
-    public override string ToString() => $".param [{Index}] {(Value is null ? String.Empty : $"= {Value}")}";
-    public static Parser<InitializeParamAttribute> AsParser => RunAll(
-        converter: parts => new InitializeParamAttribute(
-            parts[0].Index,
-            parts[1]?.Value
-        ),
-        RunAll(
-            converter: parts => new InitializeParamAttribute(parts[2], null),
-            Discard<INT, string>(ConsumeWord(Id, ".param")),
-            Discard<INT, char>(ConsumeChar(Id, '[')),
-            INT.AsParser,
-            Discard<INT, char>(ConsumeChar(Id, ']'))
-        ),
-        TryRun(
-            converter: finit => new InitializeParamAttribute(null, finit),
-            RunAll(
-                converter: parts => parts[1],
-                Discard<FieldInit, char>(ConsumeChar(Id, '=')),
-                FieldInit.AsParser
-            )
-        )
-    );
-}
-
+[WrapParser<ParamClause>] public partial record ParamAttribute :  Member, IDeclaration<ParamAttribute>;
 
 public record LocalsItem(bool IsInit, Local.Collection Signatures) : Member, IDeclaration<LocalsItem>
 {

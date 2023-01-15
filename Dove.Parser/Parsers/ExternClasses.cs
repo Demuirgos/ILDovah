@@ -13,8 +13,9 @@ public record ExternClass(Prefix Header, Member.Collection Members) : Declaratio
     public override string ToString() => $".class {Header} \n{{\n{Members}\n}}";
 
     public static Parser<ExternClass> AsParser => RunAll(
-        converter: parts => new ExternClass(parts[1].Header, parts[3].Members),
+        converter: parts => new ExternClass(parts[2].Header, parts[4].Members),
         Discard<ExternClass, string>(ConsumeWord(Core.Id, ".class")),
+        Discard<ExternClass, string>(ConsumeWord(Core.Id, "extern")),
         Map(
             converter: header => Construct<ExternClass>(2, 0, header),
             Prefix.AsParser
@@ -32,8 +33,7 @@ public record Prefix(ExportAttribute.Collection Attribute, DottedName Name) : ID
 {
     public override string ToString() => $"extern {Attribute} {Name}";
     public static Parser<Prefix> AsParser => RunAll(
-        converter: parts => new Prefix(parts[1].Attribute, parts[2].Name),
-        Discard<Prefix, string>(ConsumeWord(Core.Id, "extern")),
+        converter: parts => new Prefix(parts[0].Attribute, parts[1].Name),
         Map(
             converter: attr => Construct<Prefix>(2, 0, attr),
             ExportAttribute.Collection.AsParser
