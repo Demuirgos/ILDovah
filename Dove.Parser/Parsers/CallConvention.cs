@@ -3,6 +3,7 @@ using System.Text;
 using static Core;
 using static ExtraTools.Extensions;
 namespace CallConventionDecl;
+
 public record CallConvention(CallAttribute Attribute, CallKind Kind) : IDeclaration<CallConvention>
 {
     public override string ToString()
@@ -44,14 +45,15 @@ public record CallAttribute(string[] values) : IDeclaration<CallAttribute>
     );
 }
 
-public record CallKind(String Kind) : IDeclaration<CallKind>
+[GenerateParser] public partial record CallKind : IDeclaration<CallKind>;
+public record CallKindPrimitive(String Kind) : CallKind, IDeclaration<CallKindPrimitive>
 {
     private static String[] PrimaryKeywords = { "default", "vararg", "unmanaged" };
     private static String[] SecondaryWords = { "cdecl", "fastcall", "stdcall", "thiscall" };
 
     public override string ToString() => Kind;
-    public static Parser<CallKind> AsParser => TryRun(
-        converter: (vals) => new CallKind(vals),
+    public static Parser<CallKindPrimitive> AsParser => TryRun(
+        converter: (vals) => new CallKindPrimitive(vals),
         PrimaryKeywords.Select(word =>
         {
             if (word == "unmanaged")
@@ -70,5 +72,18 @@ public record CallKind(String Kind) : IDeclaration<CallKind>
                 return ConsumeWord(Id, word);
             }
         }).ToArray()
+    );
+}
+
+
+public record CallKindCustom(INT Index) : CallKind, IDeclaration<CallKindCustom>
+{
+    public override string ToString() => $"callconv({Index})";
+    public static Parser<CallKindCustom> AsParser => RunAll(
+        converter: vals => new CallKindCustom(vals[2]),
+        Discard<INT, String>(ConsumeWord(Id, "callconv")),
+        Discard<INT, char>(ConsumeChar(Id, '(')),
+        INT.AsParser,
+        Discard<INT, char>(ConsumeChar(Id, ')'))
     );
 }

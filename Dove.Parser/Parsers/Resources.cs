@@ -10,6 +10,7 @@ namespace ResourceDecl;
 
 
 [GenerateParser] public partial record FileReference : Declaration, IDeclaration<FileReference>;
+[GenerationOrderParser(Order.Last)]
 public record FileReferenceCIL(FileReferenceCIL.Prefix Header, FileReferenceCIL.Body Member) : FileReference, IDeclaration<FileReferenceCIL>
 {
     public record Prefix(String Attribute, FileName File) : IDeclaration<Prefix>
@@ -27,11 +28,7 @@ public record FileReferenceCIL(FileReferenceCIL.Prefix Header, FileReferenceCIL.
                 Empty<String>()
             ),
             Map(
-                converter: (name) =>
-                {
-                    var cleanedName = name.Name.EndsWith(".hash") ? name.Name.Substring(0, name.Name.Length - 5) : name.Name;
-                    return Construct<Prefix>(2, 1, new FileName(cleanedName));
-                },
+                converter: (name) =>  Construct<Prefix>(2, 1, name),
                 FileName.AsParser
             )
         );
@@ -62,7 +59,8 @@ public record FileReferenceCIL(FileReferenceCIL.Prefix Header, FileReferenceCIL.
             TryRun(
                 converter: (hash) => Construct<Body>(2, 0, hash),
                 RunAll(
-                    converter: (vals) => vals[2],
+                    converter: (vals) => vals[3],
+                    Discard<ARRAY<BYTE>, string>(ConsumeWord(Id, ".hash")),
                     Discard<ARRAY<BYTE>, char>(ConsumeChar(Id, '=')),
                     Discard<ARRAY<BYTE>, char>(ConsumeChar(Id, '(')),
                     ARRAY<BYTE>.MakeParser('\0', '\0', '\0'),
@@ -98,26 +96,13 @@ public record FileReferenceCIL(FileReferenceCIL.Prefix Header, FileReferenceCIL.
     );
 }
 
+
+[WrapParser<ModuleDecl.Module>] public partial record ModuleScope : ResolutionScope;
+
+[WrapParser<AssemblyRefName>] public partial record AssemblyRef : ResolutionScope;
 public record ResolutionScope : Declaration, IDeclaration<ResolutionScope>
 {
-    public record Module(FileName File) : ResolutionScope
-    {
-        public override string ToString() => $".module {File}";
-        public static Parser<Module> AsParser => RunAll(
-            converter: (vals) => new Module(vals[1]),
-            Discard<FileName, string>(ConsumeWord(Id, ".module")),
-            FileName.AsParser
-        );
-    }
-
-    public record AssemblyRef(AssemblyRefName Name) : ResolutionScope
-    {
-        public override string ToString() => $"{Name}";
-        public static Parser<AssemblyRef> AsParser => Map(
-            converter: (name) => new AssemblyRef(name),
-            AssemblyRefName.AsParser
-        );
-    }
+    
 
     public string ToString(bool wrap = true)
     {
@@ -125,7 +110,7 @@ public record ResolutionScope : Declaration, IDeclaration<ResolutionScope>
         if (wrap) sb.Append('[');
         switch (this)
         {
-            case Module m:
+            case ModuleScope m:
                 sb.Append(m);
                 break;
             case AssemblyRef a:
@@ -141,7 +126,7 @@ public record ResolutionScope : Declaration, IDeclaration<ResolutionScope>
         Discard<ResolutionScope, char>(ConsumeChar(Id, '[')),
         TryRun(
             converter: (vals) => vals,
-            Cast<ResolutionScope, Module>(Module.AsParser),
+            Cast<ResolutionScope, ModuleScope>(ModuleScope.AsParser),
             Cast<ResolutionScope, AssemblyRef>(AssemblyRef.AsParser)
         ),
         Discard<ResolutionScope, char>(ConsumeChar(Id, ']'))
@@ -238,7 +223,7 @@ public record Corflags(INT Value) : Declaration, IDeclaration<Corflags>
         Discard<Corflags, string>(ConsumeWord(Core.Id, ".corflags")),
         Map(
             converter: value => Construct<Corflags>(1, 0, value),
-            QSTRING.AsParser
+            INT.AsParser
         )
     );
 }

@@ -171,6 +171,7 @@ public record GenericSuffix(GenArgs GenericArguments) : TypeComponent, IDeclarat
     );
 }
 
+[GenerationOrderParser(Order.First)]
 public record ModifierSuffix(String Modifier, TypeReference ReferencedType) : TypeComponent, IDeclaration<ModifierSuffix>
 {
     public override string ToString()
@@ -184,9 +185,17 @@ public record ModifierSuffix(String Modifier, TypeReference ReferencedType) : Ty
         return sb.ToString();
     }
     public static Parser<ModifierSuffix> AsParser => RunAll(
-        converter: (vals) => new ModifierSuffix(vals[0].Modifier, vals[1].ReferencedType),
-        Map(val => new ModifierSuffix(val, null), TryRun(Id, ConsumeWord(Id, "modopt"), ConsumeWord(Id, "modreq"))),
-        Map(val => new ModifierSuffix(null, val), TypeReference.AsParser)
+        converter: (vals) => new ModifierSuffix(vals[0].Modifier, vals[2].ReferencedType),
+        Map(
+            val => new ModifierSuffix(val, null), 
+            TryRun(Id, ConsumeWord(Id, "modopt"), ConsumeWord(Id, "modreq"))
+        ),
+        Discard<ModifierSuffix, char>(ConsumeChar(Id, '(')),
+        Map(
+            val => new ModifierSuffix(null, val), 
+            TypeReference.AsParser
+        ),
+        Discard<ModifierSuffix, char>(ConsumeChar(Id, ')'))
     );
 }
 
@@ -380,7 +389,7 @@ public record FieldTypeReference(TypeDecl.Type Type, TypeDecl.TypeSpecification 
     );
 }
 
-public record MethodReference(CallConvention? Convention, TypeDecl.TypeComponent TypeComponent, TypeSpecification Spec, MethodName Name, GenArgs? TypeParameters, SigArgumentDecl.SigArgument.Collection SigArgs)
+public record MethodReference(CallConvention? Convention, TypeDecl.Type TypeComponent, TypeSpecification Spec, MethodName Name, GenArgs? TypeParameters, SigArgumentDecl.SigArgument.Collection SigArgs)
     : IDeclaration<MethodReference>
 {
     public override string ToString()
@@ -418,7 +427,7 @@ public record MethodReference(CallConvention? Convention, TypeDecl.TypeComponent
         ),
         Map(
             converter: TypeComponent => Construct<MethodReference>(6, 1, TypeComponent),
-            TypeDecl.TypeComponent.AsParser
+            TypeDecl.Type.AsParser
         ),
         TryRun(
             converter: TypeComponent => Construct<MethodReference>(6, 2, TypeComponent),

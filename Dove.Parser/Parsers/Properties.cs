@@ -80,25 +80,8 @@ public partial record Member : IDeclaration<Member>
         );
     }
 }
-public record PropertyAttributeItem(CustomAttribute Attribute) : Member, IDeclaration<PropertyAttributeItem>
-{
-    public override string ToString() => $".custom {Attribute}";
-    public static Parser<PropertyAttributeItem> AsParser => RunAll(
-        converter: parts => new PropertyAttributeItem(parts[1]),
-        Discard<CustomAttribute, string>(ConsumeWord(Core.Id, ".custom")),
-        CustomAttribute.AsParser
-    );
-}
-
-public record ExternalSourceItem(ExternSource Attribute) : Member, IDeclaration<ExternalSourceItem>
-{
-    public override string ToString() => $".extern {Attribute}";
-    public static Parser<ExternalSourceItem> AsParser => RunAll(
-        converter: parts => new ExternalSourceItem(parts[1]),
-        Discard<ExternSource, string>(ConsumeWord(Core.Id, ".extern")),
-        ExternSource.AsParser
-    );
-}
+[WrapParser<CustomAttribute>] public partial record PropertyAttributeItem : Member, IDeclaration<PropertyAttributeItem>;
+[WrapParser<ExternSource>] public partial record ExternalSourceItem : Member, IDeclaration<ExternalSourceItem>;
 
 public record SpecialMethodReference(String SpecialName, CallConvention Convention, TypeDecl.Type Type, TypeSpecification? Specification, MethodName Name, Parameter.Collection Parameters) : Member, IDeclaration<SpecialMethodReference>
 {

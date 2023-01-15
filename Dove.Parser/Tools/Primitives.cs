@@ -72,13 +72,16 @@ characters (A–Z, a–z, 0–9) or the characters “_”, “$”, “@”, �
 public record ID(String Value) : IDeclaration<ID>
 {
     public override string ToString() => Value;
-    public static Parser<ID> AsParser => RunAll(
-        converter: (vals) => new ID(vals[0]),
-        RunMany(
-            converter: chars => new string(chars.ToArray()),
-            1, Int32.MaxValue, false,
-            ConsumeIf(Id, c => Char.IsLetterOrDigit(c) || c == '_' || c == '$' || c == '@' || c == '`' || c == '?')
-        )
+    public static Parser<ID> AsParser => ConsumeIf(
+        RunAll(
+            converter: (vals) => new ID(vals[0]),
+            RunMany(
+                converter: chars => new string(chars.ToArray()),
+                1, Int32.MaxValue, false,
+                ConsumeIf(Id, c => Char.IsLetterOrDigit(c) || c == '_' || c == '$' || c == '@' || c == '`' || c == '?')
+            )
+        ),
+        word => !IdentifierDecl.Identifier.reservedWords.Contains(word.Value)
     );
 }
 

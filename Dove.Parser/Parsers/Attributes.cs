@@ -63,7 +63,7 @@ public record FieldAttribute : IDeclaration<FieldAttribute>
     );
 }
 
-public record CustomAttribute(TypeDecl.MethodReference AttributeCtor, ARRAY<BYTE>? Arguments) : IDeclaration<CustomAttribute>
+public record CustomAttribute(TypeDecl.MethodReference AttributeCtor, ARRAY<BYTE>? Arguments) : Declaration, IDeclaration<CustomAttribute>
 {
     public override string ToString()
     {
