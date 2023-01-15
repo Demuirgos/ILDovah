@@ -3,7 +3,7 @@ using static Core;
 using static ExtraTools.Extensions;
 
 namespace BoundsDecl;
-public record Bound(INT Lower, INT Upper, Bound.BoundType Type) : IDeclaration<Bound>
+public record Bound(INT? LeftBound, INT? RightBound, Bound.BoundType Type) : IDeclaration<Bound>
 {
     public record Collection(ARRAY<Bound> Bounds) : IDeclaration<Collection>
     {
@@ -15,31 +15,31 @@ public record Bound(INT Lower, INT Upper, Bound.BoundType Type) : IDeclaration<B
     }
     public enum BoundType
     {
-        None = 0, LowerBound = 1, UpperBound = 2, BothBounds = LowerBound | UpperBound
+        None = 0, SingleBound = 1, Vararg = 2, LowerBound = Vararg | SingleBound, Bounded = SingleBound | Vararg | 4
     }
 
     public override string ToString() => Type switch
     {
-        BoundType.None => "...",
-        BoundType.BothBounds => $"{Lower}...{Upper}",
-        BoundType.UpperBound => $"{Upper}",
-        BoundType.LowerBound => $"{Lower}...",
-        _ => throw new System.Diagnostics.UnreachableException()
+        BoundType.Vararg => "...",
+        BoundType.LowerBound => $"{LeftBound}...",
+        BoundType.Bounded => $"{LeftBound}...{RightBound}",
+        BoundType.SingleBound => $"{LeftBound}",
+        _ => throw new System.Diagnostics.UnreachableException(Type.ToString())
     };
 
     public static Parser<Bound> AsParser => RunAll(
         // Align BoundType with Spec 
-        converter: (vals) => new Bound(vals[0].Lower, vals[2].Upper, vals.Aggregate(BoundType.None, (acc, val) => acc | val.Type)),
+        converter: (vals) => new Bound(vals[0].LeftBound, vals[2].RightBound, vals.Aggregate(BoundType.None, (acc, val) => acc | val.Type)),
         TryRun(
-            converter: (lower) => new Bound(lower, null, lower is null ? BoundType.None : BoundType.LowerBound),
+            converter: (lower) => new Bound(lower, null, lower is null ? BoundType.None : BoundType.SingleBound),
             INT.AsParser, Empty<INT>()
         ),
         TryRun(
-            converter: (type) => new Bound(null, null, BoundType.None),
+            converter: (type) => new Bound(null, null, String.IsNullOrEmpty(type) ? BoundType.None : BoundType.Vararg),
             ConsumeWord(Id, "..."), Empty<String>()
         ),
         TryRun(
-            converter: (upper) => new Bound(null, upper, upper is null ? BoundType.None : BoundType.UpperBound),
+            converter: (upper) => new Bound(null, upper, upper is null ? BoundType.None : BoundType.Bounded),
             INT.AsParser, Empty<INT>()
         )
     );

@@ -165,8 +165,15 @@ public class ParserGenerator : ISourceGenerator
             return $"Lazy(() => Cast<{BaseClassName}, {children}>(IDeclaration<{children}>.AsParser))";
         }));
 
+        string casts = String.Join("\n    ", childClassNames.Select(child =>
+        {
+            string childTypeName = child.Substring(child.LastIndexOf('.') + 1);
+            return $"public {child}? As{childTypeName}() => this is {child} c ? c : null;";
+        }));
+
         return $$$"""
         public partial record {{{BaseClassName}}} : IDeclaration<{{{BaseClassName}}}> {
+            {{{casts}}}
             public static Parser<{{{BaseClassName}}}> AsParser => TryRun(
                 converter: Core.Id,
                 {{{body}}}
