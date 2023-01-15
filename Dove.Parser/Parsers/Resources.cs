@@ -1,3 +1,4 @@
+#define MSFTSPEC
 using IdentifierDecl;
 using RootDecl;
 using System.Text;
@@ -6,7 +7,10 @@ using static Core;
 using static ExtraTools.Extensions;
 
 namespace ResourceDecl;
-public record FileReference(FileReference.Prefix Header, FileReference.Body Member) : Declaration, IDeclaration<FileReference>
+
+
+[GenerateParser] public partial record FileReference : Declaration, IDeclaration<FileReference>;
+public record FileReferenceCIL(FileReferenceCIL.Prefix Header, FileReferenceCIL.Body Member) : FileReference, IDeclaration<FileReferenceCIL>
 {
     public record Prefix(String Attribute, FileName File) : IDeclaration<Prefix>
     {
@@ -76,25 +80,25 @@ public record FileReference(FileReference.Prefix Header, FileReference.Body Memb
 
     public override string ToString() => $".file {Header} {Member}";
 
-    public static Parser<FileReference> AsParser => RunAll(
-        converter: parts => new FileReference(
+    public static Parser<FileReferenceCIL> AsParser => RunAll(
+        converter: parts => new FileReferenceCIL(
             parts[1].Header,
             parts[2]?.Member
         ),
-        Discard<FileReference, string>(ConsumeWord(Id, ".file")),
+        Discard<FileReferenceCIL, string>(ConsumeWord(Id, ".file")),
         Map(
-            converter: (header) => Construct<FileReference>(2, 0, header),
+            converter: (header) => Construct<FileReferenceCIL>(2, 0, header),
             Prefix.AsParser
         ),
         TryRun(
-            converter: (body) => Construct<FileReference>(2, 1, body),
+            converter: (body) => Construct<FileReferenceCIL>(2, 1, body),
             Body.AsParser,
             Empty<Body>()
         )
     );
 }
 
-public record ResolutionScope : IDeclaration<ResolutionScope>
+public record ResolutionScope : Declaration, IDeclaration<ResolutionScope>
 {
     public record Module(FileName File) : ResolutionScope
     {
@@ -191,7 +195,7 @@ public record ExternSource(INT Line, INT? Column, QSTRING? File) : Declaration, 
         TryRun((name) => new ExternSource(null, null, name), QSTRING.AsParser, Empty<QSTRING>())
     );
 }
-public record Culture(QSTRING Value) : IDeclaration<Culture>
+public record Culture(QSTRING Value) : Declaration, IDeclaration<Culture>
 {
     public override string ToString() => $".culture {Value}";
 
@@ -206,3 +210,68 @@ public record Culture(QSTRING Value) : IDeclaration<Culture>
         )
     );
 }
+
+public record StackReserve(INT Value) : Declaration, IDeclaration<StackReserve>
+{
+    public override string ToString() => $".stackreserve {Value}";
+
+    public static Parser<StackReserve> AsParser => RunAll(
+        converter: parts => new StackReserve(
+            parts[1].Value
+        ),
+        Discard<StackReserve, string>(ConsumeWord(Core.Id, ".stackreserve")),
+        Map(
+            converter: value => Construct<StackReserve>(1, 0, value),
+            INT.AsParser
+        )
+    );
+}
+
+public record Corflags(INT Value) : Declaration, IDeclaration<Corflags>
+{
+    public override string ToString() => $".corflags {Value}";
+
+    public static Parser<Corflags> AsParser => RunAll(
+        converter: parts => new Corflags(
+            parts[1].Value
+        ),
+        Discard<Corflags, string>(ConsumeWord(Core.Id, ".corflags")),
+        Map(
+            converter: value => Construct<Corflags>(1, 0, value),
+            QSTRING.AsParser
+        )
+    );
+}
+
+#if MSFTSPEC
+public record ImageBase(INT Value) : Declaration, IDeclaration<ImageBase>
+{
+    public override string ToString() => $".imagebase {Value}";
+
+    public static Parser<ImageBase> AsParser => RunAll(
+        converter: parts => new ImageBase(
+            parts[1].Value
+        ),
+        Discard<ImageBase, string>(ConsumeWord(Core.Id, ".imagebase")),
+        Map(
+            converter: value => Construct<ImageBase>(1, 0, value),
+            INT.AsParser
+        )
+    );
+}
+
+public record FileAlignment(INT Value) : FileReference, IDeclaration<FileAlignment>
+{
+    public override string ToString() => $".file alignment {Value}";
+
+    public static Parser<FileAlignment> AsParser => RunAll(
+        converter: parts => parts[2],
+        Discard<FileAlignment, string>(ConsumeWord(Core.Id, ".file")),
+        Discard<FileAlignment, string>(ConsumeWord(Core.Id, "alignment")),
+        Map(
+            converter: value => Construct<FileAlignment>(1, 0, value),
+            INT.AsParser
+        )
+    );
+}
+#endif

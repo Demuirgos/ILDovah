@@ -162,6 +162,16 @@ public record MethodSimpleAttribute(String Name) : MethodAttribute, IDeclaration
         AttributeWords.Select((word) => ConsumeWord(Id, word)).ToArray()
     );
 }
+
+public record DataAttribute(String Name) : IDeclaration<DataAttribute>
+{
+    private static String[] AttributeWords = { "tls", "cil" };
+    public override string ToString() => Name;
+    public static Parser<DataAttribute> AsParser => TryRun(
+        converter: (vals) => new DataAttribute(vals),
+        AttributeWords.Select((word) => ConsumeWord(Id, word)).ToArray()
+    );
+}
 public record MethodPInvokeAttribute(QSTRING Name, QSTRING Alias, PinvAttribute.Collection Attributes) : MethodAttribute, IDeclaration<MethodPInvokeAttribute>
 {
     public override string ToString()

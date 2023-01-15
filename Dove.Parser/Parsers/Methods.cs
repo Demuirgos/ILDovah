@@ -181,7 +181,6 @@ public record MaxStackItem(INT Value) : Member, IDeclaration<MaxStackItem>
 }
 
 [WrapParser<ParamClause>] public partial record ParamAttribute :  Member, IDeclaration<ParamAttribute>;
-
 public record LocalsItem(bool IsInit, Local.Collection Signatures) : Member, IDeclaration<LocalsItem>
 {
     public override string ToString() => $".locals {(IsInit ? "init" : String.Empty)} (\n{Signatures}\n)";

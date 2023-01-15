@@ -154,6 +154,20 @@ public record PackingClause(INT Sizeof) : Member, IDeclaration<PackingClause>
     );
 }
 
+public record InterfaceImplClause(TypeDecl.Type Interface) : Member, IDeclaration<InterfaceImplClause>
+{
+    public override string ToString() => $".interfaceimpl type {Interface}";
+    public static Parser<InterfaceImplClause> AsParser => Map(
+        converter: type => new InterfaceImplClause(type),
+        RunAll(
+            converter: typerefs => typerefs[2],
+            Discard<TypeDecl.Type, string>(ConsumeWord(Core.Id, ".interfaceimpl")),
+            Discard<TypeDecl.Type, string>(ConsumeWord(Core.Id, "type")),
+            TypeDecl.Type.AsParser
+        )
+    );
+}
+
 [WrapParser<GenericParameterSelector>] public partial record ParamAttributeClause : Member, IDeclaration<ParamAttributeClause>;
 
 public record SubstitutionClause(OverrideMethodSignature Target, OverrideMethodSignature Substitution) : Member, IDeclaration<SubstitutionClause>

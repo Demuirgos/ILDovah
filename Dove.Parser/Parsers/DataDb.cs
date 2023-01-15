@@ -9,9 +9,16 @@ using static ExtraTools.Extensions;
 namespace DataDecl;
 using DataBody = DbItem.Collection;
 
-public record Data(DataLabel? Label, DataBody Body) : Declaration, IDeclaration<Data>
+public record Data(Prefix? Label, DbItem Body) : Declaration, IDeclaration<Data>
 {
-    public override string ToString() => $".data {Label} = {Body}";
+    public override string ToString() {
+        if (Label is not null)
+        {
+            return $".data {Label} = {Body}";
+        }
+        return $".data {Body}";
+    }
+
     public static Parser<Data> AsParser => RunAll(
         converter: parts => new Data(parts?[1]?.Label, parts[2].Body),
         Discard<Data, string>(ConsumeWord(Id, ".data")),
@@ -19,14 +26,31 @@ public record Data(DataLabel? Label, DataBody Body) : Declaration, IDeclaration<
             converter: item => Construct<Data>(2, 0, item),
             RunAll(
                 converter: items => items[0],
-                DataLabel.AsParser,
-                Discard<DataLabel, char>(ConsumeChar(Id, '='))
+                Prefix.AsParser,
+                Discard<Prefix, char>(ConsumeChar(Id, '='))
             ),
-            Empty<DataLabel>()
+            Empty<Prefix>()
         ),
         Map(
             converter: body => Construct<Data>(2, 1, body),
-            DataBody.AsParser
+            DbItem.AsParser
+        )
+    );
+}
+
+public record Prefix(DataLabel Label, AttributeDecl.DataAttribute Attribute) : IDeclaration<Prefix>
+{
+    public override string ToString() => $"{Attribute} {Label}";
+    public static Parser<Prefix> AsParser => RunAll(
+        converter: parts => new Prefix(parts[1].Label, parts[0].Attribute),
+        TryRun(
+            converter: attr => Construct<Prefix>(2, 1, attr),
+            AttributeDecl.DataAttribute.AsParser,
+            Empty<AttributeDecl.DataAttribute>()
+        ),
+        Map(
+            converter: label => Construct<Prefix>(2, 0, label),
+            DataLabel.AsParser
         )
     );
 }
@@ -34,6 +58,7 @@ public record Data(DataLabel? Label, DataBody Body) : Declaration, IDeclaration<
 [GenerateParser]
 public partial record DbItem : IDeclaration<DbItem>
 {
+    [GenerationOrderParser(Order.Last)]
     public record Collection(ARRAY<DbItem> Items) : DbItem, IDeclaration<DataBody>
     {
         public override string ToString() => Items.ToString(',');
@@ -57,13 +82,11 @@ public record LabelPointer(Identifier Id) : DbItem, IDeclaration<DataLabel>
 
 public record BytearrayItem(ARRAY<BYTE> Bytes) : DbItem, IDeclaration<BytearrayItem>
 {
-    public override string ToString() => $"bytearray({Bytes.ToString(' ')})";
+    public override string ToString() => $"bytearray{Bytes.ToString(' ')}";
     public static Parser<BytearrayItem> AsParser => RunAll(
-        converter: parts => new BytearrayItem(parts[2]),
+        converter: parts => new BytearrayItem(parts[1]),
         Discard<ARRAY<BYTE>, string>(ConsumeWord(Core.Id, "bytearray")),
-        Discard<ARRAY<BYTE>, char>(ConsumeChar(Core.Id, '(')),
-        ARRAY<BYTE>.MakeParser('\0', '\0', '\0'),
-        Discard<ARRAY<BYTE>, char>(ConsumeChar(Core.Id, ')'))
+        ARRAY<BYTE>.MakeParser('(', '\0', ')')
     );
 }
 
@@ -79,6 +102,7 @@ public record StringItem(QSTRING String) : DbItem, IDeclaration<StringItem>
     );
 }
 
+[GenerationOrderParser(Order.Middle)]
 public record IntegralItem(string Typename, long BitSize, INT? ReplicationCount) : DbItem, IDeclaration<IntegralItem>
 {
     private Object Value;
@@ -103,11 +127,11 @@ public record IntegralItem(string Typename, long BitSize, INT? ReplicationCount)
                 converter: parts =>
                 {
                     var result = new IntegralItem(parts[0].Typename, parts[0].BitSize, parts[4]?.ReplicationCount);
-                    result.Value = parts[3].Value;
+                    result.Value = parts[2].Value;
                     return result;
                 },
                 RunAll(
-                    converter: items => new IntegralItem(items[0].Typename, items[0].BitSize, null),
+                    converter: items => new IntegralItem(items[0].Typename, items[1].BitSize, null),
                     skipWhitespace: false,
                     Map(
                         converter: typename => Construct<IntegralItem>(3, 0, typename),

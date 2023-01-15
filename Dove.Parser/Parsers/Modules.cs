@@ -4,7 +4,7 @@ using static ExtraTools.Extensions;
 
 
 namespace ModuleDecl;
-public record Module(FileName File, bool IsExtern) : IDeclaration<Module>
+public record Module(FileName File, bool IsExtern) : RootDecl.Declaration, IDeclaration<Module>
 {
     public override string ToString() => $".module {(IsExtern ? "extern" : String.Empty)} {File}";
     public static Parser<Module> AsParser => RunAll(
