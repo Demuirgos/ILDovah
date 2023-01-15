@@ -27,20 +27,22 @@ public record Bound(INT? LeftBound, INT? RightBound, Bound.BoundType Type) : IDe
         _ => throw new System.Diagnostics.UnreachableException(Type.ToString())
     };
 
-    public static Parser<Bound> AsParser => RunAll(
-        // Align BoundType with Spec 
-        converter: (vals) => new Bound(vals[0].LeftBound, vals[2].RightBound, vals.Aggregate(BoundType.None, (acc, val) => acc | val.Type)),
-        TryRun(
-            converter: (lower) => new Bound(lower, null, lower is null ? BoundType.None : BoundType.SingleBound),
-            INT.AsParser, Empty<INT>()
+    public static Parser<Bound> AsParser => ConsumeIf(
+        RunAll(
+            converter: (vals) => new Bound(vals[0].LeftBound, vals[2].RightBound, vals.Aggregate(BoundType.None, (acc, val) => acc | val.Type)),
+            TryRun(
+                converter: (lower) => new Bound(lower, null, lower is null ? BoundType.None : BoundType.SingleBound),
+                INT.AsParser, Empty<INT>()
+            ),
+            TryRun(
+                converter: (type) => new Bound(null, null, String.IsNullOrEmpty(type) ? BoundType.None : BoundType.Vararg),
+                ConsumeWord(Id, "..."), Empty<String>()
+            ),
+            TryRun(
+                converter: (upper) => new Bound(null, upper, upper is null ? BoundType.None : BoundType.Bounded),
+                INT.AsParser, Empty<INT>()
+            )
         ),
-        TryRun(
-            converter: (type) => new Bound(null, null, String.IsNullOrEmpty(type) ? BoundType.None : BoundType.Vararg),
-            ConsumeWord(Id, "..."), Empty<String>()
-        ),
-        TryRun(
-            converter: (upper) => new Bound(null, upper, upper is null ? BoundType.None : BoundType.Bounded),
-            INT.AsParser, Empty<INT>()
-        )
+        bound => bound.Type != BoundType.None
     );
 }
