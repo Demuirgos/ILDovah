@@ -31,7 +31,7 @@ public record Instruction(String Opcode, InstructionArgument Arguments) : Member
         ["instr_brtarget"] = new[] { "brfalse.s", "bge.un.s", "bgt.un.s", "ble.un.s", "blt.un.s", "bne.un.s", "brtrue.s" , "brnull.s", "brfalse", "brnull", "brzero.s", "brzero", "brinst.s", "brinst", "leave.s", "bge.un", "bgt.un", "ble.un", "blt.un", "bne.un", "brtrue", "beq.s", "bge.s", "bgt.s", "ble.s", "blt.s", "leave", "br.s", "beq", "bge", "bgt", "ble", "blt", "br" },
         ["instr_method"] = new[] { "ldvirtftn", "callvirt", "newobj", "ldftn", "call", "jmp" },
         ["instr_field"] = new[] { "ldsflda", "ldflda", "ldsfld", "stsfld", "ldfld", "stfld" },
-        ["instr_type"] = new[] { "castclass", "unbox.any", "refanyval", "mkrefany", "initobj", "ldelema", "ldelem", "isinst", "newarr", "sizeof", "cpobj", "ldobj", "stobj", "unbox", "box" },
+        ["instr_type"] = new[] { "constrained.", "castclass", "unbox.any", "refanyval", "mkrefany", "initobj", "ldelema", "ldelem", "isinst", "newarr", "sizeof", "cpobj", "ldobj", "stobj", "unbox", "box" },
         ["instr_string"] = new[] { "ldstr" },
         ["instr_sig"] = new[] { "calli" },
         ["instr_rva"] = Array.Empty<string>(),
