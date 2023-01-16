@@ -112,7 +112,8 @@ public static class Core
                 index++;
                 return true;
             }
-            error = $"Character c: {code[index]} at index : {index} does not match predicate {predicateArgs} [{code[(index < 25 ? 0 : index - 25)..(index+25)]}]";
+            (var start, var end, index) = (index < 25 ? 0 : index - 25, index + 25 > code.Length - 1 ? code.Length - 1 : index + 25, index > code.Length - 1 ? code.Length - 1 : index);
+            error = $"Character c: {code[index]} at index : {index} does not match predicate {predicateArgs} [{code[start..end]}]";
             return false;
         };
     }
@@ -148,7 +149,7 @@ public static class Core
                 if (!ConsumeChar(Id, c)(code, ref index, out char character, out _))
                 {
                     result = default;
-                    error = $"Failed to parse word: {word} at index: {oldIndex} at [{code[(index < 25 ? 0 : index - 25)..(index + 25)]}]";
+                    error = $"Failed to parse word: {word} at index: {oldIndex} at [{code[(index < 25 ? 0 : index - 25)..(index+25 >= code.Length ? code.Length - 1: index + 25)]}]";
                     return false;
                 }
                 resultAcc.Append(character);

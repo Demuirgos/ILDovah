@@ -17,7 +17,10 @@ public record Instruction(String Opcode, InstructionArgument Arguments) : Member
         public override string ToString() => Opcodes.ToString(' ');
         public static Parser<Block> AsParser => Map(
             (ARRAY<Instruction> opcodes) => new Block(opcodes),
-            ARRAY<Instruction>.MakeParser('\0', '\0', '\0')
+            ARRAY<Instruction>.MakeParser(new ARRAY<Instruction>.ArrayOptions
+            {
+                Delimiters = ('\0', '\0', '\0')
+            })
         );
     }
 
@@ -179,7 +182,9 @@ public record BytearrayArgument(string Prefix, ARRAY<BYTE> Bytes)
         ),
         Map(
             converter: labels => Construct<BytearrayArgument>(2, 1, labels),
-            ARRAY<BYTE>.MakeParser('(', '\0', ')')
+            ARRAY<BYTE>.MakeParser(new ARRAY<BYTE>.ArrayOptions {
+                Delimiters = ('(', '\0', ')')
+            })
         )
     );
 }

@@ -182,7 +182,9 @@ public record BytearrayItem(ARRAY<BYTE> Bytes) : FieldInit, IDeclaration<Bytearr
         converter: parts => new BytearrayItem(parts[2]),
         Discard<ARRAY<BYTE>, string>(ConsumeWord(Core.Id, "bytearray")),
         Discard<ARRAY<BYTE>, char>(ConsumeChar(Core.Id, '(')),
-        ARRAY<BYTE>.MakeParser('\0', '\0', '\0'),
+        ARRAY<BYTE>.MakeParser(new ARRAY<BYTE>.ArrayOptions {
+            Delimiters = ('\0', '\0', '\0')
+        }),
         Discard<ARRAY<BYTE>, char>(ConsumeChar(Core.Id, ')'))
     );
 }

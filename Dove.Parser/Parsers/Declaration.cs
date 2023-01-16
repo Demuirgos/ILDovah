@@ -10,7 +10,10 @@ public partial record Declaration : IDeclaration<Declaration>
         public override string ToString() => Declarations.ToString('\n');
         public static Parser<Collection> AsParser => Map(
             converter: arr => new Collection(arr),
-            ARRAY<Declaration>.MakeParser('\0', '\0', '\0')
+            ARRAY<Declaration>.MakeParser(new ARRAY<Declaration>.ArrayOptions
+            {
+                Delimiters =  ('\0', '\0', '\0')
+            })
         );
     }
 }

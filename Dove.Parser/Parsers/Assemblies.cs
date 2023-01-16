@@ -38,7 +38,10 @@ public partial record Member : IDeclaration<Member>
         public override string ToString() => Members.ToString('\n');
         public static Parser<Collection> AsParser => Map(
             converter: members => new Collection(members),
-            ARRAY<Member>.MakeParser('\0', '\0', '\0')
+            ARRAY<Member>.MakeParser(new ARRAY<Member>.ArrayOptions
+            {
+                Delimiters = ('\0', '\0', '\0')
+            })
         );
     }
 }

@@ -17,7 +17,10 @@ public partial record Parameter : IDeclaration<Parameter>
         public override string ToString() => Parameters.ToString(',');
         public static Parser<Collection> AsParser => Map(
             converter: (parameters) => new Collection(parameters),
-            ARRAY<Parameter>.MakeParser('\0', ',', '\0')
+            ARRAY<Parameter>.MakeParser(new ARRAY<Parameter>.ArrayOptions
+            {
+                Delimiters = ('\0', ',', '\0')
+            })
         );
     }
 }
@@ -86,7 +89,10 @@ public record GenericParameter(GenParamAttribute.Collection Attributes, TypeDecl
         public override string ToString() => Parameters.ToString(',');
         public static Parser<Collection> AsParser => Map(
             converter: (parameters) => new Collection(parameters),
-            ARRAY<GenericParameter>.MakeParser('\0', ',', '\0')
+            ARRAY<GenericParameter>.MakeParser(new ARRAY<GenericParameter>.ArrayOptions
+            {
+                Delimiters = ('\0', ',', '\0')
+            })
         );
     }
 

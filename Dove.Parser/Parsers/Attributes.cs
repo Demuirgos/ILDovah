@@ -14,7 +14,9 @@ public record PropertyAttribute(string Value) : Declaration, IDeclaration<Proper
         public override string ToString() => Attributes.ToString(' ');
         public static Parser<Collection> AsParser => Map(
             converter: items => new Collection(items),
-            ARRAY<PropertyAttribute>.MakeParser('\0', '\0', '\0')
+            ARRAY<PropertyAttribute>.MakeParser(new ARRAY<PropertyAttribute>.ArrayOptions {
+                Delimiters = ('\0', '\0', '\0')
+            })
         );
     }
     public static String[] ValidNames = { "specialname", "rtspecialname" };
@@ -32,7 +34,9 @@ public record FieldAttribute : IDeclaration<FieldAttribute>
         public override string ToString() => Attributes.ToString(' ');
         public static Parser<Collection> AsParser => Map(
             converter: items => new Collection(items),
-            ARRAY<FieldAttribute>.MakeParser('\0', '\0', '\0')
+            ARRAY<FieldAttribute>.MakeParser(new ARRAY<FieldAttribute>.ArrayOptions {
+                Delimiters = ('\0', '\0', '\0')
+            })
         );
     }
     public record SimpleAttribute(String Name) : FieldAttribute, IDeclaration<SimpleAttribute>
@@ -87,7 +91,9 @@ public record CustomAttribute(TypeDecl.MethodReference AttributeCtor, ARRAY<BYTE
                     RunAll(
                         converter: (vals) => vals[1],
                         ConsumeChar((_) => default(ARRAY<BYTE>), '='),
-                        Map(Id, ARRAY<BYTE>.MakeParser('(', '\0', ')'))
+                        ARRAY<BYTE>.MakeParser(new ARRAY<BYTE>.ArrayOptions {
+                            Delimiters = ('(', '\0', ')')
+                        })
                     ),
                     Empty<ARRAY<BYTE>>()
                 ),
@@ -105,7 +111,9 @@ public record ImplAttribute(String Name, ImplAttribute.ModifierBehaviour Type) :
         public override string ToString() => Attributes.ToString(' ');
         public static Parser<Collection> AsParser => Map(
             converter: (attrs) => new Collection(attrs),
-            ARRAY<ImplAttribute>.MakeParser('\0', '\0', '\0')
+            ARRAY<ImplAttribute>.MakeParser(new ARRAY<ImplAttribute>.ArrayOptions {
+                Delimiters = ('\0', '\0', '\0')
+            })
         );
     }
     private static String[] AttributeWords = { "cil", "native", "forwardref", "internalcall", "managed", "noinlining", "nooptimization", "runtime", "synchronized", "unmanaged" };
@@ -131,7 +139,9 @@ public partial record MethodAttribute : IDeclaration<MethodAttribute>
         public override string ToString() => Attributes.ToString(' ');
         public static Parser<Collection> AsParser => Map(
             converter: (attrs) => new Collection(attrs),
-            ARRAY<MethodAttribute>.MakeParser('\0', '\0', '\0')
+            ARRAY<MethodAttribute>.MakeParser(new ARRAY<MethodAttribute>.ArrayOptions {
+                Delimiters = ('\0', '\0', '\0')
+            })
         );
     }
 
@@ -219,7 +229,9 @@ public record ParamAttribute(string Attribute) : IDeclaration<ParamAttribute>
         public override string ToString() => Attributes.ToString(' ');
         public static Parser<Collection> AsParser => Map(
             converter: (attrs) => new Collection(attrs),
-            ARRAY<ParamAttribute>.MakeParser('\0', '\0', '\0')
+            ARRAY<ParamAttribute>.MakeParser(new ARRAY<ParamAttribute>.ArrayOptions {
+                Delimiters = ('\0', '\0', '\0')
+            })
         );
     }
 
@@ -243,7 +255,9 @@ public record PinvAttribute(string Attribute) : IDeclaration<PinvAttribute>
         public override string ToString() => Attributes.ToString(' ');
         public static Parser<Collection> AsParser => Map(
             converter: (attrs) => new Collection(attrs),
-            ARRAY<PinvAttribute>.MakeParser('\0', '\0', '\0')
+            ARRAY<PinvAttribute>.MakeParser(new ARRAY<PinvAttribute>.ArrayOptions {
+                Delimiters = ('\0', '\0', '\0')
+            })
         );
     }
 
@@ -261,7 +275,9 @@ public record ClassAttribute(String Attribute) : IDeclaration<ClassAttribute>
         public override string ToString() => Attributes.ToString(' ');
         public static Parser<Collection> AsParser => Map(
             converter: (attrs) => new Collection(attrs),
-            ARRAY<ClassAttribute>.MakeParser('\0', '\0', '\0')
+            ARRAY<ClassAttribute>.MakeParser(new ARRAY<ClassAttribute>.ArrayOptions {
+                Delimiters = ('\0', '\0', '\0')
+            })
         );
     }
 
@@ -298,7 +314,9 @@ public record GenParamAttribute(string keyword) : IDeclaration<GenParamAttribute
         public override string ToString() => Attributes.ToString(' ');
         public static Parser<Collection> AsParser => Map(
             converter: (attrs) => new Collection(attrs),
-            ARRAY<GenParamAttribute>.MakeParser('\0', '\0', '\0')
+            ARRAY<GenParamAttribute>.MakeParser(new ARRAY<GenParamAttribute>.ArrayOptions {
+                Delimiters = ('\0', '\0', '\0')
+            })
         );
     }
 
@@ -318,7 +336,9 @@ public record VTFixupAttribute(String keyword) : IDeclaration<VTFixupAttribute>
         public override string ToString() => Attributes.ToString(' ');
         public static Parser<Collection> AsParser => Map(
             converter: (attrs) => new Collection(attrs),
-            ARRAY<VTFixupAttribute>.MakeParser('\0', '\0', '\0')
+            ARRAY<VTFixupAttribute>.MakeParser(new ARRAY<VTFixupAttribute>.ArrayOptions {
+                Delimiters = ('\0', '\0', '\0')
+            })
         );
     }
 
@@ -338,7 +358,9 @@ public record ExportAttribute(String keyword) : IDeclaration<ExportAttribute>
         public override string ToString() => Attributes.ToString(' ');
         public static Parser<Collection> AsParser => Map(
             converter: (attrs) => new Collection(attrs),
-            ARRAY<ExportAttribute>.MakeParser('\0', '\0', '\0')
+            ARRAY<ExportAttribute>.MakeParser(new ARRAY<ExportAttribute>.ArrayOptions {
+                Delimiters = ('\0', '\0', '\0')
+            })
         );
     }
 

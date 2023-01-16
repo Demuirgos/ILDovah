@@ -64,7 +64,9 @@ public partial record DbItem : IDeclaration<DbItem>
         public override string ToString() => Items.ToString(',');
         public static Parser<DataBody> AsParser => Map(
             converter: items => new DataBody(items),
-            ARRAY<DbItem>.MakeParser('{', ',', '}')
+            ARRAY<DbItem>.MakeParser(new ARRAY<DbItem>.ArrayOptions {
+                Delimiters = ('{', ',', '}')
+            })
         );
     }
 }
@@ -86,7 +88,9 @@ public record BytearrayItem(ARRAY<BYTE> Bytes) : DbItem, IDeclaration<BytearrayI
     public static Parser<BytearrayItem> AsParser => RunAll(
         converter: parts => new BytearrayItem(parts[1]),
         Discard<ARRAY<BYTE>, string>(ConsumeWord(Core.Id, "bytearray")),
-        ARRAY<BYTE>.MakeParser('(', '\0', ')')
+        ARRAY<BYTE>.MakeParser(new ARRAY<BYTE>.ArrayOptions {
+            Delimiters = ('(', '\0', ')')
+        })
     );
 }
 

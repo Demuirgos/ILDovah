@@ -19,7 +19,10 @@ public record SigArgument(AttributeDecl.ParamAttribute.Collection Attributes, Ty
             converter: parts => new Collection(parts[0].Arguments),
             Map(
                 converter: arguments => Construct<Collection>(1, 0, arguments),
-                ARRAY<SigArgument>.MakeParser('\0', ',', '\0')
+                ARRAY<SigArgument>.MakeParser(new ARRAY<SigArgument>.ArrayOptions
+                {
+                    Delimiters = ('\0', ',', '\0')
+                })
             )
         );
     }

@@ -11,7 +11,10 @@ public record Local(TypeDecl.Type Type, Identifier Id) : IDeclaration<Local>
         public override string ToString() => Values.ToString(",\n");
         public static Parser<Collection> AsParser => Map(
             converter: arr => new Collection(arr),
-            ARRAY<Local>.MakeParser('\0', ',', '\0')
+            ARRAY<Local>.MakeParser(new ARRAY<Local>.ArrayOptions
+            {
+                Delimiters = ('\0', ',', '\0')
+            })
         );
     }
 

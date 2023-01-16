@@ -52,7 +52,9 @@ public record Prefix(ClassAttribute.Collection Attributes, Identifier Id, Generi
         public static Parser<ImplementationClause> AsParser => RunAll(
             converter: specs => new ImplementationClause(specs[1]),
             Discard<ARRAY<TypeSpecification>, string>(ConsumeWord(Core.Id, "implements")),
-            ARRAY<TypeSpecification>.MakeParser('\0', ',', '\0')
+            ARRAY<TypeSpecification>.MakeParser(new ARRAY<TypeSpecification>.ArrayOptions {
+                Delimiters = ('\0', ',', '\0')
+            })
         );
     }
     public override string ToString() {
@@ -113,7 +115,9 @@ public partial record Member : IDeclaration<Member>
         public override string ToString() => Members.ToString('\n');
         public static Parser<Collection> AsParser => Map(
             converter: members => new Collection(members),
-            ARRAY<Member>.MakeParser('\0', '\0', '\0')
+            ARRAY<Member>.MakeParser(new ARRAY<Member>.ArrayOptions {
+                Delimiters = ('\0', '\0', '\0')
+            })
         );
     }
 }

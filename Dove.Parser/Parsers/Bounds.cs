@@ -10,7 +10,10 @@ public record Bound(INT? LeftBound, INT? RightBound, Bound.BoundType Type) : IDe
         public override string ToString() => Bounds.ToString(',');
         public static Parser<Collection> AsParser => Map(
             converter: (bounds) => new Collection(bounds),
-            ARRAY<Bound>.MakeParser('\0', ',', '\0')
+            ARRAY<Bound>.MakeParser(new ARRAY<Bound>.ArrayOptions
+            {
+                Delimiters = ('\0', ',', '\0')
+            })
         );
     }
     public enum BoundType

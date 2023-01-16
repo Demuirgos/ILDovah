@@ -14,7 +14,10 @@ public record Version(ARRAY<INT> SubVersions) : IDeclaration<Version>
         Discard<Version, string>(ConsumeWord(Core.Id, ".ver")),
         Map(
             converter: subversions => Construct<Version>(1, 0, subversions),
-            ARRAY<INT>.MakeParser('\0', ':', '\0')
+            ARRAY<INT>.MakeParser(new ARRAY<INT>.ArrayOptions
+            {
+                Delimiters = ('\0', ':', '\0')
+            })
         )
     );
 }

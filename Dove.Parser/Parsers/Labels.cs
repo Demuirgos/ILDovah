@@ -11,7 +11,10 @@ public partial record LabelOrOffset : IDeclaration<LabelOrOffset>
         public override string ToString() => Values.ToString(' ');
         public static Parser<Collection> AsParser => Map(
             converter: (ARRAY<LabelOrOffset> vals) => new Collection(vals),
-            ARRAY<LabelOrOffset>.MakeParser('\0', ',', '\0')
+            ARRAY<LabelOrOffset>.MakeParser(new ARRAY<LabelOrOffset>.ArrayOptions
+            {
+                Delimiters = ('\0', ',', '\0')
+            })
         );
     }
 }

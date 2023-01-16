@@ -100,7 +100,9 @@ public record QSTRING(String Value, bool IsSingleyQuoted) : IDeclaration<QSTRING
     public record Collection(ARRAY<QSTRING> Values) : IDeclaration<Collection>
     {
         public override string ToString() => Values.ToString("+");
-        public static Parser<Collection> AsParser => Map((arr) => new Collection(arr), ARRAY<QSTRING>.MakeParser('\0', '+', '\0'));
+        public static Parser<Collection> AsParser => Map((arr) => new Collection(arr), ARRAY<QSTRING>.MakeParser(new ARRAY<QSTRING>.ArrayOptions {
+            Delimiters = ('\0', '+', '\0') 
+        }));
     }
     public override string ToString()
     {
@@ -126,22 +128,31 @@ public record QSTRING(String Value, bool IsSingleyQuoted) : IDeclaration<QSTRING
 
 public record ARRAY<T>(T[] Values) : IDeclaration<ARRAY<T>> where T : IDeclaration<T>
 {
-    public virtual (char start, char separator, char end) Delimiters { get; set; } = ('[', ',', ']');
-    public override string ToString() => ToString(Delimiters.separator);
+    public class ArrayOptions {
+        public (char start, char separator, char end) Delimiters { get; set; } = ('[', ',', ']');
+        public bool AllowEmpty { get; set; } = true;
+        public int MinLength { get; set; } = 1;
+        public int MaxLength { get; set; } = Int32.MaxValue;
+        
+    }
+
+    public ArrayOptions Options { get; set; } = new ArrayOptions();
+
+    public override string ToString() => ToString(Options.Delimiters.separator);
     public new string ToString(char? overrideDelim = null) {
-        char delim = overrideDelim ?? Delimiters.separator;
+        char delim = overrideDelim ?? Options.Delimiters.separator;
         return ToString($"{(delim == '\0' ? String.Empty : $"{delim}")}");
     } 
-    public new string ToString(string? overrideDelim = null) => $"{(Delimiters.start == '\0' ? String.Empty : $"{Delimiters.start}")}{string.Join(overrideDelim, Values.Select(v => v.ToString()))}{(Delimiters.end == '\0' ? String.Empty : $"{Delimiters.end}")}";
+    public new string ToString(string? overrideDelim = null) => $"{(Options.Delimiters.start == '\0' ? String.Empty : $"{Options.Delimiters.start}")}{string.Join(overrideDelim, Values.Select(v => v.ToString()))}{(Options.Delimiters.end == '\0' ? String.Empty : $"{Options.Delimiters.end}")}";
 
     [Obsolete("Use MakeParser instead", true)]
     public static Parser<ARRAY<T>> AsParser => throw new TypeLoadException("Use MakeParser instead");
-    public static Parser<ARRAY<T>> MakeParser(char start, char separator, char end) => RunAll(
+    public static Parser<ARRAY<T>> MakeParser(ArrayOptions options) => RunAll(
         converter: (vals) => new ARRAY<T>(vals[1])
         {
-            Delimiters = (start, separator, end)
+            Options = options
         },
-        start != '\0' ? ConsumeChar(_ => Array.Empty<T>(), start) : Empty<T[]>(),
+        options.Delimiters.start != '\0' ? ConsumeChar(_ => Array.Empty<T>(), options.Delimiters.start) : Empty<T[]>(),
         Map(
             converter: results =>
             {
@@ -152,28 +163,28 @@ public record ARRAY<T>(T[] Values) : IDeclaration<ARRAY<T>> where T : IDeclarati
                 condP: Map(val => new T[] { val }, IDeclaration<T>.AsParser),
                 thenP: RunMany(
                     converter: (vals) => vals,
-                    0, Int32.MaxValue, false,
+                    options.MinLength - 1, options.MaxLength, false,
                     RunAll(
                         converter: (vals) => vals[1],
-                        separator == '\0'
+                        options.Delimiters.separator == '\0'
                             ? Empty<T>()
-                            : Discard<T, char>(ConsumeChar(Id, separator)),
+                            : Discard<T, char>(ConsumeChar(Id, options.Delimiters.separator)),
                         IDeclaration<T>.AsParser
                     )
                 ),
-                elseP: Empty<T[]>()
+                elseP: options.AllowEmpty ? Empty<T[]>() :  Fail<T[]>()
             )
         ),
-        end != '\0' ? ConsumeChar(_ => Array.Empty<T>(), end) : Empty<T[]>()
+        options.Delimiters.end != '\0' ? ConsumeChar(_ => Array.Empty<T>(), options.Delimiters.end) : Empty<T[]>()
     );
 
     [Obsolete("Use Parse with SpecialCharacters argument instead", true)]
     public static bool Parse(ref int index, string source, out ARRAY<T> arrayVal)
         => throw new TypeLoadException("Use Parse with SpecialCharacters argument instead");
 
-    public static bool Parse(ref int index, string source, out ARRAY<T> arrayVal, out string error, (char start, char separator, char end) specialCharacters)
+    public static bool Parse(ref int index, string source, out ARRAY<T> arrayVal, out string error, ArrayOptions option)
     {
-        if (MakeParser(specialCharacters.start, specialCharacters.separator, specialCharacters.end)(source, ref index, out arrayVal, out error))
+        if (MakeParser(option)(source, ref index, out arrayVal, out error))
         {
             return true;
         }

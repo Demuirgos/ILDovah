@@ -148,7 +148,9 @@ public partial record Member : IDeclaration<Member>
         public override string ToString() => Items.ToString('\n');
         public static Parser<Collection> AsParser => Map(
             converter: items => new Collection(items),
-            ARRAY<Member>.MakeParser('\0', '\0', '\0')
+            ARRAY<Member>.MakeParser(new ARRAY<Member>.ArrayOptions {
+                Delimiters= ('\0', '\0', '\0')
+            })
         );
     }
 }

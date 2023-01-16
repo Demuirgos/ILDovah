@@ -27,7 +27,10 @@ public record PKClause(ARRAY<BYTE> Bytes) : IDeclaration<PKClause>
         Discard<PKClause, char>(ConsumeChar(Core.Id, '=')),
         Map(
             converter: bytes => Construct<PKClause>(1, 0, bytes),
-            ARRAY<BYTE>.MakeParser('(', '\0', ')')
+            ARRAY<BYTE>.MakeParser(new ARRAY<BYTE>.ArrayOptions
+            {
+                Delimiters = ('(', '\0', ')')
+            })
         )
     );
 }
@@ -41,7 +44,10 @@ public record PKTokenClause(ARRAY<BYTE> Bytes) : IDeclaration<PKTokenClause>
         Discard<PKTokenClause, char>(ConsumeChar(Core.Id, '=')),
         Map(
             converter: bytes => Construct<PKTokenClause>(1, 0, bytes),
-            ARRAY<BYTE>.MakeParser('(', '\0', ')')
+            ARRAY<BYTE>.MakeParser(new ARRAY<BYTE>.ArrayOptions
+            {
+                Delimiters = ('(', '\0', ')')
+            })
         )
     );
 }
@@ -62,7 +68,10 @@ public record PermissionSet(SecurityAction Action, ARRAY<BYTE> Bytes) : Security
         Discard<PermissionSet, char>(ConsumeChar(Core.Id, '(')),
         Map(
             converter: bytes => new PermissionSet(null, bytes),
-            ARRAY<BYTE>.MakeParser('\0', '\0', '\0')
+            ARRAY<BYTE>.MakeParser(new ARRAY<BYTE>.ArrayOptions
+            {
+                Delimiters = ('\0', '\0', '\0')
+            })
         ),
         Discard<PermissionSet, char>(ConsumeChar(Core.Id, ')'))
     );
@@ -98,7 +107,10 @@ public record NameValPair(QSTRING Name, QSTRING Value) : IDeclaration<NameValPai
         public override string ToString() => Items.ToString(',');
         public static Parser<Collection> AsParser => Map(
             converter: items => new Collection(items),
-            ARRAY<NameValPair>.MakeParser('\0', ',', '\0')
+            ARRAY<NameValPair>.MakeParser(new ARRAY<NameValPair>.ArrayOptions
+            {
+                Delimiters = ('\0', ',', '\0')
+            })
         );
     }
     public override string ToString() => $"{Name}={Value}";

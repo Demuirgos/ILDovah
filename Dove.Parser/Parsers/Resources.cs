@@ -63,7 +63,9 @@ public record FileReferenceCIL(FileReferenceCIL.Prefix Header, FileReferenceCIL.
                     Discard<ARRAY<BYTE>, string>(ConsumeWord(Id, ".hash")),
                     Discard<ARRAY<BYTE>, char>(ConsumeChar(Id, '=')),
                     Discard<ARRAY<BYTE>, char>(ConsumeChar(Id, '(')),
-                    ARRAY<BYTE>.MakeParser('\0', '\0', '\0'),
+                    ARRAY<BYTE>.MakeParser(new ARRAY<BYTE>.ArrayOptions {
+                        Delimiters = ('\0', '\0', '\0')
+                    }),
                     Discard<ARRAY<BYTE>, char>(ConsumeChar(Id, ')'))
                 ),
                 Empty<ARRAY<BYTE>>()

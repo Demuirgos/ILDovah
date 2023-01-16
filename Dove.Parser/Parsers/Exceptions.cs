@@ -30,7 +30,10 @@ public partial record WireBlock : IDeclaration<WireBlock>
         public override string ToString() => Blocks.ToString('\n');
         public static Parser<Collection> AsParser => Map(
             converter: blocks => new Collection(blocks),
-            ARRAY<WireBlock>.MakeParser('\0', '\0', '\0')
+            ARRAY<WireBlock>.MakeParser(new ARRAY<WireBlock>.ArrayOptions
+            {
+                Delimiters = ('\0', '\0', '\0')
+            })
         );
     }
 }

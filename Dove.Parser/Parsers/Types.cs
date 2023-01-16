@@ -37,8 +37,8 @@ public record NamedModuleSpecification(DottedName Name, bool IsModule) : TypeSpe
     );
 }
 
+[WrapParser<TypeReference>] public partial record TypeSpecificationReference : TypeSpecification, IDeclaration<TypeSpecificationReference>;
 [WrapParser<TypeComponent>] public partial record TypeSpecificationInlined : TypeSpecification, IDeclaration<TypeSpecificationInlined>;
-[WrapParser<TypeReference>] public partial record TypeSpecificationReference : TypeSpecification, IDeclaration<TypeSpecificationInlined>;
 
 public record NativeType(NativeType TypeComponent, bool IsArray, INT Length, INT Supplied) : IDeclaration<NativeType>
 {
@@ -126,7 +126,9 @@ public record NativeType(NativeType TypeComponent, bool IsArray, INT Length, INT
         public override string ToString() => Types.ToString(',');
         public static Parser<Collection> AsParser => Map(
             converter: (types) => new Collection(types),
-            ARRAY<Type>.MakeParser('\0', ',', '\0')
+            ARRAY<Type>.MakeParser(new ARRAY<Type>.ArrayOptions {
+                Delimiters = ('\0', ',', '\0')
+            })
         );
     }
 }
@@ -136,7 +138,9 @@ public record NativeType(NativeType TypeComponent, bool IsArray, INT Length, INT
         public override string ToString() => Types.ToString(' ');
         public static Parser<Collection> AsParser => Map(
             converter: (types) => new Collection(types),
-            ARRAY<TypeComponent>.MakeParser('\0', '\0', '\0')
+            ARRAY<TypeComponent>.MakeParser(new ARRAY<TypeComponent>.ArrayOptions {
+                Delimiters = ('\0', '\0', '\0')
+            })
         );
     }
 }
@@ -320,8 +324,8 @@ public record CustomTypeReference(string TypeBehaviorIndice, TypeReference Refer
 
 
 [GenerateParser] public partial record OwnerType : IDeclaration<OwnerType>;
-[WrapParser<TypeSpecification>] public partial record TypeSpecReference : OwnerType, IDeclaration<OwnerType>;
-[GenerateParser] public partial record MemberReference : OwnerType, IDeclaration<OwnerType>;
+[WrapParser<TypeSpecification>] public partial record TypeSpecReference : OwnerType, IDeclaration<TypeSpecReference>;
+[GenerateParser] public partial record MemberReference : OwnerType, IDeclaration<MemberReference>;
 
 public record MethodMemberReference(MethodReference MethodRef) : MemberReference, IDeclaration<MethodMemberReference>
 {
@@ -462,7 +466,7 @@ public record MethodReference(CallConvention? Convention, TypeDecl.Type TypeComp
 }
 
 
-public record TypeReference(ResolutionScope Scope, ARRAY<DottedName> Names, GenArgs GenericTypes) : IDeclaration<TypeReference>
+public record TypeReference(ResolutionScope Scope, Identifier Name, GenArgs GenericTypes) : IDeclaration<TypeReference>
 {
     public override string ToString()
     {
@@ -471,7 +475,7 @@ public record TypeReference(ResolutionScope Scope, ARRAY<DottedName> Names, GenA
         {
             sb.Append($"{Scope.ToString(true)} ");
         }
-        sb.Append(Names.ToString("/"));
+        sb.Append(Name);
         if (GenericTypes is not null)
         {
             sb.Append($"<{GenericTypes}>");
@@ -479,7 +483,7 @@ public record TypeReference(ResolutionScope Scope, ARRAY<DottedName> Names, GenA
         return sb.ToString();
     }
     public static Parser<TypeReference> AsParser => RunAll(
-        converter: (vals) => new TypeReference(vals[0]?.Scope, vals[1].Names, vals[2]?.GenericTypes),
+        converter: (vals) => new TypeReference(vals[0]?.Scope, vals[1].Name, vals[2]?.GenericTypes),
         TryRun(
             converter: (scope) => Construct<TypeReference>(3, 0, scope),
             ResolutionScope.AsParser,
@@ -487,7 +491,7 @@ public record TypeReference(ResolutionScope Scope, ARRAY<DottedName> Names, GenA
         ),
         Map(
             converter: (name) => Construct<TypeReference>(3, 1, name),
-            ARRAY<DottedName>.MakeParser('\0', '/', '\0')
+            Identifier.AsParser
         ),
         TryRun(
             converter: (typeParams) => Construct<TypeReference>(3, 2, typeParams),
