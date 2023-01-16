@@ -4,10 +4,11 @@ using ResourceDecl;
 namespace Dove.Core;
 
 public static class Parser {
+    public static bool IsStrict { get; set; } = false; // to be removed
     public static bool TryParse<T>(string source,[NotNullWhen(true)] out T result) where T : IDeclaration<T> {
         var parser = IDeclaration<T>.AsParser;
         int start = 0;
-        if(parser(source, ref start, out result) /*&& start == source.Length*/) {
+        if(parser(source, ref start, out result, out _) && (IsStrict ? start == source.Length : true)) {
             return true;
         }
         return false;
@@ -16,17 +17,17 @@ public static class Parser {
     public static T? Parse<T>(string source) where T : IDeclaration<T> {
         var parser = IDeclaration<T>.AsParser;
         int start = 0;
-        if(parser(source, ref start, out var result) /*&& start == source.Length*/) {
+        if(parser(source, ref start, out var result, out string error) && (IsStrict ? start == source.Length : true)) {
             return result;
         }
-        return default(T);
+        throw new Exception(error);
     }
 
     public static Task<T?> ParseAsync<T>(string source) where T : IDeclaration<T> {
         var parser = IDeclaration<T>.AsParser;
         int start = 0;
-        return parser(source, ref start, out var result) //&& start == source.Length
+        return parser(source, ref start, out var result, out string error)  && (IsStrict ? start == source.Length : true)
             ? Task.FromResult(result)
-            : Task.FromResult(default(T));
+            : throw new Exception(error);
     } 
 }

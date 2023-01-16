@@ -171,9 +171,9 @@ public record ARRAY<T>(T[] Values) : IDeclaration<ARRAY<T>> where T : IDeclarati
     public static bool Parse(ref int index, string source, out ARRAY<T> arrayVal)
         => throw new TypeLoadException("Use Parse with SpecialCharacters argument instead");
 
-    public static bool Parse(ref int index, string source, out ARRAY<T> arrayVal, (char start, char separator, char end) specialCharacters)
+    public static bool Parse(ref int index, string source, out ARRAY<T> arrayVal, out string error, (char start, char separator, char end) specialCharacters)
     {
-        if (MakeParser(specialCharacters.start, specialCharacters.separator, specialCharacters.end)(source, ref index, out arrayVal))
+        if (MakeParser(specialCharacters.start, specialCharacters.separator, specialCharacters.end)(source, ref index, out arrayVal, out error))
         {
             return true;
         }

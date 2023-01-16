@@ -16,9 +16,9 @@ public interface IDeclaration<in T>
             return defaultP;
         }
     }
-    static bool Parse(ref int index, string source, out T val)
+    static bool Parse(ref int index, string source, out T val, out string error)
     {
-        if (AsParser(source, ref index, out val))
+        if (AsParser(source, ref index, out val, out error))
         {
             return true;
         }

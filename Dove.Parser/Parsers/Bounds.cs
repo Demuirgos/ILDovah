@@ -24,7 +24,7 @@ public record Bound(INT? LeftBound, INT? RightBound, Bound.BoundType Type) : IDe
         BoundType.LowerBound => $"{LeftBound}...",
         BoundType.Bounded => $"{LeftBound}...{RightBound}",
         BoundType.SingleBound => $"{LeftBound}",
-        _ => throw new System.Diagnostics.UnreachableException(Type.ToString())
+        _ => String.Empty
     };
 
     public static Parser<Bound> AsParser => ConsumeIf(
