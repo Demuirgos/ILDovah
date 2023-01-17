@@ -38,7 +38,7 @@ public record NamedModuleSpecification(DottedName Name, bool IsModule) : TypeSpe
 }
 
 [WrapParser<TypeReference>] public partial record TypeSpecificationReference : TypeSpecification, IDeclaration<TypeSpecificationReference>;
-[WrapParser<TypeComponent>] public partial record TypeSpecificationInlined : TypeSpecification, IDeclaration<TypeSpecificationInlined>;
+[WrapParser<Type>] public partial record TypeSpecificationInlined : TypeSpecification, IDeclaration<TypeSpecificationInlined>;
 
 public record NativeType(NativeType TypeComponent, bool IsArray, INT Length, INT Supplied) : IDeclaration<NativeType>
 {
@@ -120,7 +120,8 @@ public record NativeType(NativeType TypeComponent, bool IsArray, INT Length, INT
     );
 }
 
-[WrapParser<TypeComponent.Collection>] public partial record Type : IDeclaration<Type> {
+public record Type(TypeComponent.Collection Components) : IDeclaration<Type> {
+    public override string ToString() => Components.ToString();
     public record Collection(ARRAY<Type> Types) : IDeclaration<Collection>
     {
         public override string ToString() => Types.ToString(',');
@@ -131,6 +132,30 @@ public record NativeType(NativeType TypeComponent, bool IsArray, INT Length, INT
             })
         );
     }
+
+    public static Parser<Type> AsParser => RunAll(
+        converter: (vals) => new Type(
+            new TypeComponent.Collection(
+                new ARRAY<TypeComponent>(vals[0].Concat(vals[1]).ToArray()) {
+                    Options = new ARRAY<TypeComponent>.ArrayOptions {
+                        Delimiters = ('\0', ' ', '\0')
+                    }
+                }
+            )
+        ),
+        Map(
+            converter: comp => new TypeComponent[] {comp as TypeComponent  },
+            TypePrefix.AsParser
+        ),
+        RunMany(
+            converter: Id,
+            0, Int32.MaxValue, true,
+            Map(
+                converter: comp => comp as TypeComponent,
+                TypeSuffix.AsParser
+            )
+        )
+    );
 }
 [GenerateParser] public partial record TypeComponent : IDeclaration<TypeComponent> {
     public record Collection(ARRAY<TypeComponent> Types) : IDeclaration<Collection>
@@ -144,7 +169,9 @@ public record NativeType(NativeType TypeComponent, bool IsArray, INT Length, INT
         );
     }
 }
-public record ReferenceSuffix(bool IsRawPointer) : TypeComponent, IDeclaration<ReferenceSuffix>
+[GenerateParser] public partial record TypePrefix : TypeComponent, IDeclaration<TypePrefix>;
+[GenerateParser] public partial record TypeSuffix : TypeComponent, IDeclaration<TypeSuffix>;
+public record ReferenceSuffix(bool IsRawPointer) : TypeSuffix, IDeclaration<ReferenceSuffix>
 {
     public override string ToString() => IsRawPointer ? "*" : "&";
     public static Parser<ReferenceSuffix> AsParser => TryRun(
@@ -153,7 +180,7 @@ public record ReferenceSuffix(bool IsRawPointer) : TypeComponent, IDeclaration<R
     );
 }
 
-public record BoundedSuffix(Bound.Collection Bounds) : TypeComponent, IDeclaration<BoundedSuffix>
+public record BoundedSuffix(Bound.Collection Bounds) : TypeSuffix, IDeclaration<BoundedSuffix>
 {
     public override string ToString() => $"[{Bounds}]";
     public static Parser<BoundedSuffix> AsParser => RunAll(
@@ -164,7 +191,7 @@ public record BoundedSuffix(Bound.Collection Bounds) : TypeComponent, IDeclarati
     );
 }
 
-public record GenericSuffix(GenArgs GenericArguments) : TypeComponent, IDeclaration<GenericSuffix>
+public record GenericSuffix(GenArgs GenericArguments) : TypeSuffix, IDeclaration<GenericSuffix>
 {
     public override string ToString() => $"<{GenericArguments}>";
     public static Parser<GenericSuffix> AsParser => RunAll(
@@ -176,7 +203,7 @@ public record GenericSuffix(GenArgs GenericArguments) : TypeComponent, IDeclarat
 }
 
 [GenerationOrderParser(Order.First)]
-public record ModifierSuffix(String Modifier, TypeReference ReferencedType) : TypeComponent, IDeclaration<ModifierSuffix>
+public record ModifierSuffix(String Modifier, TypeReference ReferencedType) : TypeSuffix, IDeclaration<ModifierSuffix>
 {
     public override string ToString()
     {
@@ -203,8 +230,7 @@ public record ModifierSuffix(String Modifier, TypeReference ReferencedType) : Ty
     );
 }
 
-[GenerateParser] public partial record Predefined : TypeComponent, IDeclaration<Predefined>;
-public record TypePrimitive(String TypeName) : Predefined, IDeclaration<TypePrimitive>
+public record TypePrimitive(String TypeName) : TypePrefix, IDeclaration<TypePrimitive>
 {
     private static String[] _primitives = new String[] { "bool", "char", "float32", "float64", "int8", "int16", "int32", "int64", "object", "string", "typedref", "void", "unsigned", "native" };
 
@@ -260,7 +286,7 @@ public record TypePrimitive(String TypeName) : Predefined, IDeclaration<TypePrim
     );
 }
 
-public record GenericTypeParameter(GenericParameterReference Index, GenericTypeParameter.TypeComponent TypeParameterType) : Predefined, IDeclaration<GenericTypeParameter>
+public record GenericTypeParameter(GenericParameterReference Index, GenericTypeParameter.TypeComponent TypeParameterType) : TypePrefix, IDeclaration<GenericTypeParameter>
 {
     public enum TypeComponent { Method, Class, None }
     public override string ToString() => $"{(TypeParameterType is TypeComponent.Method ? "!!" : "!")}{Index}";
@@ -275,7 +301,7 @@ public record GenericTypeParameter(GenericParameterReference Index, GenericTypeP
     );
 }
 
-public record MethodDefinition(CallConvention CallConvention, TypeComponent TypeTarget, Parameter.Collection Parameters) : Predefined, IDeclaration<MethodDefinition>
+public record MethodDefinition(CallConvention CallConvention, Type TypeTarget, Parameter.Collection Parameters) : TypePrefix, IDeclaration<MethodDefinition>
 {
     public override string ToString()
     {
@@ -294,7 +320,7 @@ public record MethodDefinition(CallConvention CallConvention, TypeComponent Type
         ),
         Map(
             converter: part2 => new MethodDefinition(null, part2, null),
-            Lazy(() => TypeComponent.AsParser)
+            Lazy(() => Type.AsParser)
         ),
         Discard<MethodDefinition, char>(ConsumeChar(Id, '*')),
         Discard<MethodDefinition, char>(ConsumeChar(Id, '(')),
@@ -305,7 +331,7 @@ public record MethodDefinition(CallConvention CallConvention, TypeComponent Type
     );
 }
 
-public record CustomTypeReference(string TypeBehaviorIndice, TypeReference Reference) : Predefined, IDeclaration<CustomTypeReference>
+public record CustomTypeReference(string TypeBehaviorIndice, TypeReference Reference) : TypePrefix, IDeclaration<CustomTypeReference>
 {
     public override string ToString() => $"{TypeBehaviorIndice} {Reference}";
     public static Parser<CustomTypeReference> AsParser => RunAll(
