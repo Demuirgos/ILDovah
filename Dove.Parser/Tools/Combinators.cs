@@ -112,7 +112,7 @@ public static class Core
                 index++;
                 return true;
             }
-            (var start, var end, index) = (index < 25 ? 0 : index - 25, index + 25 > code.Length - 1 ? code.Length - 1 : index + 25, index > code.Length - 1 ? code.Length - 1 : index);
+            (var start, var end, index) = (index < 100 ? 0 : index - 100, index + 100 > code.Length - 1 ? code.Length - 1 : index + 100, index > code.Length - 1 ? code.Length - 1 : index);
             error = $@"
 Character c: {code[index]} at index : {index} does not match predicate {predicateArgs} [
     {code[start..end].ReplaceLineEndings(" ")}
@@ -153,7 +153,7 @@ Character c: {code[index]} at index : {index} does not match predicate {predicat
             {
                 if (!ConsumeChar(Id, c)(code, ref index, out char character, out _))
                 {
-                    (var start, var end, index) = (index < 25 ? 0 : index - 25, index + 25 > code.Length - 1 ? code.Length - 1 : index + 25, index > code.Length - 1 ? code.Length - 1 : index);
+                    (var start, var end, index) = (index < 100 ? 0 : index - 100, index + 100 > code.Length - 1 ? code.Length - 1 : index + 100, index > code.Length - 1 ? code.Length - 1 : index);
                     result = default;
                     error = $@"
 Failed to parse word: {word} at index: {oldIndex} at [
