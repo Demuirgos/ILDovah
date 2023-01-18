@@ -20,7 +20,7 @@ public record HashClause(INT AlgorithmId) : IDeclaration<HashClause>
 }
 public record PKClause(ARRAY<BYTE> Bytes) : IDeclaration<PKClause>
 {
-    public override string ToString() => $".publickey = ({Bytes.ToString(' ')})";
+    public override string ToString() => $".publickey = {Bytes.ToString(' ')}";
     public static Parser<PKClause> AsParser => RunAll(
         converter: parts => new PKClause(parts[2].Bytes),
         Discard<PKClause, string>(ConsumeWord(Core.Id, ".publickey")),
@@ -37,7 +37,7 @@ public record PKClause(ARRAY<BYTE> Bytes) : IDeclaration<PKClause>
 
 public record PKTokenClause(ARRAY<BYTE> Bytes) : IDeclaration<PKTokenClause>
 {
-    public override string ToString() => $".publickeytoken = ({Bytes.ToString(' ')})";
+    public override string ToString() => $".publickeytoken = {Bytes.ToString(' ')}";
     public static Parser<PKTokenClause> AsParser => RunAll(
         converter: parts => new PKTokenClause(parts[2].Bytes),
         Discard<PKTokenClause, string>(ConsumeWord(Core.Id, ".publickeytoken")),
