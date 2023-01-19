@@ -3,7 +3,7 @@ using static Core;
 public record INT(Int64 Value, int BitsSize, bool IsHex) : IDeclaration<INT>
 {
     public override string ToString() => IsHex ? $"0x{Value:X2}" : Value.ToString();
-    public static Parser<INT> Body(int baseCount, Parser<char> parser, bool inHex) => RunMany(
+    public static Parser<INT> Body(int baseCount, Parser<char> parser, bool inHex, int sign = 1) => RunMany(
         converter: cs => new INT(cs.Aggregate(0l, (acc, c) => acc * baseCount + BYTE.charVal(c)), cs.Length, inHex),
         1, Int32.MaxValue, false, parser);
     public static Parser<INT> AsParser => Map(
@@ -12,12 +12,10 @@ public record INT(Int64 Value, int BitsSize, bool IsHex) : IDeclaration<INT>
             condP: ConsumeWord(_ => 0l, "0x"),
             thenP: Body(16, ConsumeIf(Id, BYTE.hexChars.Contains), true),
             elseP: Map(
-                converter: (val) => val.Item2 with {
-                    Value = val.Item2.Value * val.Item1 
-                },
+                converter: (val) => val.Item2,
                 If(
                     condP: ConsumeChar(_ => (-1l), '-'),
-                    thenP: Body(10, ConsumeIf(Id, Char.IsDigit), false),
+                    thenP: Body(10, ConsumeIf(Id, Char.IsDigit), false, -1),
                     elseP: Body(10, ConsumeIf(Id, Char.IsDigit), false)
                 )
             )
