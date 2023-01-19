@@ -10,7 +10,7 @@ namespace IdentifierDecl;
 [GenerationOrderParser(Order.Middle)]
 public record DottedName(ARRAY<SimpleName> Values) : Identifier, IDeclaration<DottedName>
 {
-    public override string ToString() => Values.ToString("");
+    public override string ToString() => Values.ToString(".");
     public static Parser<DottedName> AsParser => Map(
         converter: Ids => new DottedName(Ids),
         ARRAY<SimpleName>.MakeParser(new ARRAY<SimpleName>.ArrayOptions
