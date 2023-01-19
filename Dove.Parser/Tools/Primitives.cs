@@ -11,7 +11,16 @@ public record INT(Int64 Value, int BitsSize, bool IsHex) : IDeclaration<INT>
         If(
             condP: ConsumeWord(_ => 0l, "0x"),
             thenP: Body(16, ConsumeIf(Id, BYTE.hexChars.Contains), true),
-            elseP: Body(10, ConsumeIf(Id, Char.IsDigit), false)
+            elseP: Map(
+                converter: (val) => val.Item2 with {
+                    Value = val.Item2.Value * val.Item1 
+                },
+                If(
+                    condP: ConsumeChar(_ => (-1l), '-'),
+                    thenP: Body(10, ConsumeIf(Id, Char.IsDigit), false),
+                    elseP: Body(10, ConsumeIf(Id, Char.IsDigit), false)
+                )
+            )
         )
     );
 }
