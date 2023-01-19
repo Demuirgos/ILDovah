@@ -158,16 +158,16 @@ public record PackingClause(INT Sizeof) : Member, IDeclaration<PackingClause>
     );
 }
 
-public record InterfaceImplClause(TypeDecl.Type Interface) : Member, IDeclaration<InterfaceImplClause>
+public record InterfaceImplClause(TypeDecl.TypeSpecification Interface) : Member, IDeclaration<InterfaceImplClause>
 {
     public override string ToString() => $".interfaceimpl type {Interface}";
     public static Parser<InterfaceImplClause> AsParser => Map(
         converter: type => new InterfaceImplClause(type),
         RunAll(
             converter: typerefs => typerefs[2],
-            Discard<TypeDecl.Type, string>(ConsumeWord(Core.Id, ".interfaceimpl")),
-            Discard<TypeDecl.Type, string>(ConsumeWord(Core.Id, "type")),
-            TypeDecl.Type.AsParser
+            Discard<TypeDecl.TypeSpecification, string>(ConsumeWord(Core.Id, ".interfaceimpl")),
+            Discard<TypeDecl.TypeSpecification, string>(ConsumeWord(Core.Id, "type")),
+            TypeDecl.TypeSpecification.AsParser
         )
     );
 }
