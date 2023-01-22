@@ -5,7 +5,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <PackageId>IL.Parser.2023.Alpha</PackageId>
-    <Version>0.1.4.6</Version>
+    <Version>0.1.4.7</Version>
     <Authors>Demuirgos</Authors>
     <Company>Digital.Autonomous.Technologies.And.Applications</Company>
   </PropertyGroup>
