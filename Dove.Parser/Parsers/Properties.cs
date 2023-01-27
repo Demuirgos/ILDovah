@@ -31,7 +31,7 @@ public record Property(Prefix Header, Member.Collection Members) : IDeclaration<
 
 public record Prefix(PropertyAttribute.Collection Attributes, CallConvention Convention, TypeDecl.Type Type, Identifier Id, Parameter.Collection Parameters) : IDeclaration<Prefix>
 {
-    public override string ToString() => $"{Attributes} {Convention} {Type} {Id}({Parameters})";
+    public override string ToString() => $"{Attributes} {Convention} {Type} {Id}{Parameters}";
     public static Parser<Prefix> AsParser => RunAll(
         converter: parts => new Prefix(
             parts[0].Attributes,
@@ -58,11 +58,9 @@ public record Prefix(PropertyAttribute.Collection Attributes, CallConvention Con
         ),
         Map(
             converter: pars => Construct<Prefix>(5, 4, pars),
-            RunAll(
-                converter: parts => parts[1],
-                Discard<Parameter.Collection, char>(ConsumeChar(Core.Id, '(')),
-                Parameter.Collection.AsParser,
-                Discard<Parameter.Collection, char>(ConsumeChar(Core.Id, ')'))
+            Map(
+                converter: parts => parts,
+                Parameter.Collection.AsParser
             )
         )
     );

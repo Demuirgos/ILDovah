@@ -36,25 +36,42 @@ public record Class(Prefix Header, Member.Collection Members) : Declaration, IDe
 
 public record Prefix(ClassAttribute.Collection Attributes, Identifier Id, GenericParameter.Collection TypeParameters, Prefix.ExtensionClause Extends, Prefix.ImplementationClause Implements) : IDeclaration<Prefix>
 {
-    public record ExtensionClause(TypeSpecification Type) : IDeclaration<ExtensionClause>
+    public record ExtensionClause(AttributeDecl.CustomAttribute? Attribute, TypeSpecification Type) : IDeclaration<ExtensionClause>
     {
         public override string ToString() => $"extends {Type}";
         public static Parser<ExtensionClause> AsParser => RunAll(
-            converter: spec => new ExtensionClause(spec[1]),
-            Discard<TypeSpecification, string>(ConsumeWord(Core.Id, "extends")),
-            TypeSpecification.AsParser
+            converter: spec => new ExtensionClause(spec[1]?.Attribute, spec[2].Type),
+            Discard<ExtensionClause, string>(ConsumeWord(Core.Id, "extends")),
+            TryRun(
+                converter: attr => Construct<ExtensionClause>(2, 0, attr),
+                AttributeDecl.CustomAttribute.AsParser,
+                Empty<AttributeDecl.CustomAttribute>()
+            ),
+            Map(
+                converter: spec => Construct<ExtensionClause>(2, 1, spec),
+                TypeSpecification.AsParser
+            )
         );
     }
 
-    public record ImplementationClause(ARRAY<TypeSpecification> Types) : IDeclaration<ImplementationClause>
+    public record ImplementationClause(AttributeDecl.CustomAttribute? Attribute, ARRAY<TypeSpecification> Types) : IDeclaration<ImplementationClause>
     {
         public override string ToString() => $"implements {Types}";
         public static Parser<ImplementationClause> AsParser => RunAll(
-            converter: specs => new ImplementationClause(specs[1]),
-            Discard<ARRAY<TypeSpecification>, string>(ConsumeWord(Core.Id, "implements")),
-            ARRAY<TypeSpecification>.MakeParser(new ARRAY<TypeSpecification>.ArrayOptions {
-                Delimiters = ('\0', ',', '\0')
-            })
+            converter: specs => new ImplementationClause(specs[1].Attribute, specs[2].Types),
+            Discard<ImplementationClause, string>(ConsumeWord(Core.Id, "implements")),
+            TryRun(
+                converter: attr => Construct<ImplementationClause>(2, 0, attr),
+                AttributeDecl.CustomAttribute.AsParser,
+                Empty<AttributeDecl.CustomAttribute>()
+            ),
+            Map(
+                converter: spec => Construct<ImplementationClause>(2, 1, spec),
+                ARRAY<TypeSpecification>.MakeParser(new ARRAY<TypeSpecification>.ArrayOptions {
+                    Delimiters = ('\0', ',', '\0')
+                })
+            )
+            
         );
     }
     public override string ToString() {
