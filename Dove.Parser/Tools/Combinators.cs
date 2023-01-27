@@ -24,8 +24,7 @@ public static class Core
         return RunAll(
             ps => ps[1], false,
             Whitespace<T>(),
-            parser,
-            Whitespace<T>()
+            parser
         );
     }
 
