@@ -151,7 +151,7 @@
         )
                         .maxstack 2
         .locals init (
-            [0..] int32
+            [0] int32
         )
 
         IL_0000: call void [System.Runtime]System.Runtime.CompilerServices.RuntimeHelpers::EnsureSufficientExecutionStack()
@@ -282,7 +282,7 @@
     } 
     .method public hidebysig newslot virtual 
         instance bool Equals (
-            class Student others
+            class Student other
         ) cil managed 
     {
         .custom instance void System.Runtime.CompilerServices.NullableContextAttribute::.ctor(uint8) = (

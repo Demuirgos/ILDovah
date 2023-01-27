@@ -138,8 +138,10 @@ public record ARRAY<T>(T[] Values) : IDeclaration<ARRAY<T>> where T : IDeclarati
     public class ArrayOptions {
         public (char start, char separator, char end) Delimiters { get; set; } = ('[', ',', ']');
         public bool AllowEmpty { get; set; } = true;
+        public bool SkipWhitespace { get; set; } = true;
         public int MinLength { get; set; } = 1;
         public int MaxLength { get; set; } = Int32.MaxValue;
+
         
     }
 
@@ -170,9 +172,10 @@ public record ARRAY<T>(T[] Values) : IDeclaration<ARRAY<T>> where T : IDeclarati
                 condP: Map(val => new T[] { val }, IDeclaration<T>.AsParser),
                 thenP: RunMany(
                     converter: (vals) => vals,
-                    options.MinLength - 1, options.MaxLength, false,
+                    options.MinLength - 1, options.MaxLength, options.SkipWhitespace,
                     RunAll(
                         converter: (vals) => vals[1],
+                        options.SkipWhitespace,
                         options.Delimiters.separator == '\0'
                             ? Empty<T>()
                             : Discard<T, char>(ConsumeChar(Id, options.Delimiters.separator)),
