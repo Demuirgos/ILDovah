@@ -12,7 +12,7 @@ public record Bound(INT? LeftBound, INT? RightBound, Bound.BoundType Type) : IDe
             converter: (bounds) => new Collection(bounds),
             ARRAY<Bound>.MakeParser(new ARRAY<Bound>.ArrayOptions
             {
-                Delimiters = ('\0', ',', '\0')
+                Delimiters = ('[', ',', ']')
             })
         );
     }

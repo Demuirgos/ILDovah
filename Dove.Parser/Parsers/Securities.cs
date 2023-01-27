@@ -79,9 +79,9 @@ public record PermissionSet(SecurityAction Action, ARRAY<BYTE> Bytes) : Security
 
 public record Permission(SecurityAction Action, TypeReference TypeReference, NameValPair.Collection NameValPairs) : SecurityBlock, IDeclaration<Permission>
 {
-    public override string ToString() => $".permission {Action} {TypeReference} ({NameValPairs})";
+    public override string ToString() => $".permission {Action} {TypeReference} {NameValPairs}";
     public static Parser<Permission> AsParser => RunAll(
-        converter: parts => new Permission(parts[1].Action, parts[2].TypeReference, parts[4].NameValPairs),
+        converter: parts => new Permission(parts[1].Action, parts[2].TypeReference, parts[3].NameValPairs),
         Discard<Permission, string>(ConsumeWord(Core.Id, ".permission")),
         Map(
             converter: action => new Permission(action, null, null),
@@ -91,12 +91,10 @@ public record Permission(SecurityAction Action, TypeReference TypeReference, Nam
             converter: type => new Permission(null, type, null),
             TypeReference.AsParser
         ),
-        Discard<Permission, char>(ConsumeChar(Core.Id, '(')),
         Map(
             converter: nameValPairs => new Permission(null, null, nameValPairs),
             NameValPair.Collection.AsParser
-        ),
-        Discard<Permission, char>(ConsumeChar(Core.Id, ')'))
+        )
     );
 }
 
@@ -109,7 +107,7 @@ public record NameValPair(QSTRING Name, QSTRING Value) : IDeclaration<NameValPai
             converter: items => new Collection(items),
             ARRAY<NameValPair>.MakeParser(new ARRAY<NameValPair>.ArrayOptions
             {
-                Delimiters = ('\0', ',', '\0')
+                Delimiters = ('(', ',', ')')
             })
         );
     }

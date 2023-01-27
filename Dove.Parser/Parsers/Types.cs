@@ -182,12 +182,10 @@ public record ReferenceSuffix(bool IsRawPointer) : TypeSuffix, IDeclaration<Refe
 
 public record BoundedSuffix(Bound.Collection Bounds) : TypeSuffix, IDeclaration<BoundedSuffix>
 {
-    public override string ToString() => $"[{Bounds}]";
-    public static Parser<BoundedSuffix> AsParser => RunAll(
-        converter: (vals) => new BoundedSuffix(vals[1]),
-        Discard<Bound.Collection, char>(ConsumeChar(Id, '[')),
-        Bound.Collection.AsParser,
-        Discard<Bound.Collection, char>(ConsumeChar(Id, ']'))
+    public override string ToString() => Bounds.ToString();
+    public static Parser<BoundedSuffix> AsParser => Map(
+        converter: (vals) => new BoundedSuffix(vals),
+        Bound.Collection.AsParser
     );
 }
 
@@ -312,7 +310,7 @@ public record MethodDefinition(CallConvention CallConvention, Type TypeTarget, P
         return sb.ToString();
     }
     public static Parser<MethodDefinition> AsParser => RunAll(
-        converter: parts => new MethodDefinition(parts[1].CallConvention, parts[2].TypeTarget, parts[5].Parameters),
+        converter: parts => new MethodDefinition(parts[1].CallConvention, parts[2].TypeTarget, parts[4].Parameters),
         Discard<MethodDefinition, String>(ConsumeWord(Id, "method")),
         Map(
             converter: part1 => new MethodDefinition(part1, null, null),
@@ -323,11 +321,10 @@ public record MethodDefinition(CallConvention CallConvention, Type TypeTarget, P
             Lazy(() => Type.AsParser)
         ),
         Discard<MethodDefinition, char>(ConsumeChar(Id, '*')),
-        Discard<MethodDefinition, char>(ConsumeChar(Id, '(')),
         Map(
             converter: part3 => new MethodDefinition(null, null, part3),
-            Parameter.Collection.AsParser),
-        Discard<MethodDefinition, char>(ConsumeChar(Id, ')'))
+            Parameter.Collection.AsParser
+        )
     );
 }
 
@@ -439,7 +436,7 @@ public record MethodReference(CallConvention? Convention, TypeDecl.Type TypeComp
         {
             sb.Append($"<{TypeParameters}> ");
         }
-        sb.Append($"({SigArgs})");
+        sb.Append($"{SigArgs}");
         return sb.ToString();
     }
     public static Parser<MethodReference> AsParser => RunAll(
@@ -482,11 +479,9 @@ public record MethodReference(CallConvention? Convention, TypeDecl.Type TypeComp
             ),
             Empty<GenArgs>()
         ),
-        RunAll(
-            converter: pars => Construct<MethodReference>(6, 5, pars[1]),
-            Discard<SigArgument.Collection, char>(ConsumeChar(Id, '(')),
-            SigArgument.Collection.AsParser,
-            Discard<SigArgument.Collection, char>(ConsumeChar(Id, ')'))
+        Map(
+            converter: pars => Construct<MethodReference>(6, 5, pars),
+            SigArgument.Collection.AsParser
         )
     );
 }

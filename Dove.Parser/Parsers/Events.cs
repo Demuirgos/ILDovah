@@ -88,7 +88,7 @@ public record ExternalSourceItem(ExternSource Attribute) : Member, IDeclaration<
 
 public record SpecialMethodReference(String SpecialName, CallConvention Convention, TypeDecl.Type Type, TypeSpecification? Specification, MethodName Name, Parameter.Collection Parameters) : Member, IDeclaration<SpecialMethodReference>
 {
-    public override string ToString() => $"{SpecialName} {Convention} {(Specification is null ? String.Empty : $"{Specification}::")}{Name}({Parameters})";
+    public override string ToString() => $"{SpecialName} {Convention} {(Specification is null ? String.Empty : $"{Specification}::")}{Name}{Parameters}";
     public static string[] SpecialNames = new string[] { ".fire", ".other", ".addon", ".removeon" };
     public static Parser<SpecialMethodReference> AsParser => RunAll(
         converter: parts => new SpecialMethodReference(
@@ -124,11 +124,9 @@ public record SpecialMethodReference(String SpecialName, CallConvention Conventi
             converter: name => Construct<SpecialMethodReference>(6, 4, name),
             MethodName.AsParser
         ),
-        RunAll(
-            converter: parts => Construct<SpecialMethodReference>(6, 5, parts[1]),
-            Discard<Parameter.Collection, char>(ConsumeChar(Core.Id, '(')),
-            Parameter.Collection.AsParser,
-            Discard<Parameter.Collection, char>(ConsumeChar(Core.Id, ')'))
+        Map(
+            converter: pars => Construct<SpecialMethodReference>(6, 5, pars),
+            Parameter.Collection.AsParser
         )
     );
 }

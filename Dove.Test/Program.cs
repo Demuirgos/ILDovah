@@ -1,6 +1,6 @@
 ﻿using Dove.Core;
 int index = 0;
-var result = INT.AsParser(File.ReadAllText("Test.il"), ref index, out var res, out string err);
+var result = InstructionDecl.Instruction.AsParser(File.ReadAllText("Test.il"), ref index, out var res, out string err);
 // TODO : Add unit tests on version 0.1.5.0
 // TODO : Add MSFT Specific stuff
 // TODO : Add TABLES 

@@ -21,7 +21,7 @@ public record SigArgument(AttributeDecl.ParamAttribute.Collection Attributes, Ty
                 converter: arguments => Construct<Collection>(1, 0, arguments),
                 ARRAY<SigArgument>.MakeParser(new ARRAY<SigArgument>.ArrayOptions
                 {
-                    Delimiters = ('\0', ',', '\0')
+                    Delimiters = ('(', ',', ')')
                 })
             )
         );

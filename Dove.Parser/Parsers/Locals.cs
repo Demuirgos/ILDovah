@@ -13,7 +13,7 @@ public record Local(TypeDecl.Type Type, Identifier Id) : IDeclaration<Local>
             converter: arr => new Collection(arr),
             ARRAY<Local>.MakeParser(new ARRAY<Local>.ArrayOptions
             {
-                Delimiters = ('\0', ',', '\0')
+                Delimiters = ('(', ',', ')')
             })
         );
     }

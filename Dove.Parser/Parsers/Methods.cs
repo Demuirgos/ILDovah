@@ -70,9 +70,9 @@ public record Prefix(MethodAttribute.Collection MethodAttributes, CallConvention
         sb.Append($" {Name}");
         if (TypeParameters != null)
         {
-            sb.Append($" <{TypeParameters}>");
+            sb.Append($" {TypeParameters}");
         }
-        sb.Append($" ({Parameters})");
+        sb.Append($" {Parameters}");
         if (ImplementationAttributes != null)
         {
             sb.Append($" {ImplementationAttributes} ");
@@ -119,19 +119,15 @@ public record Prefix(MethodAttribute.Collection MethodAttributes, CallConvention
         ),
         TryRun(
             converter: genpars => Construct<Prefix>(8, 5, genpars),
-            RunAll(
-                converter: pars => pars[1],
-                Discard<GenericParameter.Collection, char>(ConsumeChar(Id, '<')),
-                GenericParameter.Collection.AsParser,
-                Discard<GenericParameter.Collection, char>(ConsumeChar(Id, '>'))
+            Map(
+                converter: pars => pars,
+                GenericParameter.Collection.AsParser
             ),
             Empty<GenericParameter.Collection>()
         ),
-        RunAll(
-            converter: pars => Construct<Prefix>(8, 6, pars[1]),
-            Discard<Parameter.Collection, char>(ConsumeChar(Id, '(')),
-            Parameter.Collection.AsParser,
-            Discard<Parameter.Collection, char>(ConsumeChar(Id, ')'))
+        Map(
+            converter: pars => Construct<Prefix>(8, 6, pars),
+            Parameter.Collection.AsParser
         ),
         Map(
             converter: implattrs => Construct<Prefix>(8, 7, implattrs),
@@ -185,7 +181,7 @@ public record MaxStackItem(INT Value) : Member, IDeclaration<MaxStackItem>
 [WrapParser<ParamClause>] public partial record ParamAttribute :  Member, IDeclaration<ParamAttribute>;
 public record LocalsItem(bool IsInit, Local.Collection Signatures) : Member, IDeclaration<LocalsItem>
 {
-    public override string ToString() => $".locals {(IsInit ? "init" : String.Empty)} (\n{Signatures}\n)";
+    public override string ToString() => $".locals {(IsInit ? "init" : String.Empty)} \n{Signatures}\n";
     public static Parser<LocalsItem> AsParser => RunAll(
         converter: parts => new LocalsItem(parts[1].IsInit, parts[2].Signatures),
         Discard<LocalsItem, string>(ConsumeWord(Id, ".locals")),
@@ -194,11 +190,9 @@ public record LocalsItem(bool IsInit, Local.Collection Signatures) : Member, IDe
             Discard<LocalsItem, string>(ConsumeWord(Id, "init")),
             Empty<LocalsItem>()
         ),
-        RunAll(
-            converter: sigs => new LocalsItem(false, sigs[1]),
-            Discard<Local.Collection, char>(ConsumeChar(Id, '(')),
-            Local.Collection.AsParser,
-            Discard<Local.Collection, char>(ConsumeChar(Id, ')'))
+        Map(
+            converter: sigs => new LocalsItem(false, sigs),
+            Local.Collection.AsParser
         )
     );
 }
@@ -224,7 +218,7 @@ public record OverrideMethodDefault(TypeSpecification Specification, MethodName 
 
 public record OverrideMethodGeneric(CallConvention Convention, TypeDecl.Type Type, TypeSpecification Specification, MethodName Name, GenericTypeArity Arity, Parameter.Collection Parameters) : OverrideMethodSignature, IDeclaration<OverrideMethodGeneric>
 {
-    public override string ToString() => $"method {Convention} {Type} {Specification}::{Name} {Arity} ({Parameters})";
+    public override string ToString() => $"method {Convention} {Type} {Specification}::{Name} {Arity} {Parameters}";
     public static Parser<OverrideMethodGeneric> AsParser => RunAll(
         converter: parts => new OverrideMethodGeneric(
             parts[1].Convention,
@@ -232,7 +226,7 @@ public record OverrideMethodGeneric(CallConvention Convention, TypeDecl.Type Typ
             parts[3].Specification,
             parts[5].Name,
             parts[6].Arity,
-            parts[8].Parameters
+            parts[7].Parameters
         ),
         TryRun(
             Id,
@@ -260,12 +254,10 @@ public record OverrideMethodGeneric(CallConvention Convention, TypeDecl.Type Typ
             converter: arity => Construct<OverrideMethodGeneric>(6, 4, arity),
             GenericTypeArity.AsParser
         ),
-        Discard<OverrideMethodGeneric, char>(ConsumeChar(Id, '(')),
         Map(
             converter: parameters => Construct<OverrideMethodGeneric>(6, 5, parameters),
             Parameter.Collection.AsParser
-        ),
-        Discard<OverrideMethodGeneric, char>(ConsumeChar(Id, ')'))
+        )
     );
 }
 

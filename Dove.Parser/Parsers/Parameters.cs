@@ -19,7 +19,7 @@ public partial record Parameter : IDeclaration<Parameter>
             converter: (parameters) => new Collection(parameters),
             ARRAY<Parameter>.MakeParser(new ARRAY<Parameter>.ArrayOptions
             {
-                Delimiters = ('\0', ',', '\0')
+                Delimiters = ('(', ',', ')')
             })
         );
     }
@@ -91,7 +91,7 @@ public record GenericParameter(GenParamAttribute.Collection Attributes, TypeDecl
             converter: (parameters) => new Collection(parameters),
             ARRAY<GenericParameter>.MakeParser(new ARRAY<GenericParameter>.ArrayOptions
             {
-                Delimiters = ('\0', ',', '\0')
+                Delimiters = ('<', ',', '>')
             })
         );
     }
@@ -123,9 +123,9 @@ public record GenericParameter(GenParamAttribute.Collection Attributes, TypeDecl
             converter: constraints => new GenericParameter(null, constraints, null),
             RunAll(
                 converter: vals => vals[1],
-                Discard<TypeDecl.Type.Collection, char>(ConsumeChar(Core.Id, '(')),
+                Discard<GenericConstraints, char>(ConsumeChar(Core.Id, '(')),
                 GenericConstraints.AsParser,
-                Discard<TypeDecl.Type.Collection, char>(ConsumeChar(Core.Id, ')'))
+                Discard<GenericConstraints, char>(ConsumeChar(Core.Id, ')'))
             ),
             Empty<TypeDecl.Type.Collection>()
         ),

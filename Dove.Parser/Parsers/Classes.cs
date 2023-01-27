@@ -86,11 +86,9 @@ public record Prefix(ClassAttribute.Collection Attributes, Identifier Id, Generi
         ),
         TryRun(
             converter: genArgs => Construct<Prefix>(5, 2, genArgs),
-            RunAll(
-                converter: typeParams => typeParams[1],
-                Discard<GenericParameter.Collection, char>(ConsumeChar(Core.Id, '<')),
-                GenericParameter.Collection.AsParser,
-                Discard<GenericParameter.Collection, char>(ConsumeChar(Core.Id, '>'))
+            Map(
+                converter: typeParams => typeParams,
+                GenericParameter.Collection.AsParser
             ),
             Empty<GenericParameter.Collection>()
         ),

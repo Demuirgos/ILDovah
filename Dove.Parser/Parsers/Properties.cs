@@ -87,7 +87,7 @@ public partial record Member : IDeclaration<Member>
 
 public record SpecialMethodReference(String SpecialName, CallConvention Convention, TypeDecl.Type Type, TypeSpecification? Specification, MethodName Name, Parameter.Collection Parameters) : Member, IDeclaration<SpecialMethodReference>
 {
-    public override string ToString() => $"{SpecialName} {Convention} {Type} {(Specification is null ? "" : $"{Specification}::")}{Name}({Parameters})";
+    public override string ToString() => $"{SpecialName} {Convention} {Type} {(Specification is null ? "" : $"{Specification}::")}{Name} {Parameters}";
     public static string[] SpecialNames = new string[] { ".get", ".other", ".set" };
     public static Parser<SpecialMethodReference> AsParser => RunAll(
         converter: parts => new SpecialMethodReference(
@@ -123,11 +123,9 @@ public record SpecialMethodReference(String SpecialName, CallConvention Conventi
             converter: name => Construct<SpecialMethodReference>(6, 4, name),
             MethodName.AsParser
         ),
-        RunAll(
-            converter: parts => Construct<SpecialMethodReference>(6, 5, parts[1]),
-            Discard<Parameter.Collection, char>(ConsumeChar(Core.Id, '(')),
-            Parameter.Collection.AsParser,
-            Discard<Parameter.Collection, char>(ConsumeChar(Core.Id, ')'))
+        Map(
+            converter: param => Construct<SpecialMethodReference>(6, 5, param),
+            Parameter.Collection.AsParser
         )
     );
 }

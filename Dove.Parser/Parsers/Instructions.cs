@@ -192,15 +192,10 @@ public record BytearrayArgument(string Prefix, ARRAY<BYTE> Bytes)
 public record SigArgs(SigArgument.Collection SigArguments)
     : IDeclaration<SigArgs>
 {
-    public override string ToString() => $"({SigArguments})";
-    public static Parser<SigArgs> AsParser => RunAll(
-        converter: parts => new SigArgs(parts[1]),
-        Discard<SigArgs, char>(ConsumeChar(Id, '(')),
-        Map(
-            converter: labels => Construct<SigArgs>(1, 0, labels),
-            SigArgument.Collection.AsParser
-        ),
-        Discard<SigArgs, char>(ConsumeChar(Id, ')'))
+    public override string ToString() => $"{SigArguments}";
+    public static Parser<SigArgs> AsParser => Map(
+        converter: labels => Construct<SigArgs>(1, 0, labels),
+        SigArgument.Collection.AsParser
     );
 }
 public record JumpLabels(LabelOrOffset.Collection TargetLabels)
