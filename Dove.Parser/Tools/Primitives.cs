@@ -4,7 +4,7 @@ public record INT(Int64 Value, int BitsSize, bool IsHex) : IDeclaration<INT>
 {
     public override string ToString() => IsHex ? $"0x{Value:X2}" : Value.ToString();
     public static Parser<INT> Body(int baseCount, Parser<char> parser, bool inHex, int sign = 1) => RunMany(
-        converter: cs => new INT(cs.Aggregate(0l, (acc, c) => acc * baseCount + BYTE.charVal(c)), cs.Length, inHex),
+        converter: cs => new INT(cs.Aggregate(0, (acc, c) => acc * baseCount + sign * BYTE.charVal(c)), cs.Length, inHex),
         1, Int32.MaxValue, false, parser);
     public static Parser<INT> AsParser => Map(
         converter: result => result.Item2,
@@ -14,7 +14,7 @@ public record INT(Int64 Value, int BitsSize, bool IsHex) : IDeclaration<INT>
             elseP: Map(
                 converter: (val) => val.Item2,
                 If(
-                    condP: ConsumeChar(_ => (-1l), '-'),
+                    condP: ConsumeChar(Id, '-'),
                     thenP: Body(10, ConsumeIf(Id, Char.IsDigit), false, -1),
                     elseP: Body(10, ConsumeIf(Id, Char.IsDigit), false)
                 )
