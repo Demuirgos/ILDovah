@@ -79,23 +79,30 @@ public static class Core
         };
     }
 
-    public static Parser<T> ConsumeIf<T>(Parser<T> parser, Func<T, bool> predicate, [CallerArgumentExpression("predicate")] string predicateArgs = null)
+    public static Parser<T> ConsumeIf<T>(Parser<T> parser, Func<T, bool> predicate,[CallerArgumentExpression("predicate")] string predicateArgs = null)
     {
         return (string code, ref int index, out T result, out string error) =>
         {
-            result = default;
-            bool isParsed = parser(code, ref index, out T value, out error);
-            if (isParsed)
+            int oldIndex = index;
+    
+            if (!parser(code, ref index, out T value, out error))
             {
-                bool isValid = predicate(value);
-                if (isValid)
-                {
-                    result = value;
-                    return true;
-                }
+                result = default;
+                return false;
             }
-            error = isParsed ? $"Value: {value} does not match predicate {predicateArgs}" : error;
-            result = default(T);
+    
+            if (predicate(value))
+            {
+                result = value;
+                error = default;
+                return true;
+            }
+    
+            // Backtrack
+            index = oldIndex;
+    
+            result = default;
+            error = $"Value: {value} does not match predicate {predicateArgs}";
             return false;
         };
     }
